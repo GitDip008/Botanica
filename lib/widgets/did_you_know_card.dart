@@ -1,9 +1,48 @@
+import 'dart:math';
 import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:provider/provider.dart';
 import '../i18n/app_strings.dart';
 import '../services/chat_service.dart';
 import '../services/language_service.dart';
+
+// Hardcoded fallback facts (used only if Groq is unreachable)
+const _fallbacksEn = [
+  'Bamboo can grow up to 91 cm in a single day — the fastest plant on Earth.',
+  'A single tree can release 100 gallons of water vapor into the air daily.',
+  'Carl Linnaeus invented the binomial naming system we still use today.',
+  'Some lotus seeds have sprouted after 1,300 years buried in lake sediment.',
+  'Sunflowers track the sun across the sky — a behaviour called heliotropism.',
+  'Mycorrhizal fungi connect trees in a hidden "wood-wide-web" underground.',
+  'Venus flytraps count touches before closing — to avoid wasting energy.',
+  'Vanilla is the second most expensive spice in the world after saffron.',
+  'A giant redwood can live for over 3,000 years and weigh 1,000 tonnes.',
+  'Coffee plants originally come from Ethiopia, not South America.',
+];
+const _fallbacksFi = [
+  'Bambu voi kasvaa jopa 91 cm yhdessä päivässä — maailman nopeimmin kasvava kasvi.',
+  'Yksittäinen puu voi vapauttaa ilmaan 380 litraa vesihöyryä päivässä.',
+  'Carl Linnaeus kehitti kaksiosaisen nimijärjestelmän, jota käytämme yhä.',
+  'Lootuksen siemenet ovat itäneet 1 300 vuoden jälkeen järven pohjasta.',
+  'Auringonkukat seuraavat aurinkoa — ilmiötä kutsutaan heliotropismiksi.',
+  'Sienirihmasto yhdistää puut maan alla "metsän internetiksi".',
+  'Kihokit laskevat kosketuksia ennen sulkeutumistaan säästääkseen energiaa.',
+  'Vanilja on maailman toiseksi kallein mauste sahramin jälkeen.',
+  'Jättiläispunapuu voi elää yli 3 000 vuotta ja painaa 1 000 tonnia.',
+  'Kahvi on alun perin kotoisin Etiopiasta, ei Etelä-Amerikasta.',
+];
+const _fallbacksSv = [
+  'Bambu kan växa upp till 91 cm på en dag — jordens snabbast växande växt.',
+  'Ett enda träd kan släppa ut 380 liter vattenånga i luften per dag.',
+  'Carl Linnaeus uppfann det binomiala namnsystemet vi använder än idag.',
+  'Vissa lotusfrön har grott efter 1 300 år i sjösediment.',
+  'Solrosor följer solen över himlen — ett beteende kallat heliotropism.',
+  'Mykorrhiza-svampar förbinder träd i ett dolt "skogens internet".',
+  'Venus flugfälla räknar beröringar innan den sluts för att spara energi.',
+  'Vanilj är världens näst dyraste krydda efter saffran.',
+  'En jätteredwood kan leva i över 3 000 år och väga 1 000 ton.',
+  'Kaffeplantor kommer ursprungligen från Etiopien, inte Sydamerika.',
+];
 
 /// Shows a fresh AI-generated botanical/garden fact in the current app language.
 /// Tap the refresh button to generate a new one. Maximum 3 sentences.
@@ -29,34 +68,71 @@ class _DidYouKnowCardState extends State<DidYouKnowCard> {
     }
   }
 
+  // 30 diverse seed topics — picked at random each fetch to force diversity.
+  static const _topicSeeds = [
+    'carnivorous plants (Venus flytrap, sundews)',
+    'orchids',
+    'mosses & lichens',
+    'mushrooms / fungi',
+    'tropical rainforest plants',
+    'cacti and desert succulents',
+    'giant trees (redwoods, sequoias)',
+    'flowering pollination tricks',
+    'plant symbiosis with insects',
+    'a famous botanist (Linnaeus, Mendel, Hooker, Bauhin)',
+    'ferns and primitive vascular plants',
+    'plants and music or sound',
+    'aquatic plants and water lilies',
+    'bamboo growth speed',
+    'plants that glow / bioluminescence',
+    'fragrant flowers and perfume history',
+    'medicinal use of a plant (willow bark, foxglove)',
+    'coffee, tea or chocolate plant origins',
+    'plants that survive fire',
+    'arctic and alpine plant adaptations',
+    'plant evolution (ginkgo, cycads)',
+    'invasive plant species',
+    'seeds with extreme longevity',
+    'sunflowers and Fibonacci patterns',
+    'mangrove ecosystems',
+    'mycorrhizal fungal networks',
+    'plants that move (Mimosa pudica)',
+    'edible flowers',
+    'spices and their origins (saffron, vanilla)',
+    'plant defenses (thorns, toxins, latex)',
+  ];
+
   Future<void> _fetch() async {
     setState(() => _loading = true);
     final lang = context.read<LanguageService>().current.llmName;
+    // Pick a random topic seed so the LLM is forced off the cloudberry path
+    final rand = Random();
+    final topic = _topicSeeds[rand.nextInt(_topicSeeds.length)];
 
     final fact = await ChatService.instance.cloud.completeText(
       systemPrompt:
-          'You are a botanical educator at Oulu Botanical Garden. Always answer in $lang only. '
+          'You are a botanical educator. Always answer in $lang only. '
           'Plain text only — no markdown, no preamble, no quotation marks.',
       userPrompt:
-          'Share ONE surprising or delightful botanical fact — about a plant, '
-          'a botanist, a flower, an ecosystem, plant evolution, or Finnish/Nordic flora. '
-          'Pick something random and unexpected.\n\n'
-          'STRICT RULES (must follow):\n'
-          '• Maximum 150 characters TOTAL (count them — including spaces and punctuation).\n'
+          'Share ONE surprising botanical fact specifically about: $topic.\n\n'
+          'STRICT RULES:\n'
+          '• Maximum 150 characters TOTAL.\n'
           '• 1-2 short sentences only.\n'
+          '• Do NOT mention cloudberries unless the topic explicitly is cloudberries.\n'
           '• Do NOT start with "Did you know".\n'
-          '• Just state the fact directly.',
+          '• State the fact directly.',
       maxTokens: 80,
-      temperature: 0.95,
+      temperature: 1.0,
     );
 
     if (!mounted) return;
-    String shown = fact ??
-        (lang == 'Finnish'
-            ? 'Kasvit tuottavat lähes 99 % maapallon hapesta.'
-            : lang == 'Swedish'
-                ? 'Växter producerar nästan 99 % av världens syre.'
-                : 'Plants produce nearly 99% of the oxygen in our atmosphere.');
+    // Hardcoded language-specific fallback pool (used when Groq fails)
+    final pool = lang == 'Finnish'
+        ? _fallbacksFi
+        : lang == 'Swedish'
+            ? _fallbacksSv
+            : _fallbacksEn;
+    String shown = fact ?? pool[rand.nextInt(pool.length)];
 
     // Hard-cap at 150 chars client-side — LLM sometimes ignores the prompt.
     if (shown.length > 150) {

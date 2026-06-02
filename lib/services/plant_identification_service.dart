@@ -1,8 +1,6 @@
-import 'dart:convert';
 import 'dart:typed_data';
-import 'package:http/http.dart' as http;
-import '../config/api_config.dart';
 import '../models/plant_info.dart';
+import 'cloud_llm_service.dart';
 import 'gemini_service.dart';
 import 'language_service.dart';
 import 'plantnet_service.dart';
@@ -123,11 +121,8 @@ class PlantIdentificationService {
     return _attachImage(enriched);
   }
 
-  /// Groq description (free). Returns null on any failure.
+  /// Groq description (free) via Cloud Function proxy. Returns null on failure.
   Future<String?> _describeViaCloudLLM(PlantInfo base) async {
-    final key = ApiConfig.cloudLlmApiKey;
-    if (key.isEmpty || key == 'YOUR_CLOUD_LLM_API_KEY_HERE') return null;
-
     final lang = LanguageService.instance.current.llmName;
     final userPrompt =
         'Write a 3-4 sentence engaging botanical description of ${base.commonName} '
@@ -138,33 +133,14 @@ class PlantIdentificationService {
         'Start directly with the description, no preamble.';
 
     try {
-      final uri = Uri.parse('${ApiConfig.cloudLlmBaseUrl}/chat/completions');
-      final res = await http
-          .post(
-            uri,
-            headers: {
-              'Content-Type': 'application/json',
-              'Authorization': 'Bearer $key',
-            },
-            body: jsonEncode({
-              'model': ApiConfig.cloudLlmModel,
-              'messages': [
-                {
-                  'role': 'system',
-                  'content':
-                      'You are a botanical educator writing for a botanical garden app. Plain prose only — no markdown formatting (no **, *, #, -, etc.).',
-                },
-                {'role': 'user', 'content': userPrompt},
-              ],
-              'temperature': 0.7,
-              'max_tokens': 220,
-            }),
-          )
-          .timeout(const Duration(seconds: 20));
-      if (res.statusCode != 200) return null;
-      final data = jsonDecode(res.body) as Map<String, dynamic>;
-      final text =
-          (data['choices'][0]['message']['content'] as String).trim();
+      final text = await CloudLLMService().completeText(
+        systemPrompt:
+            'You are a botanical educator writing for a botanical garden app. Plain prose only — no markdown formatting (no **, *, #, -, etc.).',
+        userPrompt: userPrompt,
+        maxTokens: 220,
+        temperature: 0.7,
+      );
+      if (text == null) return null;
       return _stripMarkdown(text);
     } catch (_) {
       return null;

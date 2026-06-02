@@ -2,11 +2,13 @@ import 'dart:io';
 import 'package:camera/camera.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
-import 'package:google_generative_ai/google_generative_ai.dart';
 import 'package:permission_handler/permission_handler.dart';
-import '../config/api_config.dart';
+import '../services/badge_service.dart';
 import '../services/chat_service.dart';
+import '../services/gemini_proxy.dart';
+import '../services/language_service.dart';
 import '../services/plant_identification_service.dart';
+import '../services/usage_tracking_service.dart';
 
 // ─── Data ─────────────────────────────────────────────────────────────────────
 
@@ -86,8 +88,6 @@ class PlantHuntScreen extends StatefulWidget {
 enum _StopState { pending, checking, correct, wrong }
 
 class _PlantHuntScreenState extends State<PlantHuntScreen> {
-  static const _apiKey = ApiConfig.geminiApiKey;
-
   int _current = 0; // which challenge we're on
   final List<_StopState> _states = List.filled(3, _StopState.pending);
   String? _feedback; // Gemini one-liner
@@ -110,6 +110,7 @@ class _PlantHuntScreenState extends State<PlantHuntScreen> {
   void initState() {
     super.initState();
     _initCamera();
+    UsageTrackingService.instance.log(UsageTrackingService.featurePlantHunt);
   }
 
   Future<void> _initCamera() async {
@@ -185,17 +186,16 @@ class _PlantHuntScreenState extends State<PlantHuntScreen> {
 
         String? reply = cloudReply;
         if (reply == null) {
-          // Gemini fallback
+          // Gemini fallback via Cloud Function proxy
           final prompt =
               'You are a friendly botanist helping a child on a plant scavenger hunt. '
               'The child is looking for ${challenge.targetName} (${challenge.targetScientific}). '
               'The child answered: "$typedAnswer". '
               'Reply with exactly two lines: CORRECT or WRONG, then one short sentence (max 12 words).';
-          final model =
-              GenerativeModel(model: 'gemini-2.5-flash', apiKey: _apiKey);
-          final response =
-              await model.generateContent([Content.text(prompt)]);
-          reply = (response.text ?? '').trim();
+          reply = await GeminiProxy.instance.text(
+            prompt: prompt,
+            model: 'gemini-2.5-flash',
+          );
         }
 
         final lines =
@@ -238,6 +238,9 @@ class _PlantHuntScreenState extends State<PlantHuntScreen> {
         _states[_current] = _StopState.pending;
       });
     } else {
+      // Award persistent badge for completing the hunt — survives sign-outs
+      // and shows up later on the profile / chat shelf.
+      BadgeService.instance.award('plant_hunt_completed');
       setState(() => _allDone = true);
     }
   }
@@ -255,6 +258,7 @@ class _PlantHuntScreenState extends State<PlantHuntScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final s = LanguageService.instance.strings;
     return Scaffold(
       backgroundColor: const Color(0xFF0D1F14),
       appBar: AppBar(
@@ -349,7 +353,9 @@ class _PlantHuntScreenState extends State<PlantHuntScreen> {
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          Text('Quest #${challenge.questNumber}',
+                          Text(
+                              LanguageService.instance.strings
+                                  .questNumber(challenge.questNumber),
                               style: const TextStyle(
                                   color: Color(0xFF66BB6A),
                                   fontSize: 12,
@@ -368,12 +374,12 @@ class _PlantHuntScreenState extends State<PlantHuntScreen> {
                   ],
                 ),
                 const SizedBox(height: 14),
-                const Row(children: [
-                  Icon(Icons.format_quote,
+                Row(children: [
+                  const Icon(Icons.format_quote,
                       color: Color(0xFF2E7D32), size: 16),
-                  SizedBox(width: 4),
-                  Text('Your clue:',
-                      style: TextStyle(
+                  const SizedBox(width: 4),
+                  Text(LanguageService.instance.strings.yourClue,
+                      style: const TextStyle(
                           color: Color(0xFF66BB6A),
                           fontWeight: FontWeight.bold,
                           fontSize: 12)),
@@ -516,8 +522,8 @@ class _PlantHuntScreenState extends State<PlantHuntScreen> {
           TextButton.icon(
             onPressed: _retakePhoto,
             icon: const Icon(Icons.refresh, color: Color(0xFF66BB6A), size: 16),
-            label: const Text('Retake photo',
-                style: TextStyle(color: Color(0xFF66BB6A), fontSize: 12)),
+            label: Text(LanguageService.instance.strings.retakePhoto,
+                style: const TextStyle(color: Color(0xFF66BB6A), fontSize: 12)),
           ),
         ],
       );
@@ -534,15 +540,15 @@ class _PlantHuntScreenState extends State<PlantHuntScreen> {
             border: Border.all(
                 color: const Color(0xFF2E7D32), style: BorderStyle.solid),
           ),
-          child: const Column(
+          child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              Icon(Icons.camera_alt, color: Color(0xFF4CAF50), size: 36),
-              SizedBox(height: 8),
-              Text('Tap to open camera',
-                  style: TextStyle(color: Color(0xFF4CAF50), fontSize: 13)),
-              Text('Take a photo of the plant!',
-                  style: TextStyle(color: Color(0xFF2E7D32), fontSize: 11)),
+              const Icon(Icons.camera_alt, color: Color(0xFF4CAF50), size: 36),
+              const SizedBox(height: 8),
+              Text(LanguageService.instance.strings.tapToOpenCamera,
+                  style: const TextStyle(color: Color(0xFF4CAF50), fontSize: 13)),
+              Text(LanguageService.instance.strings.takeAPhotoOfThePlant,
+                  style: const TextStyle(color: Color(0xFF2E7D32), fontSize: 11)),
             ],
           ),
         ),
@@ -569,7 +575,8 @@ class _PlantHuntScreenState extends State<PlantHuntScreen> {
                 borderRadius: BorderRadius.circular(12)),
           ),
           icon: const Icon(Icons.camera, size: 18),
-          label: const Text('Take Photo', style: TextStyle(fontSize: 13)),
+          label: Text(LanguageService.instance.strings.takePhoto,
+              style: const TextStyle(fontSize: 13)),
           onPressed: _capture,
         ),
       ],
@@ -580,15 +587,15 @@ class _PlantHuntScreenState extends State<PlantHuntScreen> {
 
   Widget _buildActionButton(_StopState state, _Challenge challenge) {
     if (state == _StopState.checking) {
-      return const Center(
+      return Center(
         child: Padding(
-          padding: EdgeInsets.symmetric(vertical: 12),
+          padding: const EdgeInsets.symmetric(vertical: 12),
           child: Column(
             children: [
-              CircularProgressIndicator(color: Color(0xFF66BB6A)),
-              SizedBox(height: 8),
-              Text('Checking your answer…',
-                  style: TextStyle(color: Color(0xFF4CAF50), fontSize: 13)),
+              const CircularProgressIndicator(color: Color(0xFF66BB6A)),
+              const SizedBox(height: 8),
+              Text(LanguageService.instance.strings.checkingYourAnswer,
+                  style: const TextStyle(color: Color(0xFF4CAF50), fontSize: 13)),
             ],
           ),
         ),
@@ -606,7 +613,9 @@ class _PlantHuntScreenState extends State<PlantHuntScreen> {
         ),
         icon: const Icon(Icons.arrow_forward),
         label: Text(
-          _current < 2 ? 'Next Quest →' : '🏆 Claim Your Badge!',
+          _current < 2
+              ? LanguageService.instance.strings.nextQuest
+              : LanguageService.instance.strings.claimYourBadge,
           style: const TextStyle(fontSize: 15, fontWeight: FontWeight.bold),
         ),
         onPressed: _nextChallenge,
@@ -633,13 +642,13 @@ class _PlantHuntScreenState extends State<PlantHuntScreen> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    const Row(
+                    Row(
                       children: [
-                        Icon(Icons.lightbulb_rounded,
+                        const Icon(Icons.lightbulb_rounded,
                             color: Color(0xFFFFD54F), size: 16),
-                        SizedBox(width: 6),
-                        Text('The answer is',
-                            style: TextStyle(
+                        const SizedBox(width: 6),
+                        Text(LanguageService.instance.strings.theAnswerIs,
+                            style: const TextStyle(
                                 color: Color(0xFFFFD54F),
                                 fontSize: 12,
                                 fontWeight: FontWeight.w700)),
@@ -655,7 +664,7 @@ class _PlantHuntScreenState extends State<PlantHuntScreen> {
                     ),
                     const SizedBox(height: 4),
                     Text(
-                      'Now go find it and submit your answer to continue! 🌿',
+                      LanguageService.instance.strings.goFindItToContinue,
                       style: const TextStyle(
                           color: Color(0xFF81C784), fontSize: 12),
                     ),
@@ -675,7 +684,7 @@ class _PlantHuntScreenState extends State<PlantHuntScreen> {
                         borderRadius: BorderRadius.circular(12)),
                   ),
                   icon: const Icon(Icons.lightbulb_outline_rounded, size: 16),
-                  label: const Text('Tap to know the answer'),
+                  label: Text(LanguageService.instance.strings.tapToKnowTheAnswer),
                   onPressed: () =>
                       setState(() => _answerRevealed[_current] = true),
                 ),
@@ -691,7 +700,7 @@ class _PlantHuntScreenState extends State<PlantHuntScreen> {
               minimumSize: const Size(double.infinity, 0),
             ),
             icon: const Icon(Icons.refresh, size: 16),
-            label: const Text('Try Again'),
+            label: Text(LanguageService.instance.strings.tryAgain),
             onPressed: _retryChallenge,
           ),
         ],
@@ -711,8 +720,8 @@ class _PlantHuntScreenState extends State<PlantHuntScreen> {
             RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
       ),
       icon: const Icon(Icons.send_rounded),
-      label: const Text('Submit Answer',
-          style: TextStyle(fontSize: 15, fontWeight: FontWeight.bold)),
+      label: Text(LanguageService.instance.strings.submitAnswer,
+          style: const TextStyle(fontSize: 15, fontWeight: FontWeight.bold)),
       onPressed: canSubmit ? _submit : null,
     );
   }
@@ -835,8 +844,8 @@ class _PlantHuntScreenState extends State<PlantHuntScreen> {
                     borderRadius: BorderRadius.circular(14)),
               ),
               icon: const Icon(Icons.home),
-              label: const Text('Back to Home',
-                  style: TextStyle(fontSize: 14)),
+              label: Text(LanguageService.instance.strings.backToHome,
+                  style: const TextStyle(fontSize: 14)),
               onPressed: () => Navigator.pop(context),
             ),
           ],

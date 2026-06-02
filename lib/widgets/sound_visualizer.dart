@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/scheduler.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'package:record/record.dart';
+import '../services/language_service.dart';
 
 class SoundVisualizer extends StatefulWidget {
   const SoundVisualizer({super.key});
@@ -168,12 +169,13 @@ class _SoundVisualizerState extends State<SoundVisualizer>
 
   String _dbLabel(double db) {
     if (!_isListening) return '…';
-    if (db < 20) return 'Silence';
-    if (db < 40) return 'Very quiet';
-    if (db < 60) return 'Quiet';
-    if (db < 80) return 'Moderate';
-    if (db < 95) return 'Loud';
-    return 'Very loud';
+    final s = LanguageService.instance.strings;
+    if (db < 20) return s.dbSilence;
+    if (db < 40) return s.dbVeryQuiet;
+    if (db < 60) return s.dbQuiet;
+    if (db < 80) return s.dbModerate;
+    if (db < 95) return s.dbLoud;
+    return s.dbVeryLoud;
   }
 
   // ── Build ─────────────────────────────────────────────────────────────────
@@ -182,6 +184,7 @@ class _SoundVisualizerState extends State<SoundVisualizer>
   Widget build(BuildContext context) {
     if (!_hasPermission) return _buildNoPermission();
     if (_errorMsg == 'no_data' && !_isListening) return _buildNoData();
+    final s = LanguageService.instance.strings;
 
     return Column(
       children: [
@@ -196,14 +199,14 @@ class _SoundVisualizerState extends State<SoundVisualizer>
               color: const Color(0xFF1A2E1E),
               borderRadius: BorderRadius.circular(10),
             ),
-            child: const Row(
+            child: Row(
               mainAxisSize: MainAxisSize.min,
               children: [
-                SizedBox(width: 14, height: 14,
+                const SizedBox(width: 14, height: 14,
                     child: CircularProgressIndicator(color: Color(0xFF66BB6A), strokeWidth: 2)),
-                SizedBox(width: 10),
-                Text('Starting microphone…',
-                    style: TextStyle(color: Color(0xFF66BB6A), fontSize: 13)),
+                const SizedBox(width: 10),
+                Text(s.startingMic,
+                    style: const TextStyle(color: Color(0xFF66BB6A), fontSize: 13)),
               ],
             ),
           ),
@@ -246,7 +249,7 @@ class _SoundVisualizerState extends State<SoundVisualizer>
             _errorMsg != 'permanently_denied' && _errorMsg != 'no_data')
           Padding(
             padding: const EdgeInsets.only(top: 6),
-            child: Text('Retrying… $_errorMsg',
+            child: Text(s.retrying(_errorMsg ?? ''),
                 style: const TextStyle(color: Colors.orange, fontSize: 10),
                 textAlign: TextAlign.center),
           ),
@@ -298,13 +301,13 @@ class _SoundVisualizerState extends State<SoundVisualizer>
         ),
 
         const SizedBox(height: 6),
-        const Row(
+        Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
-            Text('Quiet', style: TextStyle(color: Color(0xFF4CAF50), fontSize: 10)),
-            Text('🌿  listening to the garden  🌿',
-                style: TextStyle(color: Color(0xFF4CAF50), fontSize: 10)),
-            Text('Loud', style: TextStyle(color: Color(0xFF4CAF50), fontSize: 10)),
+            Text(s.dbQuiet, style: const TextStyle(color: Color(0xFF4CAF50), fontSize: 10)),
+            Text(s.listeningToGarden,
+                style: const TextStyle(color: Color(0xFF4CAF50), fontSize: 10)),
+            Text(s.dbLoud, style: const TextStyle(color: Color(0xFF4CAF50), fontSize: 10)),
           ],
         ),
         const SizedBox(height: 12),
@@ -316,6 +319,7 @@ class _SoundVisualizerState extends State<SoundVisualizer>
 
   Widget _buildNoPermission() {
     final isPerm = _errorMsg == 'permanently_denied';
+    final s = LanguageService.instance.strings;
     return Center(
       child: Padding(
         padding: const EdgeInsets.all(24),
@@ -326,10 +330,7 @@ class _SoundVisualizerState extends State<SoundVisualizer>
                 color: isPerm ? Colors.red[400] : const Color(0xFF4CAF50), size: 56),
             const SizedBox(height: 16),
             Text(
-              isPerm
-                  ? 'Microphone access was permanently denied.\n\n'
-                    'Settings → Apps → Botanica AR → Permissions → Microphone → Allow.'
-                  : 'Microphone permission is needed\nto visualise ambient sound.',
+              isPerm ? s.micPermBodyPerm : s.micPermBody,
               textAlign: TextAlign.center,
               style: const TextStyle(color: Color(0xFF4CAF50), fontSize: 14, height: 1.6),
             ),
@@ -345,7 +346,7 @@ class _SoundVisualizerState extends State<SoundVisualizer>
                   ? const SizedBox(width: 16, height: 16,
                       child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2))
                   : Icon(isPerm ? Icons.settings : Icons.mic),
-              label: Text(isPerm ? 'Open Settings' : 'Grant Permission'),
+              label: Text(isPerm ? s.openSettings : s.grantPermission),
               onPressed: _requesting ? null : () {
                 if (isPerm) openAppSettings(); else _checkAndStart();
               },
@@ -359,6 +360,7 @@ class _SoundVisualizerState extends State<SoundVisualizer>
   // ── No-data ───────────────────────────────────────────────────────────────
 
   Widget _buildNoData() {
+    final s = LanguageService.instance.strings;
     return Center(
       child: Padding(
         padding: const EdgeInsets.all(24),
@@ -367,12 +369,10 @@ class _SoundVisualizerState extends State<SoundVisualizer>
           children: [
             const Icon(Icons.mic_none, color: Colors.orange, size: 56),
             const SizedBox(height: 16),
-            const Text(
-              'Microphone opened but no audio arrived.\n\n'
-              'Settings → Apps → Botanica AR → Permissions\n'
-              '→ set Microphone to "Allow"',
+            Text(
+              s.noAudioArrived,
               textAlign: TextAlign.center,
-              style: TextStyle(color: Color(0xFF4CAF50), fontSize: 13, height: 1.6),
+              style: const TextStyle(color: Color(0xFF4CAF50), fontSize: 13, height: 1.6),
             ),
             const SizedBox(height: 20),
             Row(
@@ -385,7 +385,7 @@ class _SoundVisualizerState extends State<SoundVisualizer>
                     shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
                   ),
                   icon: const Icon(Icons.refresh, size: 16),
-                  label: const Text('Try Again'),
+                  label: Text(s.tryAgainBtn),
                   onPressed: () { setState(() => _errorMsg = null); _startListening(); },
                 ),
                 const SizedBox(width: 12),
@@ -396,7 +396,7 @@ class _SoundVisualizerState extends State<SoundVisualizer>
                     shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
                   ),
                   icon: const Icon(Icons.settings, size: 16),
-                  label: const Text('Settings'),
+                  label: Text(s.settingsBtn),
                   onPressed: openAppSettings,
                 ),
               ],

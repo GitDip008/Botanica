@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../../services/chat_service.dart';
+import '../../services/language_service.dart';
 
 /// Shows which chat engine is active and lets users optionally download
 /// the on-device Gemma model for offline fallback.
@@ -35,9 +36,9 @@ class _AIModelScreenState extends State<AIModelScreen> {
       await ChatService.instance.tryInitLocal();
       if (mounted) {
         setState(() => _localInstalled = true);
-        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
-          backgroundColor: Color(0xFF2E7D32),
-          content: Text('✅ On-device fallback ready!'),
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+          backgroundColor: const Color(0xFF2E7D32),
+          content: Text(LanguageService.instance.strings.offlineReady),
         ));
       }
     } catch (e) {
@@ -49,13 +50,14 @@ class _AIModelScreenState extends State<AIModelScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final s = LanguageService.instance.strings;
     final chat = ChatService.instance;
     final cloudActive = chat.cloud.isConfigured;
 
     return Scaffold(
       backgroundColor: const Color(0xFF0A1A0F),
       appBar: AppBar(
-        title: const Text('Chat Engine'),
+        title: Text(LanguageService.instance.strings.chatEngine),
         backgroundColor: const Color(0xFF0D1F14),
         elevation: 0,
       ),
@@ -79,8 +81,8 @@ class _AIModelScreenState extends State<AIModelScreen> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    const Text('Active engine',
-                        style: TextStyle(color: Color(0xFF81C784), fontSize: 11)),
+                    Text(LanguageService.instance.strings.activeEngine,
+                        style: const TextStyle(color: Color(0xFF81C784), fontSize: 11)),
                     Text(chat.activeEngine,
                         style: const TextStyle(
                             color: Color(0xFFE8F5E9),
@@ -97,12 +99,10 @@ class _AIModelScreenState extends State<AIModelScreen> {
           // ── Engine list ─────────────────────────────────────
           _engineRow(
             icon: Icons.cloud_rounded,
-            title: 'Cloud LLM',
-            subtitle: cloudActive
-                ? 'Groq · Fast · Free tier'
-                : 'Not configured — add API key in api_config.dart',
+            title: s.engineCloudTitle,
+            subtitle: cloudActive ? s.engineCloudActive : s.engineCloudOff,
             iconColor: const Color(0xFF64B5F6),
-            status: cloudActive ? 'Active' : 'Off',
+            status: cloudActive ? s.statusActive : s.statusOff,
             statusColor: cloudActive
                 ? const Color(0xFF66BB6A)
                 : const Color(0xFF4A7A50),
@@ -110,12 +110,12 @@ class _AIModelScreenState extends State<AIModelScreen> {
           const SizedBox(height: 8),
           _engineRow(
             icon: Icons.memory_rounded,
-            title: 'On-device Gemma (fallback)',
+            title: s.engineGemmaTitle,
             subtitle: _localInstalled
-                ? 'Installed · Works offline'
-                : 'Optional 530MB download',
+                ? s.engineGemmaInstalled
+                : s.engineGemmaNotInstalled,
             iconColor: const Color(0xFF66BB6A),
-            status: _localInstalled ? 'Installed' : 'Not installed',
+            status: _localInstalled ? s.statusInstalled : s.statusNotInstalled,
             statusColor: _localInstalled
                 ? const Color(0xFF66BB6A)
                 : const Color(0xFF4A7A50),
@@ -123,19 +123,19 @@ class _AIModelScreenState extends State<AIModelScreen> {
           const SizedBox(height: 8),
           _engineRow(
             icon: Icons.bubble_chart_rounded,
-            title: 'Gemini (last resort)',
-            subtitle: 'Always available · €0.0002/message',
+            title: s.engineGeminiTitle,
+            subtitle: s.engineGeminiBody,
             iconColor: const Color(0xFFFFB74D),
-            status: 'Available',
+            status: s.statusAvailable,
             statusColor: const Color(0xFF81C784),
           ),
 
           const SizedBox(height: 28),
 
           if (!_localInstalled) ...[
-            const Text(
-              'OFFLINE FALLBACK',
-              style: TextStyle(
+            Text(
+              s.offlineFallbackHeader,
+              style: const TextStyle(
                 color: Color(0xFF4A7A50),
                 fontSize: 11,
                 fontWeight: FontWeight.w700,
@@ -143,9 +143,9 @@ class _AIModelScreenState extends State<AIModelScreen> {
               ),
             ),
             const SizedBox(height: 8),
-            const Text(
-              'Want chat to work even without internet? Download a small on-device model as backup.',
-              style: TextStyle(color: Color(0xFF81C784), fontSize: 12),
+            Text(
+              s.offlineFallbackBody,
+              style: const TextStyle(color: Color(0xFF81C784), fontSize: 12),
             ),
             const SizedBox(height: 12),
             if (_error != null)
@@ -168,7 +168,7 @@ class _AIModelScreenState extends State<AIModelScreen> {
                       child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
                   : const Icon(Icons.download_rounded),
               label: Text(
-                _busy ? 'Downloading…' : 'Download 530MB offline model',
+                _busy ? s.downloading : s.downloadOfflineModel,
                 style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600),
               ),
               style: ElevatedButton.styleFrom(
@@ -182,10 +182,10 @@ class _AIModelScreenState extends State<AIModelScreen> {
           ],
 
           const SizedBox(height: 20),
-          const Text(
-            'ℹ️ The cloud LLM handles all chats by default — no download needed. The on-device model is only used if cloud fails (no internet).',
+          Text(
+            s.aiModelFooter,
             textAlign: TextAlign.center,
-            style: TextStyle(color: Color(0xFF4A7A50), fontSize: 11),
+            style: const TextStyle(color: Color(0xFF4A7A50), fontSize: 11),
           ),
         ],
       ),

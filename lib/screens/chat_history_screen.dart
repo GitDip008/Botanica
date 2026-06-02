@@ -78,8 +78,12 @@ class _ChatHistoryScreenState extends State<ChatHistoryScreen> {
       ),
     );
     if (ok == true) {
-      await ChatHistoryService.instance.deleteMany(_selected);
-      _clearSelection();
+      // Snapshot the selection BEFORE the await so a mid-flight stream
+      // rebuild can't mutate it out from under us. This was the source of
+      // the "only the last selected chat is deleted" bug.
+      final ids = _selected.toList(growable: false);
+      _clearSelection(); // visually exit selection mode immediately
+      await ChatHistoryService.instance.deleteMany(ids);
     }
   }
 
@@ -242,8 +246,10 @@ class _ChatHistoryScreenState extends State<ChatHistoryScreen> {
           final recent = sessions.where((c) => !c.isPinned).toList();
 
           Widget tile(ChatSession c) => Padding(
+                key: ValueKey('chat-tile-${c.id}'),
                 padding: const EdgeInsets.only(bottom: 10),
                 child: _SessionTile(
+                  key: ValueKey('chat-${c.id}'),
                   session: c,
                   selectionMode: _selectionMode,
                   selected: _selected.contains(c.id),
@@ -253,12 +259,22 @@ class _ChatHistoryScreenState extends State<ChatHistoryScreen> {
               );
 
           return ListView(
+            key: const PageStorageKey('chat-history-list'),
             padding: const EdgeInsets.all(16),
             children: [
-              if (!_selectionMode) ...[
-                _NewChatCard(s: s),
-                const SizedBox(height: 16),
-              ],
+              // Keep the New-chat card slot in the tree at all times so the
+              // list layout doesn't jump when selection mode toggles. We just
+              // collapse it to zero height while selecting.
+              AnimatedSize(
+                duration: const Duration(milliseconds: 180),
+                curve: Curves.easeOutCubic,
+                child: _selectionMode
+                    ? const SizedBox.shrink()
+                    : Padding(
+                        padding: const EdgeInsets.only(bottom: 16),
+                        child: _NewChatCard(s: s),
+                      ),
+              ),
               if (pinned.isNotEmpty) ...[
                 _sectionLabel(s.pinnedSection),
                 const SizedBox(height: 8),
@@ -285,6 +301,7 @@ class _SessionTile extends StatelessWidget {
   final VoidCallback onToggle;
   final VoidCallback onEnterSelection;
   const _SessionTile({
+    super.key,
     required this.session,
     this.selectionMode = false,
     this.selected = false,

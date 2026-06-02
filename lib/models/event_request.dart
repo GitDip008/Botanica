@@ -15,6 +15,10 @@ class EventRequest {
   final String spaceRequirements;
   final EventStatus status;
   final DateTime createdAt;
+  final bool isPublic; // open-to-all → auto-publish on approval
+  final int capacity;  // 0 = unlimited
+  final List<String> rsvpUserIds;
+  final String? sourceUrl; // set by oulu.fi scraper
 
   const EventRequest({
     required this.id,
@@ -31,7 +35,20 @@ class EventRequest {
     required this.spaceRequirements,
     this.status = EventStatus.pending,
     required this.createdAt,
+    this.isPublic = false,
+    this.capacity = 0,
+    this.rsvpUserIds = const [],
+    this.sourceUrl,
   });
+
+  /// Number of remaining spots (clamped to 0). Returns -1 when unlimited.
+  int get spotsRemaining {
+    if (capacity <= 0) return -1;
+    final taken = rsvpUserIds.length;
+    return (capacity - taken).clamp(0, capacity);
+  }
+
+  bool get isFull => capacity > 0 && rsvpUserIds.length >= capacity;
 
   Map<String, dynamic> toJson() => {
         'id': id,
@@ -48,6 +65,10 @@ class EventRequest {
         'spaceRequirements': spaceRequirements,
         'status': status.name,
         'createdAt': createdAt.toIso8601String(),
+        'isPublic': isPublic,
+        'capacity': capacity,
+        'rsvpUserIds': rsvpUserIds,
+        if (sourceUrl != null) 'sourceUrl': sourceUrl,
       };
 
   factory EventRequest.fromJson(Map<String, dynamic> j) => EventRequest(
@@ -68,5 +89,11 @@ class EventRequest {
           orElse: () => EventStatus.pending,
         ),
         createdAt: DateTime.parse(j['createdAt'] as String),
+        isPublic: (j['isPublic'] as bool?) ?? false,
+        capacity: (j['capacity'] as num?)?.toInt() ?? 0,
+        rsvpUserIds: ((j['rsvpUserIds'] as List?) ?? const [])
+            .whereType<String>()
+            .toList(),
+        sourceUrl: j['sourceUrl'] as String?,
       );
 }

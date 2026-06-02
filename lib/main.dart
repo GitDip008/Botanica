@@ -4,9 +4,12 @@ import 'package:provider/provider.dart';
 import 'firebase_options.dart';
 import 'screens/auth/auth_gate.dart';
 import 'services/auth_service.dart';
+import 'services/connectivity_service.dart';
 import 'services/firebase_auth_service.dart';
 import 'services/language_service.dart';
+import 'services/notification_service.dart';
 import 'services/user_state.dart';
+import 'widgets/offline_banner.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -15,8 +18,12 @@ void main() async {
     options: DefaultFirebaseOptions.currentPlatform,
   );
 
-  // ── Real Firebase auth — backed by Firestore /users/{uid} ─────────────────
+  // ── Real Firebase auth — backed by Firestore /users/{uid} ───────────
   AuthService.instance = FirebaseAuthService();
+
+  // Push notifications — runs in background, doesn't block app start
+  NotificationService.instance.init();
+  ConnectivityService.instance.init();
 
   runApp(const BotanicaApp());
 }
@@ -36,6 +43,7 @@ class BotanicaApp extends StatelessWidget {
         }),
       ],
       child: MaterialApp(
+        navigatorKey: NotificationService.navigatorKey,
         title: 'Botanica',
         debugShowCheckedModeBanner: false,
         theme: ThemeData(
@@ -54,6 +62,8 @@ class BotanicaApp extends StatelessWidget {
             elevation: 0,
           ),
         ),
+        builder: (context, child) =>
+            OfflineBannerOverlay(child: child ?? const SizedBox.shrink()),
         home: const AuthGate(),
       ),
     );

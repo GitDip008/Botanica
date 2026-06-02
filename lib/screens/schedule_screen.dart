@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../services/garden_schedule.dart';
+import '../services/holiday_hours_service.dart';
 import '../services/language_service.dart';
 
 /// Minimal page shown when the Open/Closed chip is tapped.
@@ -70,17 +71,28 @@ class ScheduleScreen extends StatelessWidget {
               ['Entrance', 'Free'],
             ]),
             const SizedBox(height: 16),
-            _section(s.holidayHours, const [
-              ['Good Friday · 3 Apr', 'Closed'],
-              ['Saturday · 4 Apr', '10 – 16'],
-              ['Easter Sunday · 5 Apr', '10 – 16'],
-              ['Easter Monday · 6 Apr', 'Closed'],
-              ['May Day · 1 May', 'Closed'],
-              ['Ascension Day · 14 May', 'Closed'],
-              ['Whit Sunday · 24 May', '10 – 16'],
-              ['Midsummer Eve · 19 Jun', 'Closed'],
-              ['Midsummer Day · 20 Jun', 'Closed'],
-            ]),
+            // Live holiday hours from Firestore (with hardcoded fallback)
+            StreamBuilder<HolidayHoursDoc>(
+              stream: HolidayHoursService.instance.watch(),
+              builder: (ctx, snap) {
+                final rows = (snap.data?.entries.isNotEmpty ?? false)
+                    ? snap.data!.entries
+                        .map((e) => [e.label, e.hours])
+                        .toList()
+                    : const [
+                        ['Good Friday · 3 Apr', 'Closed'],
+                        ['Saturday · 4 Apr', '10 – 16'],
+                        ['Easter Sunday · 5 Apr', '10 – 16'],
+                        ['Easter Monday · 6 Apr', 'Closed'],
+                        ['May Day · 1 May', 'Closed'],
+                        ['Ascension Day · 14 May', 'Closed'],
+                        ['Whit Sunday · 24 May', '10 – 16'],
+                        ['Midsummer Eve · 19 Jun', 'Closed'],
+                        ['Midsummer Day · 20 Jun', 'Closed'],
+                      ];
+                return _section(s.holidayHours, rows);
+              },
+            ),
           ],
         ),
       ),

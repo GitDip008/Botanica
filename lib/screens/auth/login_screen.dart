@@ -137,20 +137,20 @@ class _LoginScreenState extends State<LoginScreen> {
                   child: Image.asset('logo.png', width: 88, height: 88),
                 ).animate().fadeIn(duration: 500.ms),
                 const SizedBox(height: 20),
-                const Text(
-                  'Welcome back',
+                Text(
+                  s.welcomeBack,
                   textAlign: TextAlign.center,
-                  style: TextStyle(
+                  style: const TextStyle(
                     color: Color(0xFFE8F5E9),
                     fontSize: 26,
                     fontWeight: FontWeight.w700,
                   ),
                 ),
                 const SizedBox(height: 4),
-                const Text(
-                  'Sign in to continue exploring',
+                Text(
+                  s.signInSubtitle,
                   textAlign: TextAlign.center,
-                  style: TextStyle(color: Color(0xFF81C784), fontSize: 13),
+                  style: const TextStyle(color: Color(0xFF81C784), fontSize: 13),
                 ),
                 const SizedBox(height: 36),
 
@@ -161,8 +161,8 @@ class _LoginScreenState extends State<LoginScreen> {
                   style: const TextStyle(color: Colors.white),
                   decoration: _decoration('Email', Icons.mail_outline_rounded),
                   validator: (v) {
-                    if (v == null || v.isEmpty) return 'Enter your email';
-                    if (!v.contains('@')) return 'Invalid email';
+                    if (v == null || v.isEmpty) return s.enterYourEmail;
+                    if (!v.contains('@')) return s.invalidEmail;
                     return null;
                   },
                 ),
@@ -185,7 +185,7 @@ class _LoginScreenState extends State<LoginScreen> {
                     ),
                   ),
                   validator: (v) {
-                    if (v == null || v.length < 6) return 'At least 6 characters';
+                    if (v == null || v.length < 6) return s.atLeast6Chars;
                     return null;
                   },
                 ),
@@ -248,19 +248,19 @@ class _LoginScreenState extends State<LoginScreen> {
                           width: 20, height: 20,
                           child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
                         )
-                      : const Text('Sign in',
-                          style: TextStyle(fontSize: 15, fontWeight: FontWeight.w600)),
+                      : Text(s.signIn,
+                          style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w600)),
                 ),
                 const SizedBox(height: 14),
 
                 // ── Divider ──────────────────────────────────
-                Row(children: const [
-                  Expanded(child: Divider(color: Color(0xFF2A4A2F))),
+                Row(children: [
+                  const Expanded(child: Divider(color: Color(0xFF2A4A2F))),
                   Padding(
-                    padding: EdgeInsets.symmetric(horizontal: 12),
-                    child: Text('or', style: TextStyle(color: Color(0xFF4A7A50), fontSize: 12)),
+                    padding: const EdgeInsets.symmetric(horizontal: 12),
+                    child: Text(s.or, style: const TextStyle(color: Color(0xFF4A7A50), fontSize: 12)),
                   ),
-                  Expanded(child: Divider(color: Color(0xFF2A4A2F))),
+                  const Expanded(child: Divider(color: Color(0xFF2A4A2F))),
                 ]),
                 const SizedBox(height: 14),
 
@@ -268,8 +268,8 @@ class _LoginScreenState extends State<LoginScreen> {
                 OutlinedButton.icon(
                   onPressed: _busy ? null : _signInWithGoogle,
                   icon: const Icon(Icons.g_mobiledata_rounded, size: 24, color: Color(0xFF66BB6A)),
-                  label: const Text('Continue with Google',
-                      style: TextStyle(color: Color(0xFFE8F5E9), fontWeight: FontWeight.w600)),
+                  label: Text(s.continueWithGoogle,
+                      style: const TextStyle(color: Color(0xFFE8F5E9), fontWeight: FontWeight.w600)),
                   style: OutlinedButton.styleFrom(
                     side: const BorderSide(color: Color(0xFF2A4A2F)),
                     padding: const EdgeInsets.symmetric(vertical: 14),
@@ -283,13 +283,13 @@ class _LoginScreenState extends State<LoginScreen> {
                 Row(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    const Text("Don't have an account? ",
-                        style: TextStyle(color: Color(0xFF81C784), fontSize: 13)),
+                    Text(s.noAccountQuestion,
+                        style: const TextStyle(color: Color(0xFF81C784), fontSize: 13)),
                     GestureDetector(
                       onTap: () => Navigator.push(context,
                           MaterialPageRoute(builder: (_) => const SignupScreen())),
-                      child: const Text('Sign up',
-                          style: TextStyle(
+                      child: Text(s.signUp,
+                          style: const TextStyle(
                               color: Color(0xFF66BB6A),
                               fontSize: 13,
                               fontWeight: FontWeight.w600)),

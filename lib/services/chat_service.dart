@@ -1,8 +1,10 @@
+import 'package:flutter/foundation.dart';
 import 'auth_service.dart';
 import 'chat_history_service.dart';
 import 'cloud_llm_service.dart' show CloudLLMService, CloudLLMRateLimitException;
 import 'gemini_service.dart';
 import 'local_llm_service.dart';
+import 'usage_tracking_service.dart';
 import '../models/plant_info.dart';
 import '../models/user_model.dart';
 
@@ -113,8 +115,7 @@ class ChatService {
             await Future.delayed(Duration(milliseconds: 800 * (attempt + 1)));
             continue;
           }
-          // ignore: avoid_print
-          print('[ChatService] Cloud LLM failed (attempt ${attempt + 1}): $e');
+          debugPrint('[ChatService] Cloud LLM failed (attempt ${attempt + 1}): $e');
           break;
         }
       }
@@ -125,8 +126,7 @@ class ChatService {
       try {
         return _finalize(await _local.sendMessage(message), access);
       } catch (e) {
-        // ignore: avoid_print
-        print('[ChatService] Local LLM failed: $e');
+        debugPrint('[ChatService] Local LLM failed: $e');
       }
     }
 
@@ -152,6 +152,7 @@ class ChatService {
     if (sessionId.isNotEmpty) {
       AuthService.instance.incrementChatUsage(sessionId);
     }
+    UsageTrackingService.instance.log(UsageTrackingService.featureChat);
     return reply;
   }
 

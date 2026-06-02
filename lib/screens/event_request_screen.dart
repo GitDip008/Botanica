@@ -3,6 +3,7 @@ import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
 import '../services/event_service.dart';
 import '../services/language_service.dart';
+import '../services/usage_tracking_service.dart';
 import '../services/user_state.dart';
 
 class EventRequestScreen extends StatefulWidget {
@@ -17,17 +18,20 @@ class _EventRequestScreenState extends State<EventRequestScreen> {
   final _name = TextEditingController();
   final _description = TextEditingController();
   final _attendees = TextEditingController();
+  final _capacity = TextEditingController();
   final _space = TextEditingController();
   DateTime? _date;
   TimeOfDay? _startTime;
   TimeOfDay? _endTime;
   bool _busy = false;
+  bool _isPublic = false; // open-to-all toggle
 
   @override
   void dispose() {
     _name.dispose();
     _description.dispose();
     _attendees.dispose();
+    _capacity.dispose();
     _space.dispose();
     super.dispose();
   }
@@ -99,7 +103,12 @@ class _EventRequestScreenState extends State<EventRequestScreen> {
         startTime: _startTime!.format(context),
         endTime: _endTime!.format(context),
         spaceRequirements: _space.text.trim(),
+        isPublic: _isPublic,
+        capacity: _isPublic
+            ? (int.tryParse(_capacity.text.trim()) ?? 0)
+            : 0,
       );
+      UsageTrackingService.instance.log(UsageTrackingService.featureEvent);
       if (mounted) {
         final s = context.read<LanguageService>().strings;
         ScaffoldMessenger.of(context).showSnackBar(SnackBar(
@@ -177,6 +186,83 @@ class _EventRequestScreenState extends State<EventRequestScreen> {
                 ),
                 const SizedBox(height: 12),
                 _field(s.eventSpace, _space, maxLines: 3),
+                const SizedBox(height: 12),
+                // ── Visibility toggle ────────────────────────
+                Container(
+                  padding: const EdgeInsets.all(14),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFF111F16),
+                    borderRadius: BorderRadius.circular(14),
+                    border: Border.all(color: const Color(0xFF2A4A2F)),
+                  ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(s.visibility,
+                          style: const TextStyle(
+                              color: Color(0xFF81C784),
+                              fontSize: 12,
+                              fontWeight: FontWeight.w600)),
+                      const SizedBox(height: 8),
+                      Row(children: [
+                        Expanded(
+                          child: _visibilityChip(
+                            label: s.openToAll,
+                            icon: Icons.public_rounded,
+                            selected: _isPublic,
+                            onTap: () => setState(() => _isPublic = true),
+                          ),
+                        ),
+                        const SizedBox(width: 8),
+                        Expanded(
+                          child: _visibilityChip(
+                            label: s.privateEvent,
+                            icon: Icons.lock_outline_rounded,
+                            selected: !_isPublic,
+                            onTap: () => setState(() => _isPublic = false),
+                          ),
+                        ),
+                      ]),
+                      // ── Capacity (only when public) ────────────
+                      if (_isPublic) ...[
+                        const SizedBox(height: 14),
+                        Text(s.rsvpCapacity,
+                            style: const TextStyle(
+                                color: Color(0xFF81C784),
+                                fontSize: 12,
+                                fontWeight: FontWeight.w600)),
+                        const SizedBox(height: 6),
+                        TextFormField(
+                          controller: _capacity,
+                          keyboardType: TextInputType.number,
+                          style:
+                              const TextStyle(color: Color(0xFFE8F5E9)),
+                          decoration: InputDecoration(
+                            hintText: s.rsvpCapacityHint,
+                            hintStyle: const TextStyle(
+                                color: Color(0xFF4A7A50), fontSize: 12),
+                            filled: true,
+                            fillColor: const Color(0xFF0F1A12),
+                            border: OutlineInputBorder(
+                                borderRadius: BorderRadius.circular(10),
+                                borderSide: const BorderSide(
+                                    color: Color(0xFF2A4A2F))),
+                            enabledBorder: OutlineInputBorder(
+                                borderRadius: BorderRadius.circular(10),
+                                borderSide: const BorderSide(
+                                    color: Color(0xFF2A4A2F))),
+                            focusedBorder: OutlineInputBorder(
+                                borderRadius: BorderRadius.circular(10),
+                                borderSide: const BorderSide(
+                                    color: Color(0xFF66BB6A), width: 1.5)),
+                            contentPadding: const EdgeInsets.symmetric(
+                                horizontal: 12, vertical: 10),
+                          ),
+                        ),
+                      ],
+                    ],
+                  ),
+                ),
                 const SizedBox(height: 24),
                 ElevatedButton(
                   onPressed: _busy ||
@@ -204,6 +290,54 @@ class _EventRequestScreenState extends State<EventRequestScreen> {
                 ),
               ],
             ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _visibilityChip({
+    required String label,
+    required IconData icon,
+    required bool selected,
+    required VoidCallback onTap,
+  }) {
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(10),
+        child: Container(
+          padding: const EdgeInsets.symmetric(vertical: 10),
+          decoration: BoxDecoration(
+            color: selected
+                ? const Color(0xFF1A3320)
+                : const Color(0xFF0D1F14),
+            borderRadius: BorderRadius.circular(10),
+            border: Border.all(
+              color: selected
+                  ? const Color(0xFF66BB6A)
+                  : const Color(0xFF2A4A2F),
+              width: selected ? 1.5 : 1,
+            ),
+          ),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Icon(icon,
+                  size: 16,
+                  color: selected
+                      ? const Color(0xFF66BB6A)
+                      : const Color(0xFF4A7A50)),
+              const SizedBox(width: 6),
+              Text(label,
+                  style: TextStyle(
+                      color: selected
+                          ? const Color(0xFFE8F5E9)
+                          : const Color(0xFF81C784),
+                      fontSize: 12,
+                      fontWeight: FontWeight.w600)),
+            ],
           ),
         ),
       ),

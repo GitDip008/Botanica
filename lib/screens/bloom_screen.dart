@@ -1,8 +1,9 @@
 import 'package:flutter/material.dart';
-import 'package:google_generative_ai/google_generative_ai.dart';
 import 'package:flutter_animate/flutter_animate.dart';
-import '../config/api_config.dart';
 import '../services/chat_service.dart';
+import '../services/gemini_proxy.dart';
+import '../services/language_service.dart';
+import '../services/usage_tracking_service.dart';
 
 class BloomScreen extends StatefulWidget {
   const BloomScreen({super.key});
@@ -12,7 +13,6 @@ class BloomScreen extends StatefulWidget {
 }
 
 class _BloomScreenState extends State<BloomScreen> {
-  static const _apiKey = ApiConfig.geminiApiKey;
   List<_BloomEntry> _entries = [];
   bool _loading = true;
 
@@ -26,6 +26,7 @@ class _BloomScreenState extends State<BloomScreen> {
   void initState() {
     super.initState();
     _fetchBlooms();
+    UsageTrackingService.instance.log(UsageTrackingService.featureBloom);
   }
 
   Future<void> _fetchBlooms() async {
@@ -54,13 +55,11 @@ class _BloomScreenState extends State<BloomScreen> {
         maxTokens: 800,
       );
 
-      // 2) Fall back to Gemini if Groq fails / isn't configured
+      // 2) Fall back to Gemini (via Cloud Function proxy) if Groq fails
       if (text == null) {
-        final model =
-            GenerativeModel(model: 'gemini-2.0-flash', apiKey: _apiKey);
-        final response = await model.generateContent(
-            [Content.text('$systemPrompt\n\n$userPrompt')]);
-        text = (response.text ?? '').trim();
+        text = await GeminiProxy.instance.text(
+          prompt: '$systemPrompt\n\n$userPrompt',
+        );
       }
 
       // Parse JSON array from response
@@ -136,6 +135,7 @@ class _BloomScreenState extends State<BloomScreen> {
   @override
   Widget build(BuildContext context) {
     final now = DateTime.now();
+    final s = LanguageService.instance.strings;
     return Scaffold(
       backgroundColor: const Color(0xFF0D1F14),
       appBar: AppBar(
@@ -144,8 +144,8 @@ class _BloomScreenState extends State<BloomScreen> {
           icon: const Icon(Icons.arrow_back_rounded, color: Color(0xFF66BB6A)),
           onPressed: () => Navigator.pop(context),
         ),
-        title: const Text('🌸 In Bloom Now',
-            style: TextStyle(color: Color(0xFFE8F5E9), fontWeight: FontWeight.bold)),
+        title: Text('🌸 ${s.inBloomTitle}',
+            style: const TextStyle(color: Color(0xFFE8F5E9), fontWeight: FontWeight.bold)),
         actions: [
           IconButton(
             icon: const Icon(Icons.refresh, color: Color(0xFF66BB6A)),
@@ -171,18 +171,43 @@ class _BloomScreenState extends State<BloomScreen> {
           ),
           Expanded(
             child: _loading
-                ? const Center(
+                ? Center(
                     child: Column(
                       mainAxisSize: MainAxisSize.min,
                       children: [
-                        CircularProgressIndicator(color: Color(0xFF66BB6A)),
-                        SizedBox(height: 16),
-                        Text('Checking what\'s blooming...',
-                            style: TextStyle(color: Color(0xFF4CAF50))),
+                        const CircularProgressIndicator(color: Color(0xFF66BB6A)),
+                        const SizedBox(height: 16),
+                        Text(s.checkingBlooms,
+                            style: const TextStyle(color: Color(0xFF4CAF50))),
                       ],
                     ),
                   )
-                : ListView.builder(
+                : _entries.isEmpty
+                    ? Center(
+                        child: Padding(
+                          padding: const EdgeInsets.all(32),
+                          child: Column(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              const Icon(Icons.local_florist_outlined,
+                                  color: Color(0xFF4A7A50), size: 56),
+                              const SizedBox(height: 14),
+                              Text(s.noBloomsToday,
+                                  textAlign: TextAlign.center,
+                                  style: const TextStyle(
+                                      color: Color(0xFFE8F5E9),
+                                      fontSize: 16,
+                                      fontWeight: FontWeight.w700)),
+                              const SizedBox(height: 6),
+                              Text(s.noBloomsBody,
+                                  textAlign: TextAlign.center,
+                                  style: const TextStyle(
+                                      color: Color(0xFF81C784), fontSize: 13)),
+                            ],
+                          ),
+                        ),
+                      )
+                    : ListView.builder(
                     padding: const EdgeInsets.all(14),
                     itemCount: _entries.length,
                     itemBuilder: (_, i) {

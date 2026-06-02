@@ -26,6 +26,8 @@ class EventService {
     required String startTime,
     required String endTime,
     required String spaceRequirements,
+    bool isPublic = false,
+    int capacity = 0,
   }) async {
     final docRef = _firestore.collection('events').doc();
     final req = EventRequest(
@@ -43,6 +45,8 @@ class EventService {
       spaceRequirements: spaceRequirements,
       status: EventStatus.pending,
       createdAt: DateTime.now(),
+      isPublic: isPublic,
+      capacity: capacity,
     );
     await docRef.set(req.toJson());
     await _emailAdmin(req);
@@ -113,5 +117,42 @@ Please review and respond directly to the visitor.
         .collection('events')
         .doc(eventId)
         .update({'status': status.name});
+  }
+
+  /// Toggle the current user's RSVP for [eventId]. Honours capacity caps —
+  /// if the event is full and the user isn't already on the list, the RSVP
+  /// is rejected (returns false). Otherwise returns true on success.
+  Future<bool> toggleRsvp(String eventId, String userId) async {
+    final ref = _firestore.collection('events').doc(eventId);
+    return _firestore.runTransaction<bool>((tx) async {
+      final snap = await tx.get(ref);
+      if (!snap.exists) return false;
+      final data = snap.data()!;
+      final cap = (data['capacity'] as num?)?.toInt() ?? 0;
+      final list = ((data['rsvpUserIds'] as List?) ?? const [])
+          .whereType<String>()
+          .toList();
+      final going = list.contains(userId);
+      if (going) {
+        list.remove(userId);
+      } else {
+        if (cap > 0 && list.length >= cap) return false; // full
+        list.add(userId);
+      }
+      tx.update(ref, {'rsvpUserIds': list});
+      return true;
+    }).catchError((_) => false);
+  }
+
+  /// Stream of APPROVED + PUBLIC events — feeds the "Upcoming Events" screen.
+  Stream<List<EventRequest>> watchPublicApproved() {
+    return _firestore
+        .collection('events')
+        .where('status', isEqualTo: 'approved')
+        .where('isPublic', isEqualTo: true)
+        .orderBy('date')
+        .snapshots()
+        .map((snap) =>
+            snap.docs.map((d) => EventRequest.fromJson(d.data())).toList());
   }
 }

@@ -1,1 +1,37 @@
-{"flutter":{"platforms":{"dart":{"lib/firebase_options.dart":{"projectId":"botanica-008","configurations":{"android":"1:356065259812:android:0d40d85e1182745a0083b1"}}},"android":{"default":{"projectId":"botanica-008","appId":"1:356065259812:android:0d40d85e1182745a0083b1","fileOutput":"android/app/google-services.json"}}}}}
+{
+  "flutter": {
+    "platforms": {
+      "dart": {
+        "lib/firebase_options.dart": {
+          "projectId": "botanica-008",
+          "configurations": {
+            "android": "1:356065259812:android:0d40d85e1182745a0083b1"
+          }
+        }
+      },
+      "android": {
+        "default": {
+          "projectId": "botanica-008",
+          "appId": "1:356065259812:android:0d40d85e1182745a0083b1",
+          "fileOutput": "android/app/google-services.json"
+        }
+      }
+    }
+  },
+  "functions": [
+    {
+      "source": "functions",
+      "codebase": "default",
+      "ignore": [
+        "node_modules",
+        ".git",
+        "firebase-debug.log",
+        "firebase-debug.*.log",
+        "*.local"
+      ],
+      "predeploy": [
+        "npm --prefix \"$RESOURCE_DIR\" run build"
+      ]
+    }
+  ]
+}

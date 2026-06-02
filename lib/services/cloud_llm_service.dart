@@ -1,5 +1,5 @@
-import 'dart:convert';
-import 'package:http/http.dart' as http;
+import 'package:cloud_functions/cloud_functions.dart';
+import 'package:flutter/foundation.dart';
 import '../config/api_config.dart';
 import '../models/plant_info.dart';
 import 'plant_identification_service.dart' show stripMarkdown;
@@ -28,14 +28,15 @@ class CloudLLMRateLimitException extends CloudLLMException {
 ///
 /// Configure `baseUrl`, `apiKey`, and `model` in [ApiConfig].
 class CloudLLMService {
-  String get _baseUrl => ApiConfig.cloudLlmBaseUrl;
-  String get _apiKey => ApiConfig.cloudLlmApiKey;
+  // Region must match the deployed Cloud Functions region.
+  final FirebaseFunctions _functions =
+      FirebaseFunctions.instanceFor(region: 'europe-north1');
+
   String get _model => ApiConfig.cloudLlmModel;
 
-  bool get isConfigured =>
-      _baseUrl.isNotEmpty &&
-      _apiKey.isNotEmpty &&
-      _apiKey != 'YOUR_CLOUD_LLM_API_KEY_HERE';
+  // Always "configured" now — the API key lives server-side. We only fall
+  // back to Gemini if the proxy call itself fails.
+  bool get isConfigured => true;
 
   /// Per-plant conversation history.
   final List<Map<String, String>> _messages = [];
@@ -87,54 +88,38 @@ class CloudLLMService {
   }
 
   /// Sends a user message and returns the assistant's reply.
+  ///
+  /// Calls the `groqChat` Cloud Function so the Groq API key never ships in
+  /// the APK. Requires the user to be signed in (Firebase Auth).
   Future<String> sendMessage(String userMessage) async {
-    if (!isConfigured) {
-      throw StateError(
-        'Cloud LLM not configured. Set cloudLlmApiKey in api_config.dart',
-      );
-    }
-
     _messages.add({'role': 'user', 'content': userMessage});
-
-    final uri = Uri.parse('$_baseUrl/chat/completions');
-    final response = await http
-        .post(
-          uri,
-          headers: {
-            'Content-Type': 'application/json',
-            'Authorization': 'Bearer $_apiKey',
-          },
-          body: jsonEncode({
-            'model': _model,
-            // Cap history to last 12 messages (+ system) to avoid hitting
-            // per-minute token limits on Groq's free tier.
-            'messages': _trimmedMessages(),
-            'temperature': 0.7,
-            'max_tokens': 600,
-          }),
-        )
-        .timeout(const Duration(seconds: 30));
-
-    if (response.statusCode != 200) {
-      // Surface a useful error (debug logs + readable user message)
-      final body = response.body;
-      // ignore: avoid_print
-      print('[CloudLLM] Groq error ${response.statusCode}: $body');
-      if (response.statusCode == 429) {
+    try {
+      final callable = _functions.httpsCallable(
+        'groqChat',
+        options:
+            HttpsCallableOptions(timeout: const Duration(seconds: 30)),
+      );
+      final result = await callable.call<Map<String, dynamic>>({
+        'messages': _trimmedMessages(),
+        'model': _model,
+        'temperature': 0.7,
+        'maxTokens': 600,
+      });
+      final reply = (result.data['reply'] as String? ?? '').trim();
+      if (reply.isEmpty) {
+        throw const CloudLLMException('Empty reply from chat service.');
+      }
+      _messages.add({'role': 'assistant', 'content': reply});
+      return reply;
+    } on FirebaseFunctionsException catch (e) {
+      debugPrint('[CloudLLM] groqChat ${e.code}: ${e.message}');
+      if (e.code == 'resource-exhausted') {
         throw const CloudLLMRateLimitException(
             'Too many requests — wait a few seconds and try again.');
       }
       throw CloudLLMException(
-        'Chat service error (${response.statusCode}). Try again shortly.',
-      );
+          'Chat service error (${e.code}). Try again shortly.');
     }
-
-    final data = jsonDecode(response.body) as Map<String, dynamic>;
-    final choices = data['choices'] as List;
-    final reply = (choices.first['message']['content'] as String).trim();
-
-    _messages.add({'role': 'assistant', 'content': reply});
-    return reply;
   }
 
   void reset() => _messages.clear();
@@ -158,31 +143,23 @@ class CloudLLMService {
     int maxTokens = 400,
     double temperature = 0.7,
   }) async {
-    if (!isConfigured) return null;
     try {
-      final uri = Uri.parse('$_baseUrl/chat/completions');
-      final response = await http
-          .post(
-            uri,
-            headers: {
-              'Content-Type': 'application/json',
-              'Authorization': 'Bearer $_apiKey',
-            },
-            body: jsonEncode({
-              'model': _model,
-              'messages': [
-                {'role': 'system', 'content': systemPrompt},
-                {'role': 'user', 'content': userPrompt},
-              ],
-              'temperature': temperature,
-              'max_tokens': maxTokens,
-            }),
-          )
-          .timeout(const Duration(seconds: 20));
-      if (response.statusCode != 200) return null;
-      final data = jsonDecode(response.body) as Map<String, dynamic>;
-      final raw =
-          (data['choices'][0]['message']['content'] as String).trim();
+      final callable = _functions.httpsCallable(
+        'groqChat',
+        options:
+            HttpsCallableOptions(timeout: const Duration(seconds: 20)),
+      );
+      final result = await callable.call<Map<String, dynamic>>({
+        'messages': [
+          {'role': 'system', 'content': systemPrompt},
+          {'role': 'user', 'content': userPrompt},
+        ],
+        'model': _model,
+        'temperature': temperature,
+        'maxTokens': maxTokens,
+      });
+      final raw = (result.data['reply'] as String? ?? '').trim();
+      if (raw.isEmpty) return null;
       return stripMarkdown(raw);
     } catch (_) {
       return null;

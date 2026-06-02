@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
+import 'package:provider/provider.dart';
 import '../../services/auth_service.dart';
+import '../../services/language_service.dart';
 
 class SignupScreen extends StatefulWidget {
   const SignupScreen({super.key});
@@ -47,6 +49,7 @@ class _SignupScreenState extends State<SignupScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final s = context.watch<LanguageService>().strings;
     return Scaffold(
       backgroundColor: const Color(0xFF0A1A0F),
       appBar: AppBar(
@@ -62,31 +65,31 @@ class _SignupScreenState extends State<SignupScreen> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
-                const Text('Create account',
-                    style: TextStyle(
+                Text(s.createAccount,
+                    style: const TextStyle(
                         color: Color(0xFFE8F5E9), fontSize: 28, fontWeight: FontWeight.w700)),
                 const SizedBox(height: 6),
-                const Text('Join Botanica and start exploring',
-                    style: TextStyle(color: Color(0xFF81C784), fontSize: 13)),
+                Text(s.joinBotanicaSubtitle,
+                    style: const TextStyle(color: Color(0xFF81C784), fontSize: 13)),
                 const SizedBox(height: 32),
 
                 TextFormField(
                   controller: _nameCtrl,
                   textCapitalization: TextCapitalization.words,
                   style: const TextStyle(color: Colors.white),
-                  decoration: _decoration('Display name', Icons.person_outline_rounded),
+                  decoration: _decoration(s.displayName, Icons.person_outline_rounded),
                   validator: (v) =>
-                      (v == null || v.trim().isEmpty) ? 'Enter your name' : null,
+                      (v == null || v.trim().isEmpty) ? s.enterYourName : null,
                 ),
                 const SizedBox(height: 14),
                 TextFormField(
                   controller: _emailCtrl,
                   keyboardType: TextInputType.emailAddress,
                   style: const TextStyle(color: Colors.white),
-                  decoration: _decoration('Email', Icons.mail_outline_rounded),
+                  decoration: _decoration(s.email, Icons.mail_outline_rounded),
                   validator: (v) {
-                    if (v == null || v.isEmpty) return 'Enter your email';
-                    if (!v.contains('@')) return 'Invalid email';
+                    if (v == null || v.isEmpty) return s.enterYourEmail;
+                    if (!v.contains('@')) return s.invalidEmail;
                     return null;
                   },
                 ),
@@ -96,7 +99,7 @@ class _SignupScreenState extends State<SignupScreen> {
                   obscureText: _obscure,
                   style: const TextStyle(color: Colors.white),
                   decoration: _decoration(
-                    'Password (min 6 chars)',
+                    s.password,
                     Icons.lock_outline_rounded,
                     suffix: IconButton(
                       icon: Icon(
@@ -107,7 +110,7 @@ class _SignupScreenState extends State<SignupScreen> {
                     ),
                   ),
                   validator: (v) {
-                    if (v == null || v.length < 6) return 'At least 6 characters';
+                    if (v == null || v.length < 6) return s.atLeast6Chars;
                     return null;
                   },
                 ),
@@ -144,8 +147,8 @@ class _SignupScreenState extends State<SignupScreen> {
                       ? const SizedBox(
                           width: 20, height: 20,
                           child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
-                      : const Text('Create account',
-                          style: TextStyle(fontSize: 15, fontWeight: FontWeight.w600)),
+                      : Text(s.createAccount,
+                          style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w600)),
                 ),
 
                 const SizedBox(height: 18),

@@ -146,10 +146,33 @@ class ChatHistoryService {
 
   void clearCurrent() => _current = null;
 
-  /// Deletes multiple chat sessions at once.
+  /// Deletes multiple chat sessions in a single Firestore batch.
+  ///
+  /// Crucial that this is atomic: when we deleted sequentially with N awaits,
+  /// each delete triggered a Firestore snapshot which re-rendered the chat
+  /// list and could race with the in-flight iteration, leading to "only the
+  /// last selected chat deleted" symptoms. A WriteBatch emits ONE snapshot
+  /// after the whole commit lands, so the UI sees a single clean update.
   Future<void> deleteMany(Iterable<String> sessionIds) async {
-    for (final id in sessionIds) {
-      await delete(id);
+    final uid = _uid;
+    if (uid == null) return;
+    final ids = sessionIds.toList(growable: false); // snapshot — caller-safe
+    if (ids.isEmpty) return;
+    try {
+      final batch = _firestore.batch();
+      final col =
+          _firestore.collection('users').doc(uid).collection('chats');
+      for (final id in ids) {
+        batch.delete(col.doc(id));
+      }
+      await batch.commit();
+      if (ids.contains(_current?.id)) _current = null;
+    } catch (_) {
+      // Fall back to sequential delete on batch failure so the user at least
+      // sees progress.
+      for (final id in ids) {
+        await delete(id);
+      }
     }
   }
 

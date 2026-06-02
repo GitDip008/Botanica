@@ -1,12 +1,12 @@
 import 'package:flutter/material.dart';
-import 'package:google_generative_ai/google_generative_ai.dart';
 import '../models/plant_info.dart';
-import '../config/api_config.dart';
 import 'package:provider/provider.dart';
 import '../services/chat_service.dart';
+import '../services/gemini_proxy.dart';
 import '../services/gemini_service.dart';
 import '../services/language_service.dart';
 import '../services/plant_identification_service.dart';
+import '../services/usage_tracking_service.dart';
 import 'main_nav_screen.dart';
 import 'plant_result_screen.dart';
 
@@ -18,7 +18,6 @@ class SearchScreen extends StatefulWidget {
 }
 
 class _SearchScreenState extends State<SearchScreen> {
-  static const _apiKey = ApiConfig.geminiApiKey;
   final _ctrl = TextEditingController();
   bool _searching = false;
   String? _error;
@@ -32,6 +31,7 @@ class _SearchScreenState extends State<SearchScreen> {
     if (query.trim().isEmpty) return;
     setState(() { _searching = true; _error = null; });
     FocusScope.of(context).unfocus();
+    UsageTrackingService.instance.log(UsageTrackingService.featureSearch);
 
     try {
       // Generate plant description in the user's selected app language.
@@ -56,14 +56,12 @@ class _SearchScreenState extends State<SearchScreen> {
       String? text = await ChatService.instance.cloud
           .completeText(systemPrompt: systemPrompt, userPrompt: userPrompt);
 
-      // 2) Fall back to Gemini if Groq isn't configured / fails
+      // 2) Fall back to Gemini (via Cloud Function proxy) if Groq fails
       if (text == null) {
-        final model =
-            GenerativeModel(model: 'gemini-2.5-flash', apiKey: _apiKey);
-        final response = await model.generateContent([
-          Content.text('$systemPrompt\n\n$userPrompt'),
-        ]);
-        text = response.text ?? '';
+        text = await GeminiProxy.instance.text(
+          prompt: '$systemPrompt\n\n$userPrompt',
+          model: 'gemini-2.5-flash',
+        );
       }
 
       final responseText = text;

@@ -6,6 +6,7 @@ import '../services/chat_service.dart';
 import '../services/gemini_service.dart';
 import '../services/language_service.dart';
 import '../services/plant_identification_service.dart';
+import '../services/usage_tracking_service.dart';
 import 'plant_result_screen.dart';
 
 class CameraScreen extends StatefulWidget {
@@ -50,6 +51,8 @@ class _CameraScreenState extends State<CameraScreen> {
     try {
       final file = await _controller!.takePicture();
       final bytes = await File(file.path).readAsBytes();
+      UsageTrackingService.instance
+          .log(UsageTrackingService.featurePlantId);
 
       // 🌿 Free identification: PlantNet → Cloud LLM description.
       // Falls back to Gemini automatically if PlantNet fails OR returns

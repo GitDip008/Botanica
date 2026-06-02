@@ -383,9 +383,9 @@ class _PlantResultScreenState extends State<PlantResultScreen>
                       ),
                     ),
                     icon: const Icon(Icons.chat_bubble_outline_rounded),
-                    label: const Text(
-                      'Ask about this plant',
-                      style: TextStyle(fontSize: 15),
+                    label: Text(
+                      s.askAboutThisPlant,
+                      style: const TextStyle(fontSize: 15),
                     ),
                     onPressed: () => _tabController.animateTo(1),
                   ),

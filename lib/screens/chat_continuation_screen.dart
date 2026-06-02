@@ -7,6 +7,7 @@ import '../models/plant_info.dart';
 import '../services/chat_history_service.dart';
 import '../services/chat_service.dart';
 import '../services/language_service.dart';
+import '../services/user_state.dart';
 
 /// Continue an existing chat session — load all past messages, allow new ones.
 class ChatContinuationScreen extends StatefulWidget {
@@ -323,6 +324,7 @@ class _ChatContinuationScreenState extends State<ChatContinuationScreen> {
           ],
         ),
         actions: [
+          _ChatsLeftChip(),
           PopupMenuButton<String>(
             icon: const Icon(Icons.more_vert_rounded, color: Color(0xFFE8F5E9)),
             color: const Color(0xFF111F16),
@@ -537,6 +539,49 @@ class _ChatContinuationScreenState extends State<ChatContinuationScreen> {
                   blockSpacing: 8,
                 ),
               ),
+      ),
+    );
+  }
+}
+
+/// Small "N chats left today" chip — visible only for free-tier users.
+class _ChatsLeftChip extends StatelessWidget {
+  @override
+  Widget build(BuildContext context) {
+    final user = context.watch<UserState>().user;
+    final s = context.watch<LanguageService>().strings;
+    if (user == null) return const SizedBox.shrink();
+    if (user.tier.isPremium) return const SizedBox.shrink();
+
+    final left = user.chatsRemaining;
+    final isLow = left <= 2;
+    final color = left == 0
+        ? Colors.red[400]!
+        : (isLow ? const Color(0xFFFFB300) : const Color(0xFF66BB6A));
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 12),
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+        decoration: BoxDecoration(
+          color: color.withOpacity(0.15),
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(color: color.withOpacity(0.5)),
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(Icons.bolt_rounded, color: color, size: 14),
+            const SizedBox(width: 4),
+            Text(
+              s.chatsLeftToday(left),
+              style: TextStyle(
+                color: color,
+                fontSize: 11,
+                fontWeight: FontWeight.w700,
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }

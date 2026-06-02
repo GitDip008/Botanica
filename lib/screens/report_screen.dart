@@ -3,12 +3,13 @@ import 'dart:io';
 import 'package:camera/camera.dart';
 import 'package:flutter/material.dart';
 import 'package:geolocator/geolocator.dart';
-import 'package:google_generative_ai/google_generative_ai.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:url_launcher/url_launcher.dart';
-import '../config/api_config.dart';
+import '../services/gemini_proxy.dart';
+import '../services/language_service.dart';
 import '../services/report_service.dart';
+import '../services/usage_tracking_service.dart';
 
 // ─── Authority contact ────────────────────────────────────────────────────────
 // Change this to the real garden staff email before deployment.
@@ -76,7 +77,6 @@ class ReportScreen extends StatefulWidget {
 }
 
 class _ReportScreenState extends State<ReportScreen> {
-  static const _apiKey = ApiConfig.geminiApiKey;
   static const _prefsKey = 'botanical_reports';
   static const _categories = [
     'Pest damage',
@@ -168,21 +168,20 @@ class _ReportScreenState extends State<ReportScreen> {
         _analyzing = true;
       });
 
-      final model =
-          GenerativeModel(model: 'gemini-2.5-flash', apiKey: _apiKey);
       const prompt = '''You are helping document a finding at Oulu Botanical Garden.
 Describe what you see in this image in 2-3 sentences. Focus on:
 - Any visible damage, disease, pests, or unusual features
 - The plant or plants visible
 - Any concern level (none / minor / significant)
 Be concise and factual.''';
-      final response = await model.generateContent([
-        Content.multi([DataPart('image/jpeg', bytes), TextPart(prompt)]),
-      ]);
+      final text = await GeminiProxy.instance.vision(
+        prompt: prompt,
+        imageBytes: bytes,
+        model: 'gemini-2.5-flash',
+      );
       if (mounted) {
         setState(() {
-          _aiDescription =
-              response.text ?? 'Unable to analyse image.';
+          _aiDescription = text.isNotEmpty ? text : 'Unable to analyse image.';
           _analyzing = false;
         });
       }
@@ -215,6 +214,7 @@ Be concise and factual.''';
       _lastSubmitted = report;
     });
     await _saveReports(); // persist to disk
+    UsageTrackingService.instance.log(UsageTrackingService.featureReport);
     // Also mirror to Firestore so admins can see it
     await ReportService.instance.save(
       category: report.category,
@@ -273,8 +273,9 @@ Sent from Botanica AR — Oulu Botanical Garden companion app.
     } else {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('No email app found on this device.'),
+          SnackBar(
+            content:
+                Text(LanguageService.instance.strings.noEmailAppFound),
             backgroundColor: Colors.orange,
           ),
         );
@@ -300,6 +301,7 @@ Sent from Botanica AR — Oulu Botanical Garden companion app.
 
   @override
   Widget build(BuildContext context) {
+    final s = LanguageService.instance.strings;
     return Scaffold(
       backgroundColor: const Color(0xFF0D1F14),
       appBar: AppBar(
@@ -309,8 +311,8 @@ Sent from Botanica AR — Oulu Botanical Garden companion app.
               color: Color(0xFF66BB6A)),
           onPressed: () => Navigator.pop(context),
         ),
-        title: const Text('🔬 Report a Find',
-            style: TextStyle(
+        title: Text('🔬 ${s.reportTitle}',
+            style: const TextStyle(
                 color: Color(0xFFE8F5E9),
                 fontWeight: FontWeight.bold)),
         actions: [
@@ -334,6 +336,7 @@ Sent from Botanica AR — Oulu Botanical Garden companion app.
   // ── Success screen ────────────────────────────────────────────────────────
 
   Widget _buildSuccess(_Report r) {
+    final s = LanguageService.instance.strings;
     return SingleChildScrollView(
       padding: const EdgeInsets.all(24),
       child: Column(
@@ -354,9 +357,9 @@ Sent from Botanica AR — Oulu Botanical Garden companion app.
                 style: TextStyle(fontSize: 52)),
           ),
           const SizedBox(height: 10),
-          const Center(
-            child: Text('Report Saved!',
-                style: TextStyle(
+          Center(
+            child: Text(s.reportSaved,
+                style: const TextStyle(
                     color: Color(0xFF66BB6A),
                     fontSize: 22,
                     fontWeight: FontWeight.bold)),
@@ -386,12 +389,12 @@ Sent from Botanica AR — Oulu Botanical Garden companion app.
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                const Row(children: [
-                  Icon(Icons.storage,
+                Row(children: [
+                  const Icon(Icons.storage,
                       color: Color(0xFF66BB6A), size: 16),
-                  SizedBox(width: 6),
-                  Text('Where is this stored?',
-                      style: TextStyle(
+                  const SizedBox(width: 6),
+                  Text(s.whereIsThisStored,
+                      style: const TextStyle(
                           color: Color(0xFF66BB6A),
                           fontWeight: FontWeight.bold,
                           fontSize: 13)),
@@ -423,7 +426,7 @@ Sent from Botanica AR — Oulu Botanical Garden companion app.
                   borderRadius: BorderRadius.circular(14)),
             ),
             icon: const Icon(Icons.email_outlined),
-            label: const Text('Email Garden Staff  📧',
+            label: Text(s.emailGardenStaff,
                 style: TextStyle(
                     fontSize: 15, fontWeight: FontWeight.bold)),
             onPressed: () => _emailAuthority(r),
@@ -453,7 +456,7 @@ Sent from Botanica AR — Oulu Botanical Garden companion app.
                         borderRadius: BorderRadius.circular(12)),
                   ),
                   icon: const Icon(Icons.history, size: 16),
-                  label: const Text('View All Reports',
+                  label: Text(s.viewAllReports,
                       style: TextStyle(fontSize: 13)),
                   onPressed: _showHistory,
                 ),
@@ -469,7 +472,7 @@ Sent from Botanica AR — Oulu Botanical Garden companion app.
                         borderRadius: BorderRadius.circular(12)),
                   ),
                   icon: const Icon(Icons.add_a_photo, size: 16),
-                  label: const Text('New Report',
+                  label: Text(s.newReport,
                       style: TextStyle(fontSize: 13)),
                   onPressed: _resetForm,
                 ),
@@ -484,6 +487,7 @@ Sent from Botanica AR — Oulu Botanical Garden companion app.
   // ── Form ──────────────────────────────────────────────────────────────────
 
   Widget _buildForm() {
+    final s = LanguageService.instance.strings;
     return SingleChildScrollView(
       padding: const EdgeInsets.all(16),
       child: Column(
@@ -568,16 +572,16 @@ Sent from Botanica AR — Oulu Botanical Garden companion app.
 
           // AI analysis
           if (_analyzing)
-            const Row(
+            Row(
               children: [
-                SizedBox(
+                const SizedBox(
                     width: 16,
                     height: 16,
                     child: CircularProgressIndicator(
                         color: Color(0xFF66BB6A), strokeWidth: 2)),
-                SizedBox(width: 10),
-                Text('Gemini analysing image…',
-                    style: TextStyle(
+                const SizedBox(width: 10),
+                Text(LanguageService.instance.strings.analyzingImage,
+                    style: const TextStyle(
                         color: Color(0xFF4CAF50), fontSize: 13)),
               ],
             ),
@@ -592,12 +596,12 @@ Sent from Botanica AR — Oulu Botanical Garden companion app.
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  const Row(children: [
-                    Icon(Icons.auto_awesome,
+                  Row(children: [
+                    const Icon(Icons.auto_awesome,
                         color: Color(0xFF66BB6A), size: 14),
-                    SizedBox(width: 6),
-                    Text('AI Analysis',
-                        style: TextStyle(
+                    const SizedBox(width: 6),
+                    Text(s.aiAnalysisLabel,
+                        style: const TextStyle(
                             color: Color(0xFF66BB6A),
                             fontSize: 12,
                             fontWeight: FontWeight.bold)),
@@ -615,8 +619,8 @@ Sent from Botanica AR — Oulu Botanical Garden companion app.
           const SizedBox(height: 14),
 
           // Category
-          const Text('Category',
-              style: TextStyle(
+          Text(s.categoryLabel,
+              style: const TextStyle(
                   color: Color(0xFF66BB6A),
                   fontSize: 13,
                   fontWeight: FontWeight.bold)),
@@ -672,8 +676,8 @@ Sent from Botanica AR — Oulu Botanical Garden companion app.
                 Expanded(
                   child: Text(
                     _location != null
-                        ? 'GPS: ${_location!.latitude.toStringAsFixed(5)}, ${_location!.longitude.toStringAsFixed(5)}'
-                        : 'Getting location…',
+                        ? '${s.gpsLabel}: ${_location!.latitude.toStringAsFixed(5)}, ${_location!.longitude.toStringAsFixed(5)}'
+                        : s.gettingLocation,
                     style: TextStyle(
                       color: _location != null
                           ? const Color(0xFF66BB6A)
@@ -694,7 +698,7 @@ Sent from Botanica AR — Oulu Botanical Garden companion app.
             style: const TextStyle(color: Color(0xFFE8F5E9)),
             maxLines: 3,
             decoration: InputDecoration(
-              hintText: 'Add your note (optional)…',
+              hintText: s.addNoteHint,
               filled: true,
               fillColor: const Color(0xFF1A2E1E),
               border: OutlineInputBorder(
@@ -727,7 +731,7 @@ Sent from Botanica AR — Oulu Botanical Garden companion app.
                   borderRadius: BorderRadius.circular(14)),
             ),
             icon: const Icon(Icons.send),
-            label: const Text('Submit Report',
+            label: Text(s.submitReport,
                 style: TextStyle(fontSize: 15)),
             onPressed: _imagePath != null ? _submitReport : null,
           ),
@@ -774,7 +778,7 @@ Sent from Botanica AR — Oulu Botanical Garden companion app.
               padding: const EdgeInsets.fromLTRB(16, 8, 16, 8),
               child: Row(
                 children: [
-                  const Text('Saved Reports',
+                  Text(LanguageService.instance.strings.savedReports,
                       style: TextStyle(
                           color: Color(0xFF66BB6A),
                           fontWeight: FontWeight.bold,
@@ -787,10 +791,10 @@ Sent from Botanica AR — Oulu Botanical Garden companion app.
               ),
             ),
             if (_reports.isEmpty)
-              const Expanded(
+              Expanded(
                 child: Center(
-                  child: Text('No reports yet.',
-                      style: TextStyle(
+                  child: Text(LanguageService.instance.strings.noReportsYet,
+                      style: const TextStyle(
                           color: Color(0xFF4CAF50), fontSize: 14)),
                 ),
               )

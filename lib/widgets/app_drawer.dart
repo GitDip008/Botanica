@@ -7,7 +7,6 @@ import '../screens/report_screen.dart';
 import '../screens/settings_screen.dart';
 import '../services/language_service.dart';
 import '../services/user_state.dart';
-import 'developed_by_card.dart';
 
 /// Side navigation drawer with all main destinations + developer info.
 class AppDrawer extends StatelessWidget {
@@ -138,11 +137,6 @@ class AppDrawer extends StatelessWidget {
               ),
             ),
 
-            // ── Developed by footer ─────────────────────────
-            const Padding(
-              padding: EdgeInsets.fromLTRB(12, 8, 12, 12),
-              child: DevelopedByCard(),
-            ),
           ],
         ),
       ),

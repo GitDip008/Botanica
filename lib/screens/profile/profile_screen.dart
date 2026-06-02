@@ -17,9 +17,9 @@ class ProfileScreen extends StatelessWidget {
     final s = context.watch<LanguageService>().strings;
     final user = userState.user;
     if (user == null) {
-      return const Scaffold(
-        backgroundColor: Color(0xFF0A1A0F),
-        body: Center(child: Text('Not signed in', style: TextStyle(color: Colors.white))),
+      return Scaffold(
+        backgroundColor: const Color(0xFF0A1A0F),
+        body: Center(child: Text(LanguageService.instance.strings.notSignedIn, style: const TextStyle(color: Colors.white))),
       );
     }
 
@@ -148,6 +148,8 @@ class ProfileScreen extends StatelessWidget {
           ),
 
           const SizedBox(height: 24),
+
+          
 
           // ── Account actions ───────────────────────────────
           _sectionLabel(s.account.toUpperCase()),

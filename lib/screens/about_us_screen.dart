@@ -50,7 +50,7 @@ class AboutUsScreen extends StatelessWidget {
               _InfoLine('Message', '2402120/pääsymaksu'),
             ]),
 
-            _section(s.directions, Icons.directions_rounded, [
+            _section(s.directionsAndParking, Icons.directions_rounded, [
               const _Body(
                 'The Botanical Garden is in the northern corner of the Linnanmaa campus, '
                 'near Lake Kuivasjärvi. Street address: Kaitoväylä 5.\n\n'

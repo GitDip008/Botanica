@@ -5,7 +5,11 @@ import 'package:provider/provider.dart';
 import '../models/event_request.dart';
 import '../services/event_service.dart';
 import '../services/language_service.dart';
+import '../services/holiday_hours_service.dart';
 import '../services/report_service.dart';
+import '../widgets/feature_usage_chart.dart';
+import 'admin_user_list_screen.dart';
+import 'edit_holidays_screen.dart';
 
 class AdminPanelScreen extends StatelessWidget {
   const AdminPanelScreen({super.key});
@@ -24,9 +28,59 @@ class AdminPanelScreen extends StatelessWidget {
         child: ListView(
           padding: const EdgeInsets.all(16),
           children: [
+            // Scrape-error banner (only shown when oulu.fi scrape failed)
+            StreamBuilder<HolidayHoursDoc>(
+              stream: HolidayHoursService.instance.watch(),
+              builder: (ctx, snap) {
+                if (snap.data?.hasError != true) {
+                  return const SizedBox.shrink();
+                }
+                return Padding(
+                  padding: const EdgeInsets.only(bottom: 16),
+                  child: Material(
+                    color: Colors.transparent,
+                    child: InkWell(
+                      borderRadius: BorderRadius.circular(14),
+                      onTap: () => Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                            builder: (_) => const EditHolidaysScreen()),
+                      ),
+                      child: Container(
+                        padding: const EdgeInsets.all(14),
+                        decoration: BoxDecoration(
+                          color: const Color(0xFF3B2A0B),
+                          borderRadius: BorderRadius.circular(14),
+                          border:
+                              Border.all(color: const Color(0xFFFFB300)),
+                        ),
+                        child: Row(children: [
+                          const Icon(Icons.warning_amber_rounded,
+                              color: Color(0xFFFFD54F)),
+                          const SizedBox(width: 10),
+                          Expanded(
+                            child: Text(s.scrapeFailedAlert,
+                                style: const TextStyle(
+                                    color: Color(0xFFFFE082),
+                                    fontSize: 12.5,
+                                    height: 1.4)),
+                          ),
+                          const Icon(Icons.arrow_forward_rounded,
+                              color: Color(0xFFFFD54F), size: 18),
+                        ]),
+                      ),
+                    ),
+                  ),
+                );
+              },
+            ),
             _sectionLabel(s.statsOverview),
             const SizedBox(height: 10),
             const _StatsGrid(),
+            const SizedBox(height: 24),
+            _sectionLabel(s.featureUsage),
+            const SizedBox(height: 10),
+            const FeatureUsageChart(),
             const SizedBox(height: 24),
             _sectionLabel(s.pendingEvents),
             const SizedBox(height: 10),
@@ -35,6 +89,41 @@ class AdminPanelScreen extends StatelessWidget {
             _sectionLabel(s.visitorReports),
             const SizedBox(height: 10),
             const _ReportsList(),
+            const SizedBox(height: 24),
+            // Edit holiday hours tile
+            Material(
+              color: Colors.transparent,
+              child: InkWell(
+                borderRadius: BorderRadius.circular(14),
+                onTap: () => Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                      builder: (_) => const EditHolidaysScreen()),
+                ),
+                child: Container(
+                  padding: const EdgeInsets.all(14),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFF111F16),
+                    borderRadius: BorderRadius.circular(14),
+                    border: Border.all(color: const Color(0xFF2A4A2F)),
+                  ),
+                  child: Row(children: [
+                    const Icon(Icons.event_note_rounded,
+                        color: Color(0xFFFFD54F), size: 20),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: Text(s.editHolidays,
+                          style: const TextStyle(
+                              color: Color(0xFFE8F5E9),
+                              fontSize: 14,
+                              fontWeight: FontWeight.w600)),
+                    ),
+                    const Icon(Icons.arrow_forward_ios_rounded,
+                        color: Color(0xFF4A7A50), size: 14),
+                  ]),
+                ),
+              ),
+            ),
           ],
         ),
       ),
@@ -99,46 +188,97 @@ class _StatsGrid extends StatelessWidget {
           mainAxisSpacing: 10,
           childAspectRatio: 1.35,
           children: [
-            _statCard(Icons.people_alt_rounded, s.totalUsers, '$total',
-                const Color(0xFF64B5F6)),
-            _statCard(Icons.workspace_premium_rounded, s.premiumUsers,
-                '$premium', const Color(0xFFFFD54F)),
-            _statCard(Icons.bolt_rounded, s.activeToday, '$active',
-                const Color(0xFF66BB6A)),
-            _statCard(Icons.chat_bubble_rounded, s.totalChats, '$chatsToday',
-                const Color(0xFFB39DDB)),
+            _StatCard(
+                icon: Icons.people_alt_rounded,
+                label: s.totalUsers,
+                value: '$total',
+                color: const Color(0xFF64B5F6),
+                filter: AdminUserFilter.all),
+            _StatCard(
+                icon: Icons.workspace_premium_rounded,
+                label: s.premiumUsers,
+                value: '$premium',
+                color: const Color(0xFFFFD54F),
+                filter: AdminUserFilter.premium),
+            _StatCard(
+                icon: Icons.bolt_rounded,
+                label: s.activeToday,
+                value: '$active',
+                color: const Color(0xFF66BB6A),
+                filter: AdminUserFilter.activeToday),
+            _StatCard(
+                icon: Icons.chat_bubble_rounded,
+                label: s.totalChats,
+                value: '$chatsToday',
+                color: const Color(0xFFB39DDB),
+                filter: AdminUserFilter.chatsToday),
           ],
         );
       },
     );
   }
+}
 
-  Widget _statCard(IconData icon, String label, String value, Color color) {
-    return Container(
-      padding: const EdgeInsets.all(12),
-      decoration: BoxDecoration(
-        color: const Color(0xFF111F16),
+class _StatCard extends StatelessWidget {
+  final IconData icon;
+  final String label;
+  final String value;
+  final Color color;
+  final AdminUserFilter filter;
+  const _StatCard({
+    required this.icon,
+    required this.label,
+    required this.value,
+    required this.color,
+    required this.filter,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
         borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: const Color(0xFF2A4A2F)),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Icon(icon, color: color, size: 20),
-          const SizedBox(height: 8),
-          Text(value,
-              style: const TextStyle(
-                  color: Color(0xFFE8F5E9),
-                  fontSize: 22,
-                  fontWeight: FontWeight.w800,
-                  height: 1.1)),
-          const SizedBox(height: 2),
-          Text(label,
-              maxLines: 2,
-              overflow: TextOverflow.ellipsis,
-              style: const TextStyle(color: Color(0xFF81C784), fontSize: 10.5, height: 1.2)),
-        ],
+        onTap: () => Navigator.push(
+          context,
+          MaterialPageRoute(
+              builder: (_) => AdminUserListScreen(filter: filter)),
+        ),
+        child: Container(
+          padding: const EdgeInsets.all(12),
+          decoration: BoxDecoration(
+            color: const Color(0xFF111F16),
+            borderRadius: BorderRadius.circular(14),
+            border: Border.all(color: const Color(0xFF2A4A2F)),
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Row(children: [
+                Icon(icon, color: color, size: 20),
+                const Spacer(),
+                Icon(Icons.arrow_outward_rounded,
+                    color: color.withValues(alpha: 0.5), size: 14),
+              ]),
+              const SizedBox(height: 8),
+              Text(value,
+                  style: const TextStyle(
+                      color: Color(0xFFE8F5E9),
+                      fontSize: 22,
+                      fontWeight: FontWeight.w800,
+                      height: 1.1)),
+              const SizedBox(height: 2),
+              Text(label,
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
+                  style: const TextStyle(
+                      color: Color(0xFF81C784),
+                      fontSize: 10.5,
+                      height: 1.2)),
+            ],
+          ),
+        ),
       ),
     );
   }
