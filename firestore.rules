@@ -1,0 +1,109 @@
+rules_version = '2';
+
+// Botanica Firestore security rules.
+//
+// Model:
+//  • Each user owns /users/{uid} and its /chats subcollection — nobody else can
+//    read them (this is what guarantees "no user can read another user's data").
+//  • Admins are identified by their verified auth-token email (NOT a client-set
+//    field), so the isAdmin flag can never be forged to escalate privileges.
+//  • Collections written only by Cloud Functions (admin SDK bypasses rules) are
+//    locked to the client entirely.
+//  • Anything not explicitly listed is denied by the final catch-all.
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // ── Helpers ──────────────────────────────────────────────────────────
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function isOwner(uid) {
+      return isSignedIn() && request.auth.uid == uid;
+    }
+
+    // Admin = verified token email on the allow-list. Mirrors AppUser.adminEmails.
+    function isAdmin() {
+      return isSignedIn() && request.auth.token.email in [
+        'admin@botanica.fi',
+        'shourovdip147@gmail.com'
+      ];
+    }
+
+    // A normal user may write their own doc, but may only carry isAdmin:true if
+    // their token email is actually an admin — blocks privilege escalation.
+    function adminFieldIsSafe() {
+      return !('isAdmin' in request.resource.data)
+        || request.resource.data.isAdmin == false
+        || isAdmin();
+    }
+
+    // ── Users (profile, tier, badges, fcmToken) + private chat history ──
+    match /users/{uid} {
+      allow read: if isOwner(uid) || isAdmin();
+      allow create: if isOwner(uid) && adminFieldIsSafe();
+      allow update: if (isOwner(uid) && adminFieldIsSafe()) || isAdmin();
+      allow delete: if isAdmin();
+
+      // Chat history is strictly private to its owner.
+      match /chats/{chatId} {
+        allow read, write: if isOwner(uid);
+      }
+    }
+
+    // ── Events ───────────────────────────────────────────────────────────
+    // Anyone signed-in may submit a request and may read approved+public events
+    // or their own submissions. Admins manage everything. RSVP lets any signed-in
+    // user toggle ONLY the rsvpUserIds field on an event.
+    match /events/{eventId} {
+      allow read: if isAdmin()
+        || (isSignedIn() && resource.data.userId == request.auth.uid)
+        || (isSignedIn()
+            && resource.data.status == 'approved'
+            && resource.data.isPublic == true);
+
+      allow create: if isSignedIn()
+        && request.resource.data.userId == request.auth.uid;
+
+      allow update: if isAdmin()
+        || (isSignedIn()
+            && request.resource.data.diff(resource.data)
+                 .affectedKeys().hasOnly(['rsvpUserIds']));
+
+      allow delete: if isAdmin();
+    }
+
+    // ── Visitor reports — submit only; admin reads. ──────────────────────
+    match /reports/{reportId} {
+      allow create: if isSignedIn();
+      allow read, update, delete: if isAdmin();
+    }
+
+    // ── Feature usage counters — increment by signed-in users, admin reads.
+    match /stats/{doc} {
+      allow read: if isAdmin();
+      allow write: if isSignedIn();
+    }
+
+    // ── Public config (app version, holiday hours) — world-readable, admin
+    //    (and server) writes. ──────────────────────────────────────────────
+    match /config/{doc} {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+
+    // ── Server-only collections (Cloud Functions / admin SDK bypass rules).
+    //    No client may ever touch these. ──────────────────────────────────
+    match /rate_limits/{doc}      { allow read, write: if false; }
+    match /agent_audit_log/{doc}  { allow read, write: if false; }
+    match /agent_corrections/{doc}{ allow read, write: if false; }
+    match /agent_pending/{doc}    { allow read, write: if false; }
+    match /agent_writes/{doc}     { allow read, write: if false; }
+
+    // ── Default deny for anything not matched above. ─────────────────────
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}

@@ -1,0 +1,96 @@
+{
+  "description": "Location-code vocabulary for sijoituspaikka.sijoituspaikan_nimi — built from REAL data (discovery query, 76 distinct values in test slice). The codes follow a structured prefix system. Greenhouse cell-level mapping to floor-plan cells still needs confirmation from the head gardener — placeholders marked TODO.",
+  "filled_at": "2026-06",
+
+  "prefix_system": {
+    "G-H*": {
+      "meaning": "Greenhouse (kasvihuone) cells",
+      "values_seen": ["G-HA", "G-HD", "G-HF", "G-HJ", "G-HK", "G-HL", "G-HO", "G-HT", "G-HZ", "G-HK/ ruuk."],
+      "doc": "Maps to greenhouse zones. The letter after G-H likely matches the floor plan's lettered areas. CONFIRM with head gardener which floor-plan cell each one is.",
+      "suffix_note": "'/ ruuk.' = ruukussa = in a pot"
+    },
+    "T-x.y.z": {
+      "meaning": "Field plot coordinates (test/cultivation fields)",
+      "values_seen": ["T-1.5.2", "T-2.3.2", "T-1.2.2", "T-1.2.1", "T-4.6.2", "T-4.1.3", "T-2.7.2", "T-6.8"],
+      "doc": "Hierarchical plot system: T-<field>.<row>.<position>. Outdoor cultivation plots."
+    },
+    "X-*": {
+      "meaning": "Special areas",
+      "values_seen": ["X-TA", "X-TUTK.", "X-KO", "X-KK"],
+      "doc": "X-TUTK. = tutkimus (research). Others TBD with gardener."
+    },
+    "K-n": {
+      "meaning": "Numbered K-areas",
+      "values_seen": ["K-19", "K-8", "K-12", "K-11"],
+      "doc": "TBD — possibly kenttä (field) or kasvualue numbering."
+    },
+    "Z-SV": {
+      "meaning": "Largest single location in test data (38 rows)",
+      "values_seen": ["Z-SV"],
+      "doc": "TBD with gardener — possibly seed storage (siemenvarasto)?"
+    },
+    "Y-O / H-O / M-L": {
+      "meaning": "Two-letter area codes",
+      "values_seen": ["Y-O", "H-O", "M-L"],
+      "doc": "H-O appears in SIIRTO records ('SIIRTO H-O:STA K-19'). TBD."
+    },
+    "n/ m": {
+      "meaning": "Numbered bed / position (outdoor)",
+      "values_seen": ["6/ 1", "6/ 2", "6/ 3", "6/ 4", "5/ 1", "4/ 1", "7/ 1", "15/ 1", "15/ 2", "10", "11", "382", "546"],
+      "doc": "Classic bed/position numbering for outdoor beds. '11/a', '11/B' = sub-positions."
+    },
+    "freeform": {
+      "values_seen": ["marjapenkki 392", "lava/ 1", "kylv|s (=kylvös)", "karpalokentt{ (=karpalokenttä)", "AULA/ 1", "392/ LUONNONMARJAPENKKI"],
+      "doc": "Free text with legacy latin1 mangling. AULA = the entrance hall between greenhouses. Agent must handle these gracefully — fall back to showing the raw string."
+    },
+    "asterisk_suffix": {
+      "doc": "Some locations carry condition stars inline: '10/***', '14/*', 'O5/ 16*', 'L2:61-62/ 10**'. The stars after the slash are CONDITION ratings embedded in the location field by legacy habit. Strip them when parsing location; they are not part of the location code."
+    }
+  },
+
+  "floorplans": {
+    "romeo": {
+      "asset": "assets/maps/romeo.png",
+      "image_width_px": 1500,
+      "image_height_px": 1500,
+      "cells": [
+        { "label": "A8",  "section_code": "ROM-A", "bbox_px": [0,0,0,0], "feature": "pond", "db_codes": ["TODO: which G-H* is this?"] },
+        { "label": "A12", "section_code": "ROM-A", "bbox_px": [0,0,0,0], "feature": "central tropical bed", "db_codes": ["TODO"] },
+        { "label": "B6",  "section_code": "ROM-B", "bbox_px": [0,0,0,0], "feature": "subtropical round bed", "db_codes": ["TODO"] }
+      ],
+      "gardener_questions": [
+        "Which G-H* codes map to Romeo cells A1-A17 and B1-B6?",
+        "Is the letter in G-Hx the bed letter on the floor plan?"
+      ]
+    },
+    "julia": {
+      "asset": "assets/maps/julia.png",
+      "image_width_px": 1500,
+      "image_height_px": 1500,
+      "cells": [
+        { "label": "D6", "section_code": "JUL-D", "bbox_px": [0,0,0,0], "feature": "mediterranean center", "db_codes": ["TODO"] },
+        { "label": "F8", "section_code": "JUL-F", "bbox_px": [0,0,0,0], "feature": "succulents", "db_codes": ["TODO"] }
+      ]
+    }
+  },
+
+  "section_labels": {
+    "ROM-A": { "en": "Tropical section", "fi": "Trooppinen osasto", "sv": "Tropisk avdelning" },
+    "ROM-B": { "en": "Subtropical section", "fi": "Subtrooppinen osasto", "sv": "Subtropisk avdelning" },
+    "JUL-D": { "en": "Mediterranean climate", "fi": "Subtrooppinen talvi", "sv": "Medelhavsklimat" },
+    "JUL-E": { "en": "Temperate climate", "fi": "Lauhkea ilmasto", "sv": "Tempererat klimat" },
+    "JUL-F": { "en": "Succulents and xerophytes", "fi": "Sukkulentit", "sv": "Suckulenter" },
+    "AULA": { "en": "Entrance hall", "fi": "Aula", "sv": "Entréhall" }
+  },
+
+  "fallback": {
+    "doc": "When a DB code has no mapping, show the raw code + section. Never block on missing mapping.",
+    "text_template_en": "This plant is at location '{db_code}'{section_suffix}. Ask a gardener if you can't find it.",
+    "text_template_fi": "Tämä kasvi on paikassa '{db_code}'{section_suffix}."
+  },
+
+  "encoding_normalization": {
+    "doc": "Legacy latin1 mangling seen in data. Apply these replacements when DISPLAYING legacy strings:",
+    "replacements": { "|": "ö", "{": "ä", "}": "å", "[": "Ä", "\\\\": "Ö" }
+  }
+}

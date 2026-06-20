@@ -1,0 +1,244 @@
+{
+  "$schema": "./agent_tools.schema.json",
+  "version": "0.1.0",
+  "description": "Botanica Smart Agent — complete tool catalog. Single source of truth for the LLM, Flutter UI, and DB layer. Never let the LLM emit raw SQL — it picks tools from this catalog and the dispatcher runs the parameterized template.",
+  "conventions": {
+    "ids": {
+      "hankintaID": "int — identifies a SPECIFIC plant instance (a row in hankintatiedot). What the gardener points to.",
+      "taksonin_nro": "int — identifies a SPECIES (a row in taksoni). What 'tell me about Valerian' means.",
+      "osaston_numero": "int — section row id (osastopaikka.osaston_numero)",
+      "sijoituspaikan_nro": "int — placement row id (where inspections are recorded against)"
+    },
+    "dates": {
+      "input_format": "ISO 8601 string 'YYYY-MM-DD'. Default to today if missing.",
+      "read_from": ["uus_tarkastuspvm", "uus_pvm"],
+      "legacy_columns": ["tarkastuspvm", "pvm"],
+      "write_strategy": "Write BOTH the new ISO column AND the legacy DD.MM.YYYY column so the legacy desktop app keeps working."
+    },
+    "tarkastaja": "Auto-filled from kayttajatiedot.kayttajan_tunnus of the signed-in user. LLM never sets this.",
+    "soft_delete": "All writes set is_active=true. Undo flips it to false. Nightly job hard-deletes inactive rows after 24h.",
+    "confirmation": "Every WRITE tool returns a pending_action with a UUID. The UI shows a confirmation card. Only confirm_pending_action commits the change.",
+    "language": "All natural-language replies match the user's app language (en/fi/sv)."
+  },
+
+  "tools": [
+    {
+      "name": "record_action",
+      "role": ["gardener", "admin"],
+      "description": "Log a maintenance action on a specific plant — fertilize, prune, treat, water, transplant, remove, other.",
+      "params": {
+        "hankintaID": { "type": "int", "required": true, "doc": "The plant instance the action was performed on" },
+        "action_code": { "type": "string", "required": true, "doc": "Short code from action_codes.json (e.g. 'la' for fertilize). The LLM picks from the cached enum." },
+        "details_text": { "type": "string", "required": false, "doc": "Freeform notes (max 500 chars), e.g. 'organic compost, morning'" },
+        "date": { "type": "iso_date", "required": false, "default": "today", "doc": "When the action happened" }
+      },
+      "write": true,
+      "requires_confirmation": true,
+      "sql_template": "INSERT INTO toimenpide (pvm, toimenpide, hankintaID, uus_pvm) VALUES (:legacy_date, :composed_text, :hankintaID, :iso_date);",
+      "mock_response": {
+        "pending_id": "uuid",
+        "preview_en": "I will log: Fertilized #4421 (Valerian) with organic compost on 2026-06-04",
+        "preview_fi": "Tallennan: Lannoitettu #4421 (Rohtovirmajuuri) orgaanisella komposti 4.6.2026"
+      }
+    },
+
+    {
+      "name": "record_observation",
+      "role": ["gardener", "admin"],
+      "description": "Log an inspection observation: how many living individuals, condition notes, success observations.",
+      "params": {
+        "hankintaID": { "type": "int", "required": true },
+        "living_count": { "type": "int", "required": false, "doc": "elavia_yksiloita" },
+        "condition_notes": { "type": "string", "required": false, "doc": "menestymista_koskevat_havainnot — short condition text" },
+        "freeform_notes": { "type": "string", "required": false, "doc": "kasvin_huomautuksia — longer freeform" },
+        "date": { "type": "iso_date", "required": false, "default": "today" }
+      },
+      "write": true,
+      "requires_confirmation": true,
+      "auto_fill_server_side": ["tarkastaja from current_user.kayttajan_tunnus", "sijoituspaikan_nro from most recent placement of hankintaID"],
+      "sql_template": "INSERT INTO tarkastusmerkinta (tarkastuspvm, elavia_yksiloita, menestymista_koskevat_havainnot, tarkastaja, kasvin_huomautuksia, sijoituspaikan_nro, uus_tarkastuspvm) VALUES (:legacy_date, :living_count, :condition_notes, :tarkastaja, :freeform_notes, :sijoituspaikan_nro, :iso_date);",
+      "mock_response": {
+        "pending_id": "uuid",
+        "preview_en": "I will save inspection on Valerian (#4421): 2 living individuals, condition: 'minor yellowing on lower leaves'",
+        "preview_fi": "Tallennan tarkastuksen Rohtovirmajuuresta (#4421): 2 elävää, kunto: 'lievä keltaisuus alalehdissä'"
+      }
+    },
+
+    {
+      "name": "update_cultivation_info",
+      "role": ["gardener", "admin"],
+      "description": "Update the cultivation profile (soil, light, pests, hardiness) for a SPECIES. Rarer — usually only changes when curator gets new info.",
+      "params": {
+        "taksonin_nro": { "type": "int", "required": true },
+        "field": { "type": "string", "required": true, "doc": "Column name in taksonin_viljelytiedot, e.g. 'kasvitaudit_ja_tuholaiset'" },
+        "value": { "type": "string", "required": true }
+      },
+      "write": true,
+      "requires_confirmation": true,
+      "role_strict": "admin",
+      "sql_template": "UPDATE taksonin_viljelytiedot SET :field = :value WHERE taksonin_nro = :taksonin_nro;",
+      "mock_response": {
+        "pending_id": "uuid",
+        "preview_en": "I will update cultivation info for taxon #88 (Valeriana officinalis): kasvitaudit_ja_tuholaiset = 'aphids, occasional'"
+      }
+    },
+
+    {
+      "name": "mark_plant_status",
+      "role": ["gardener", "admin"],
+      "description": "Change a plant's status (alive / dormant / dead / removed).",
+      "params": {
+        "hankintaID": { "type": "int", "required": true },
+        "status": { "type": "enum", "values": ["alive", "dormant", "dead", "removed"], "required": true }
+      },
+      "write": true,
+      "requires_confirmation": true,
+      "sql_template": "UPDATE osastopaikka SET kasvin_status = :status WHERE hankintaID = :hankintaID;",
+      "mock_response": {
+        "pending_id": "uuid",
+        "preview_en": "I will mark plant #4421 (Valerian) as DEAD"
+      }
+    },
+
+    {
+      "name": "undo_last_action",
+      "role": ["gardener", "admin"],
+      "description": "Reverse the most recent confirmed write by this user within the last 24 hours.",
+      "params": {
+        "session_id": { "type": "string", "required": true }
+      },
+      "write": true,
+      "requires_confirmation": false,
+      "doc": "Reads audit_log to find the last confirmed write, then soft-deletes the corresponding row.",
+      "mock_response": {
+        "preview_en": "Reverted: Fertilized #4421 (Valerian) — logged 12 minutes ago"
+      }
+    },
+
+    {
+      "name": "query_plant_details",
+      "role": ["visitor", "gardener", "admin"],
+      "description": "Get full info about a plant. For visitors, sensitive maintenance fields are stripped server-side.",
+      "params": {
+        "hankintaID": { "type": "int", "required": false, "one_of": "with taksonin_nro" },
+        "taksonin_nro": { "type": "int", "required": false, "one_of": "with hankintaID" }
+      },
+      "write": false,
+      "visitor_strips": [
+        "tarkastusmerkinta.*",
+        "toimenpide.*",
+        "taksonin_viljelytiedot.kasvitaudit_ja_tuholaiset",
+        "taksonin_viljelytiedot.haitallisuus",
+        "taksonin_viljelytiedot.myrkyllisyys",
+        "osastopaikka.kasvin_status",
+        "hankintatiedot.kasvin_huomautuksia"
+      ],
+      "sql_template": "SELECT t.*, vt.*, op.osaston_koodi, op.osaston_nimi, sp.sijoituspaikan_nimi FROM taksoni t LEFT JOIN taksonin_viljelytiedot vt ON vt.taksonin_nro = t.taksonin_nro LEFT JOIN hankintatiedot h ON h.taksonin_nro = t.taksonin_nro AND (:hankintaID IS NULL OR h.hankintaID = :hankintaID) LEFT JOIN osastopaikka op ON op.hankintaID = h.hankintaID LEFT JOIN sijoituspaikka sp ON sp.osaston_numero = op.osaston_numero WHERE t.taksonin_nro = :taksonin_nro OR h.hankintaID = :hankintaID LIMIT 1;"
+    },
+
+    {
+      "name": "query_plant_history",
+      "role": ["gardener", "admin"],
+      "description": "Recent actions + inspections on a specific plant.",
+      "params": {
+        "hankintaID": { "type": "int", "required": true },
+        "days_back": { "type": "int", "required": false, "default": 90 }
+      },
+      "write": false,
+      "sql_template": "SELECT 'action' AS kind, uus_pvm AS pvm, toimenpide AS detail FROM toimenpide WHERE hankintaID = :hankintaID AND uus_pvm >= :since UNION ALL SELECT 'inspection' AS kind, tm.uus_tarkastuspvm AS pvm, tm.menestymista_koskevat_havainnot AS detail FROM tarkastusmerkinta tm JOIN sijoituspaikka sp ON sp.sijoituspaikan_nro = tm.sijoituspaikan_nro JOIN osastopaikka op ON op.osaston_numero = sp.osaston_numero WHERE op.hankintaID = :hankintaID AND tm.uus_tarkastuspvm >= :since ORDER BY pvm DESC;"
+    },
+
+    {
+      "name": "find_overdue_inspections",
+      "role": ["gardener", "admin"],
+      "description": "Plants that haven't been inspected in N days.",
+      "params": {
+        "days_threshold": { "type": "int", "required": false, "default": 90 },
+        "section_code": { "type": "string", "required": false, "doc": "Filter by zone, e.g. 'MED-A'" }
+      },
+      "write": false,
+      "sql_template": "SELECT h.hankintaID, t.tieteellinen_nimi, MAX(tm.uus_tarkastuspvm) AS last_seen FROM hankintatiedot h JOIN taksoni t ON t.taksonin_nro = h.taksonin_nro JOIN osastopaikka op ON op.hankintaID = h.hankintaID JOIN sijoituspaikka sp ON sp.osaston_numero = op.osaston_numero LEFT JOIN tarkastusmerkinta tm ON tm.sijoituspaikan_nro = sp.sijoituspaikan_nro WHERE (:section_code IS NULL OR op.osaston_koodi = :section_code) GROUP BY h.hankintaID HAVING last_seen IS NULL OR last_seen < :cutoff ORDER BY last_seen ASC LIMIT 50;"
+    },
+
+    {
+      "name": "find_nearby_plants",
+      "role": ["visitor", "gardener", "admin"],
+      "description": "Plants in (or near) a section/cell. Used after GPS or QR resolution.",
+      "params": {
+        "section_code": { "type": "string", "required": false },
+        "location_code": { "type": "string", "required": false, "doc": "sijoituspaikan_nimi or translated cell" },
+        "limit": { "type": "int", "default": 20 }
+      },
+      "write": false,
+      "sql_template": "SELECT h.hankintaID, t.tieteellinen_nimi, sp.sijoituspaikan_nimi FROM sijoituspaikka sp JOIN osastopaikka op ON op.osaston_numero = sp.osaston_numero JOIN hankintatiedot h ON h.hankintaID = op.hankintaID JOIN taksoni t ON t.taksonin_nro = h.taksonin_nro WHERE (:section_code IS NULL OR op.osaston_koodi = :section_code) AND (:location_code IS NULL OR sp.sijoituspaikan_nimi = :location_code) LIMIT :limit;"
+    },
+
+    {
+      "name": "whats_blooming_now",
+      "role": ["visitor", "gardener", "admin"],
+      "description": "Plants expected to be in bloom this month.",
+      "params": {
+        "month": { "type": "int", "required": false, "default": "current_month" },
+        "limit": { "type": "int", "default": 15 }
+      },
+      "write": false,
+      "doc": "Reads from taksoni.muita_tietoja and viljelytiedot. If schema lacks a bloom-month column, falls back to the LLM bloom calendar (existing behavior)."
+    },
+
+    {
+      "name": "navigate_to_plant",
+      "role": ["visitor", "gardener", "admin"],
+      "description": "Where is a plant + how to get there.",
+      "params": {
+        "hankintaID": { "type": "int", "required": true },
+        "from_gps": { "type": "object", "required": false, "doc": "{lat, lng} of current position" }
+      },
+      "write": false,
+      "returns": {
+        "outdoor": "{ type: 'outdoor', section_code, section_name, route_polyline?: GeoJSON }",
+        "indoor": "{ type: 'indoor', floorplan: 'romeo' | 'julia', cell_label: 'A8', section_code }"
+      }
+    },
+
+    {
+      "name": "plan_tour",
+      "role": ["visitor", "gardener", "admin"],
+      "description": "Build a personalized tour given time budget + interests.",
+      "params": {
+        "duration_minutes": { "type": "int", "required": true },
+        "interests": { "type": "string[]", "required": false, "doc": "['medicinal', 'arctic', 'tropical', 'edible', 'rare']" },
+        "language": { "type": "enum", "values": ["en", "fi", "sv"], "default": "en" },
+        "start_section": { "type": "string", "required": false, "default": "main_entrance" }
+      },
+      "write": false,
+      "returns": "Ordered list of stops with timing. Each stop is { hankintaID, taksonin_nro, name, section, time_min, notes }"
+    },
+
+    {
+      "name": "confirm_pending_action",
+      "role": ["visitor", "gardener", "admin"],
+      "description": "Commit a previously-emitted pending_action. Only called by the UI when the user taps Save.",
+      "params": {
+        "pending_id": { "type": "uuid", "required": true }
+      },
+      "write": true,
+      "requires_confirmation": false
+    },
+
+    {
+      "name": "cancel_pending_action",
+      "role": ["visitor", "gardener", "admin"],
+      "description": "Discard a pending_action.",
+      "params": {
+        "pending_id": { "type": "uuid", "required": true }
+      },
+      "write": false
+    }
+  ],
+
+  "system_prompts": {
+    "gardener_base": "You are the Botanica Garden Assistant. The user is a gardener at Oulu Botanical Garden. Your job: help them log maintenance actions, record observations, and answer questions about plants. Always be brief. Never invent a hankintaID — only pick from the candidate list provided. Always emit tool calls in JSON when an action is implied. For writes, the system shows a confirmation card to the user — your response text should be a short natural-language summary of what will be saved.",
+    "visitor_base": "You are the Botanica Garden Assistant. The user is a visitor at Oulu Botanical Garden. Help them find plants, learn about species, and plan tours. NEVER reveal maintenance history, pest information, health status, or staff notes — those are gardener-only. Keep replies warm, brief, and accurate. Always respond in the visitor's language.",
+    "candidate_set_addendum": "CANDIDATE PLANTS (the user is near these): {candidates_json}. When the user says 'this plant' or names a species, pick its hankintaID from this list ONLY. If no good match, say you're not sure which plant they mean."
+  }
+}

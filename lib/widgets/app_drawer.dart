@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../screens/about_us_screen.dart';
 import '../screens/admin_panel_screen.dart';
+import '../screens/agent/agent_screen.dart';
 import '../screens/event_request_screen.dart';
 import '../screens/report_screen.dart';
 import '../screens/settings_screen.dart';
@@ -97,6 +98,17 @@ class AppDrawer extends StatelessWidget {
                         context,
                         MaterialPageRoute(
                             builder: (_) => const EventRequestScreen()));
+                  }),
+
+                  // Smart Agent — Phase 1 entry point. Hidden from gold rush
+                  // until LLM is wired (Phase 2), but accessible from drawer.
+                  _item(context, Icons.smart_toy_rounded, 'Smart Agent (beta)',
+                      () {
+                    Navigator.pop(context);
+                    Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                            builder: (_) => const AgentScreen()));
                   }),
 
                   const Divider(color: Color(0xFF1E3D24), height: 24),

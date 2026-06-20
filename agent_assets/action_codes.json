@@ -1,0 +1,117 @@
+{
+  "description": "Action vocabulary for toimenpide.toimenpide — built from REAL production data (discovery queries run 2026-06-XX on T's test_database.sqlite). The legacy column is free text, but it follows strong conventions: short Finnish abbreviations + optional details. The agent writes new entries following the same conventions so legacy reports stay consistent.",
+  "filled_at": "2026-06",
+  "data_source": "GROUP BY toimenpide on test slice (37 distinct values) + Phuc/Tuomas stocktake example",
+
+  "observed_action_families": {
+    "KYLVÖ": {
+      "variants_seen": ["KYLVÖ", "KYLVö", "ky.", "KY.", "KYLVÖ RAVINTOALUSTALLE", "ky,str+5c 3vk"],
+      "en": "Sowing (seeds)",
+      "fi": "Kylvö",
+      "canonical_code": "KYLVÖ",
+      "agent_vocabulary_fi": ["kylvin", "kylvetty", "kylvö"],
+      "agent_vocabulary_en": ["sowed", "sown", "seeded"]
+    },
+    "ITÄNYT": {
+      "variants_seen": ["IT.", "it.", "ITÄNYT", "ei itänyt", "poist. itämättömänä"],
+      "en": "Germinated / germination check",
+      "fi": "Itänyt",
+      "canonical_code": "IT.",
+      "agent_vocabulary_fi": ["iti", "itänyt", "ei itänyt"],
+      "agent_vocabulary_en": ["germinated", "did not germinate"]
+    },
+    "KOULINTA": {
+      "variants_seen": ["KOULINTA", "KOULITTU", "koul.3kpl", "koul.11kpl"],
+      "en": "Pricking out / transplanting seedlings",
+      "fi": "Koulinta",
+      "canonical_code": "KOULINTA",
+      "agent_vocabulary_fi": ["koulin", "koulittu"],
+      "agent_vocabulary_en": ["pricked out", "transplanted seedlings"]
+    },
+    "ISTUTUS": {
+      "variants_seen": ["IST. T-4.1.3", "IST. T-1.5.2/3 MÄT.", "ist. T-2.7.2", "IST. 7 KPL X-TA", "IST.KOEKENTÄLLE", "IST. H-O RUNSAASTI(UUSITTU ALUSTA)"],
+      "en": "Planting out (to a location)",
+      "fi": "Istutus",
+      "canonical_code": "IST.",
+      "convention": "IST. <location_code>[/<count or amount>] — location code is appended after the action",
+      "agent_vocabulary_fi": ["istutin", "istutettu"],
+      "agent_vocabulary_en": ["planted", "planted out"]
+    },
+    "SIIRTO": {
+      "variants_seen": ["SIIRTO H-O:STA K-19", "SIIRTO F.STÄ S-OSASTOON KESÄKSI", "SIIRR.L-OSASTOSTA 3 MÄTÄSTÄ", "siirto Romeoon"],
+      "en": "Transfer / move between locations",
+      "fi": "Siirto",
+      "canonical_code": "SIIRTO",
+      "convention": "SIIRTO <from>:STA <to> — captures source and destination",
+      "agent_vocabulary_fi": ["siirsin", "siirretty", "siirto"],
+      "agent_vocabulary_en": ["moved", "transferred"]
+    },
+    "PISTETTY": {
+      "variants_seen": ["PISTETTY"],
+      "en": "Cuttings taken / stuck",
+      "fi": "Pistetty (pistokas)",
+      "canonical_code": "PISTETTY",
+      "agent_vocabulary_fi": ["pistin", "pistokkaat"],
+      "agent_vocabulary_en": ["took cuttings"]
+    },
+    "KUOLLUT": {
+      "variants_seen": ["KUOLLUT TAIMENA", "todettu kuolleeksi koehuoneessa (Tuula Kangas)", "1 KPL KUOLI", "KUOLI"],
+      "en": "Died / found dead",
+      "fi": "Kuollut",
+      "canonical_code": "KUOLLUT",
+      "agent_vocabulary_fi": ["kuoli", "kuollut"],
+      "agent_vocabulary_en": ["died", "dead"]
+    },
+    "POISTO": {
+      "variants_seen": ["poist. itämättömänä", "poistettu", "HÄVITETTY, MADOT!"],
+      "en": "Removed / discarded",
+      "fi": "Poisto / hävitys",
+      "canonical_code": "POIST.",
+      "agent_vocabulary_fi": ["poistin", "hävitin", "hävitetty"],
+      "agent_vocabulary_en": ["removed", "discarded", "destroyed"]
+    },
+    "MYYTY": {
+      "variants_seen": ["MYYTY ISOSYÖTE 1 KPL"],
+      "en": "Sold / given away",
+      "fi": "Myyty",
+      "canonical_code": "MYYTY",
+      "agent_vocabulary_fi": ["myyty", "myin"],
+      "agent_vocabulary_en": ["sold"]
+    },
+    "MUU": {
+      "variants_seen": ["NUMEROINTI", "str. +5 talvi", "marjat pesty ja siemenet siemeniä varastossa-osastolle"],
+      "en": "Other / freeform note",
+      "fi": "Muu",
+      "canonical_code": null,
+      "doc": "Freeform — agent writes the gardener's words near-verbatim, prefixed with nothing."
+    }
+  },
+
+  "stocktake_format": {
+    "doc": "From Tuomas via Phuc: the standard inspection record format. The agent should PARSE this from speech and also GENERATE it when writing menestymista_koskevat_havainnot.",
+    "example": "*** 3 kpl, 2-4 m, kukkii, ovat liian tiheässä, yksi huonompi",
+    "fields": {
+      "condition_stars": { "values": { "*": "poor", "**": "moderate", "***": "good" }, "position": "first" },
+      "count": { "format": "<n> kpl", "maps_to": "elavia_yksiloita" },
+      "size": { "format": "<min>-<max> m | <n> cm", "doc": "height or spread" },
+      "status_words": ["kukkii (blooming)", "nuppu (budding)", "siemenet (seeding)", "lakastunut (wilted)"],
+      "free_notes": "anything else, comma-separated, stays in Finnish"
+    },
+    "agent_rule": "When a gardener describes condition in speech, compose the record in this exact format: stars first, then count, then size, then status, then notes. Keep the gardener's own words for the notes part."
+  },
+
+  "encoding_warning": "Legacy rows contain latin1-mangled characters: '|' = ö, '{' = ä, '}' = å. Example: 'kylv|s' = 'kylvös', 'karpalokentt{' = 'karpalokenttä'. The agent must normalize these when READING. When WRITING, always use proper UTF-8.",
+
+  "inspector_code_mapping": {
+    "doc": "tarkastaja column uses initials that do NOT directly equal kayttajan_tunnus. Mapping discovered so far (needs confirmation from T for the full staff list):",
+    "confirmed": {},
+    "probable": {
+      "RH": "rhiltune (Ritva)",
+      "MS": "mas (Siuruainen Mirja)",
+      "MH": "mhyvarin (Marko Hyvärinen)",
+      "TK": "tpkauppi (Tuomas Kauppila)?"
+    },
+    "unmapped_initials_seen": ["PP", "JK", "ER", "VH", "AIH", "LR", "RI", "ANK", "VK", "KV", "HM", "TKA", "UT", "SM", "PM", "tn", "MP", "ML", "LK"],
+    "agent_rule": "Store the gardener's initials from their profile (users/{uid}.legacyInspectorCode). If unset, ask once on first write and save."
+  }
+}

@@ -1,0 +1,13 @@
+rules_version = '2';
+
+// Botanica Storage rules.
+// The only object in Storage is the agent's live SQLite DB (agent_live/live.sqlite),
+// which is read/written exclusively by Cloud Functions via the Admin SDK (rules
+// are bypassed there). No client uploads or downloads exist, so deny everything.
+service firebase.storage {
+  match /b/{bucket}/o {
+    match /{allPaths=**} {
+      allow read, write: if false;
+    }
+  }
+}

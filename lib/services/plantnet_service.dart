@@ -1,7 +1,6 @@
 import 'dart:convert';
 import 'dart:typed_data';
-import 'package:http/http.dart' as http;
-import '../config/api_config.dart';
+import 'package:cloud_functions/cloud_functions.dart';
 import '../models/plant_info.dart';
 
 /// Raw result from PlantNet — keeps the confidence score so callers can
@@ -12,57 +11,47 @@ class PlantNetResult {
   const PlantNetResult({required this.info, required this.confidence});
 }
 
-/// Plant identification via the **PlantNet API** — free, designed specifically
-/// for plants, and well-suited to European flora.
+/// Plant identification via the **PlantNet API**, proxied through the
+/// `plantnetIdentify` Cloud Function so the API key never ships in the APK.
 class PlantNetService {
-  static const _baseUrl = 'https://my-api.plantnet.org/v2/identify/all';
-  static String get _apiKey => ApiConfig.plantnetApiKey;
+  final FirebaseFunctions _functions =
+      FirebaseFunctions.instanceFor(region: 'europe-north1');
+
+  static const _notPlant = PlantNetResult(
+    confidence: 0,
+    info: PlantInfo(
+      scientificName: 'Unknown',
+      commonName: 'Not a plant',
+      family: 'N/A',
+      description: 'No plant detected in this image.',
+      isPlant: false,
+    ),
+  );
 
   /// Identifies a plant from an image. Returns the top match + confidence.
   Future<PlantNetResult> identifyPlant(
     Uint8List imageBytes, {
     String organs = 'auto',
+    String lang = 'en',
   }) async {
-    if (_apiKey.isEmpty || _apiKey == 'YOUR_PLANTNET_API_KEY_HERE') {
-      throw Exception(
-        'PlantNet API key not configured. Add it to api_config.dart',
-      );
-    }
+    final callable = _functions.httpsCallable(
+      'plantnetIdentify',
+      options: HttpsCallableOptions(timeout: const Duration(seconds: 40)),
+    );
 
-    final uri = Uri.parse('$_baseUrl?api-key=$_apiKey&lang=en');
-    final request = http.MultipartRequest('POST', uri)
-      ..files.add(http.MultipartFile.fromBytes(
-        'images',
-        imageBytes,
-        filename: 'plant.jpg',
-      ))
-      ..fields['organs'] = organs;
+    final result = await callable.call<Map<String, dynamic>>({
+      'imageBase64': base64Encode(imageBytes),
+      'organs': organs,
+      'lang': lang,
+    });
 
-    final streamed = await request.send().timeout(const Duration(seconds: 30));
-    final response = await http.Response.fromStream(streamed);
+    final payload = result.data;
+    if (payload['notFound'] == true) return _notPlant;
 
-    if (response.statusCode != 200) {
-      if (response.statusCode == 404) {
-        return PlantNetResult(
-          confidence: 0,
-          info: PlantInfo(
-            scientificName: 'Unknown',
-            commonName: 'Not a plant',
-            family: 'N/A',
-            description: 'No plant detected in this image.',
-            isPlant: false,
-          ),
-        );
-      }
-      throw Exception(
-        'PlantNet API error ${response.statusCode}: ${response.body}',
-      );
-    }
-
-    final data = jsonDecode(response.body) as Map<String, dynamic>;
+    final data = Map<String, dynamic>.from(payload['data'] as Map? ?? const {});
     final results = data['results'] as List?;
     if (results == null || results.isEmpty) {
-      return PlantNetResult(
+      return const PlantNetResult(
         confidence: 0,
         info: PlantInfo(
           scientificName: 'Unknown',
@@ -74,9 +63,9 @@ class PlantNetService {
       );
     }
 
-    final top = results.first as Map<String, dynamic>;
-    final species = top['species'] as Map<String, dynamic>;
-    final family = species['family'] as Map<String, dynamic>?;
+    final top = Map<String, dynamic>.from(results.first as Map);
+    final species = Map<String, dynamic>.from(top['species'] as Map);
+    final family = species['family'] as Map?;
     final commonNames = species['commonNames'] as List?;
     final score = (top['score'] as num?)?.toDouble() ?? 0;
 

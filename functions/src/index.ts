@@ -1,3 +1,4 @@
+// deploy-stamp: 1781920197 (force redeploy: rate limit + app check)
 /**
  * Botanica Cloud Functions
  * ------------------------
@@ -16,8 +17,13 @@ import * as admin from "firebase-admin";
 admin.initializeApp();
 setGlobalOptions({ region: "europe-north1" });
 
+// Smart Agent (see functions/src/agent/)
+export { agent, agentConfirm } from "./agent";
+import { enforceRateLimit } from "./ratelimit";
+
 // ─── Secrets (set with: firebase functions:secrets:set GROQ_API_KEY) ─────────
 const GROQ_API_KEY = defineSecret("GROQ_API_KEY");
+const PLANTNET_API_KEY = defineSecret("PLANTNET_API_KEY");
 const GEMINI_API_KEY = defineSecret("GEMINI_API_KEY");
 
 // ─── 1. FCM push on public event approval ────────────────────────────────────
@@ -87,7 +93,8 @@ export const onPublicEventApproved = onDocumentUpdated(
 // banner asking staff to update manually.
 //
 export const scrapeHolidayHours = onSchedule(
-  { schedule: "0 3 1 1,7 *", timeZone: "Europe/Helsinki" },
+  // Cloud Scheduler has no europe-north1; pin to europe-west1 like scrapeOuluEvents.
+  { schedule: "0 3 1 1,7 *", timeZone: "Europe/Helsinki", region: "europe-west1" },
   async () => {
     const doc = admin.firestore().doc("config/holiday_hours");
     try {
@@ -172,11 +179,12 @@ function parseHolidayHours(html: string): { label: string; hours: string }[] {
 // Replaces direct Flutter → Groq calls so the API key never ships in the APK.
 // Client just calls `httpsCallable('groqChat')` with messages + model.
 export const groqChat = onCall(
-  { secrets: [GROQ_API_KEY], cors: true, timeoutSeconds: 60 },
+  { secrets: [GROQ_API_KEY], cors: true, timeoutSeconds: 60, enforceAppCheck: true },
   async (req) => {
     if (!req.auth) {
       throw new HttpsError("unauthenticated", "Sign-in required.");
     }
+    await enforceRateLimit(req.auth.uid, "groqChat");
     const { messages, model, temperature, maxTokens } = (req.data ?? {}) as {
       messages?: { role: string; content: string }[];
       model?: string;
@@ -223,11 +231,13 @@ export const geminiCall = onCall(
     cors: true,
     timeoutSeconds: 60,
     memory: "512MiB", // image payloads can be a few MB
+    enforceAppCheck: true,
   },
   async (req) => {
     if (!req.auth) {
       throw new HttpsError("unauthenticated", "Sign-in required.");
     }
+    await enforceRateLimit(req.auth.uid, "geminiCall");
     const { prompt, model, imageBase64, mimeType } = (req.data ?? {}) as {
       prompt?: string;
       model?: string;
@@ -427,3 +437,53 @@ function stripTags(s: string): string {
     .replace(/\s+/g, " ")
     .trim();
 }
+
+// ─── 6. PlantNet identification proxy ────────────────────────────────────────
+// Keeps the PlantNet API key server-side. The app sends base64 image bytes;
+// we forward to PlantNet with the secret key and return the raw results.
+export const plantnetIdentify = onCall(
+  {
+    secrets: [PLANTNET_API_KEY],
+    cors: true,
+    timeoutSeconds: 40,
+    memory: "512MiB", // image payloads
+    enforceAppCheck: true,
+  },
+  async (req) => {
+    if (!req.auth) {
+      throw new HttpsError("unauthenticated", "Sign-in required.");
+    }
+    await enforceRateLimit(req.auth.uid, "plantnetIdentify");
+    const { imageBase64, organs, lang } = (req.data ?? {}) as {
+      imageBase64?: string;
+      organs?: string;
+      lang?: string;
+    };
+    if (!imageBase64) {
+      throw new HttpsError("invalid-argument", "imageBase64 required.");
+    }
+
+    const url =
+      `https://my-api.plantnet.org/v2/identify/all` +
+      `?api-key=${PLANTNET_API_KEY.value()}&lang=${lang ?? "en"}`;
+
+    // Build multipart form-data with the image + organ hint.
+    const form = new FormData();
+    const bytes = Buffer.from(imageBase64, "base64");
+    form.append("images", new Blob([bytes], { type: "image/jpeg" }), "plant.jpg");
+    form.append("organs", organs ?? "auto");
+
+    const resp = await fetch(url, { method: "POST", body: form as any });
+
+    if (resp.status === 404) {
+      return { notFound: true };
+    }
+    if (!resp.ok) {
+      const body = await resp.text();
+      logger.error(`PlantNet ${resp.status}: ${body.slice(0, 300)}`);
+      throw new HttpsError("internal", `PlantNet error (${resp.status}).`);
+    }
+    const data = (await resp.json()) as unknown;
+    return { data };
+  }
+);

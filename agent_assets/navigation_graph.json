@@ -1,0 +1,70 @@
+{
+  "description": "Unified navigation graph — outdoor sections + greenhouse cells joined by door nodes. Seeded with the REAL section codes from the database. Fill in coordinates (lat/lng outdoor, pixel x/y indoor) and confirm edges with the gardener. Distances in metres are rough — pace them, ±5 m is fine.",
+  "version": "0.1.0",
+  "coordinate_notes": {
+    "outdoor": "lat/lng (WGS84). Use the section polygon centroid from garden.geojson.",
+    "indoor": "px = [x, y] pixel on the floor-plan PNG. floorplan = 'romeo' | 'julia'.",
+    "door": "carries BOTH lat/lng (outdoor side) and floorplan+px (indoor side)."
+  },
+
+  "nodes": [
+    { "id": "gate_main", "type": "poi", "label": "Main entrance", "area": "outdoor", "lat": 65.0596, "lng": 25.4710 },
+    { "id": "cafe", "type": "poi", "label": "Café / Aula", "area": "outdoor", "lat": 65.0597, "lng": 25.4712 },
+    { "id": "wc", "type": "poi", "label": "Restrooms", "area": "outdoor", "lat": 65.0598, "lng": 25.4711 },
+    { "id": "info", "type": "poi", "label": "Info desk", "area": "outdoor", "lat": 65.0597, "lng": 25.4711 },
+
+    { "id": "j_central", "type": "junction", "label": "Central path fork", "area": "outdoor", "lat": 65.0599, "lng": 25.4715 },
+    { "id": "j_north", "type": "junction", "label": "North fork", "area": "outdoor", "lat": 65.0604, "lng": 25.4718 },
+    { "id": "j_field", "type": "junction", "label": "Field-plot fork", "area": "outdoor", "lat": 65.0606, "lng": 25.4724 },
+
+    { "id": "sec_L-O", "type": "section", "code": "L-O", "label": "Medicinal plants (Lääkekasvit)", "area": "outdoor", "theme": "medicinal", "lat": 65.0601, "lng": 25.4740 },
+    { "id": "sec_H-O", "type": "section", "code": "H-O", "label": "Utility plants (Hyötykasvit)", "area": "outdoor", "theme": "edible", "lat": 65.0602, "lng": 25.4738 },
+    { "id": "sec_S-O", "type": "section", "code": "S-O", "label": "Systematic section", "area": "outdoor", "theme": "systematic", "lat": 65.0603, "lng": 25.4730 },
+    { "id": "sec_K-19", "type": "section", "code": "K-19", "label": "Shore meadows (Rantaniityt)", "area": "outdoor", "theme": "arctic", "lat": 65.0608, "lng": 25.4718 },
+    { "id": "sec_K-11", "type": "section", "code": "K-11", "label": "Spruce mire (Korpi)", "area": "outdoor", "theme": "arctic", "lat": 65.0609, "lng": 25.4720 },
+    { "id": "sec_T-1.5.2", "type": "section", "code": "T-1.5.2", "label": "Calcareous meadows", "area": "outdoor", "theme": "arctic", "lat": 65.0607, "lng": 25.4726 },
+    { "id": "sec_X-TA", "type": "section", "code": "X-TA", "label": "Nursery (Taimisto)", "area": "outdoor", "theme": "nursery", "lat": 65.0605, "lng": 25.4722 },
+
+    { "id": "door_romeo", "type": "door", "label": "Romeo greenhouse entrance", "area": "door", "lat": 65.0597, "lng": 25.4709, "floorplan": "romeo", "px": [120, 760] },
+    { "id": "door_julia", "type": "door", "label": "Julia greenhouse entrance", "area": "door", "lat": 65.0596, "lng": 25.4715, "floorplan": "julia", "px": [430, 360] },
+
+    { "id": "cell_G-HA", "type": "section", "code": "G-HA", "label": "Tropical room (Romeo A)", "area": "indoor", "theme": "tropical", "floorplan": "romeo", "px": [380, 200] },
+    { "id": "cell_G-HO", "type": "section", "code": "G-HO", "label": "Greenhouse section (Romeo)", "area": "indoor", "theme": "tropical", "floorplan": "romeo", "px": [560, 540] },
+    { "id": "cell_G-HT", "type": "section", "code": "G-HT", "label": "Terrarium (Romeo)", "area": "indoor", "theme": "tropical", "floorplan": "romeo", "px": [200, 300] },
+    { "id": "cell_G-HD", "type": "section", "code": "G-HD", "label": "Mediterranean (Julia D)", "area": "indoor", "theme": "mediterranean", "floorplan": "julia", "px": [300, 300] },
+    { "id": "cell_G-HF", "type": "section", "code": "G-HF", "label": "Succulents (Julia F)", "area": "indoor", "theme": "succulent", "floorplan": "julia", "px": [300, 540] },
+    { "id": "cell_G-HL", "type": "section", "code": "G-HL", "label": "Propagation room (Lisäyshuone)", "area": "indoor", "theme": "back_of_house", "floorplan": "julia", "px": [180, 200] },
+    { "id": "cell_G-HJ", "type": "section", "code": "G-HJ", "label": "Grow-on (Jatkokasvatus)", "area": "indoor", "theme": "back_of_house", "floorplan": "romeo", "px": [600, 250] },
+    { "id": "cell_G-HZ", "type": "section", "code": "G-HZ", "label": "Other building location", "area": "indoor", "theme": "back_of_house", "floorplan": "romeo", "px": [650, 400] }
+  ],
+
+  "edges": [
+    { "from": "gate_main", "to": "info", "meters": 6, "accessible": true, "kind": "path" },
+    { "from": "info", "to": "cafe", "meters": 8, "accessible": true, "kind": "path" },
+    { "from": "info", "to": "wc", "meters": 10, "accessible": true, "kind": "path" },
+    { "from": "gate_main", "to": "j_central", "meters": 15, "accessible": true, "kind": "path" },
+
+    { "from": "j_central", "to": "j_north", "meters": 60, "accessible": true, "kind": "path" },
+    { "from": "j_central", "to": "sec_L-O", "meters": 45, "accessible": true, "kind": "path" },
+    { "from": "sec_L-O", "to": "sec_H-O", "meters": 18, "accessible": true, "kind": "path" },
+    { "from": "sec_H-O", "to": "sec_S-O", "meters": 25, "accessible": true, "kind": "path" },
+    { "from": "j_north", "to": "j_field", "meters": 40, "accessible": false, "kind": "path" },
+    { "from": "j_north", "to": "sec_K-19", "meters": 30, "accessible": true, "kind": "path" },
+    { "from": "sec_K-19", "to": "sec_K-11", "meters": 12, "accessible": false, "kind": "path" },
+    { "from": "j_field", "to": "sec_T-1.5.2", "meters": 20, "accessible": false, "kind": "path" },
+    { "from": "j_field", "to": "sec_X-TA", "meters": 22, "accessible": true, "kind": "path" },
+
+    { "from": "cafe", "to": "door_romeo", "meters": 10, "accessible": true, "kind": "path" },
+    { "from": "cafe", "to": "door_julia", "meters": 14, "accessible": true, "kind": "path" },
+
+    { "from": "door_romeo", "to": "cell_G-HA", "meters": 8, "accessible": true, "kind": "door" },
+    { "from": "cell_G-HA", "to": "cell_G-HT", "meters": 12, "accessible": true, "kind": "indoor" },
+    { "from": "cell_G-HA", "to": "cell_G-HO", "meters": 15, "accessible": true, "kind": "indoor" },
+    { "from": "cell_G-HO", "to": "cell_G-HJ", "meters": 10, "accessible": true, "kind": "indoor" },
+    { "from": "cell_G-HJ", "to": "cell_G-HZ", "meters": 8, "accessible": true, "kind": "indoor" },
+
+    { "from": "door_julia", "to": "cell_G-HD", "meters": 7, "accessible": true, "kind": "door" },
+    { "from": "cell_G-HD", "to": "cell_G-HF", "meters": 14, "accessible": true, "kind": "indoor" },
+    { "from": "cell_G-HD", "to": "cell_G-HL", "meters": 16, "accessible": true, "kind": "indoor" }
+  ]
+}
