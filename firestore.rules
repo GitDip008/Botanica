@@ -31,19 +31,25 @@ service cloud.firestore {
       ];
     }
 
-    // A normal user may write their own doc, but may only carry isAdmin:true if
-    // their token email is actually an admin — blocks privilege escalation.
-    function adminFieldIsSafe() {
-      return !('isAdmin' in request.resource.data)
-        || request.resource.data.isAdmin == false
-        || isAdmin();
+    // A normal user may write their own doc, but may NOT grant themselves staff
+    // powers. Both the privilege fields the agent trusts — isAdmin and role —
+    // can only be set to an elevated value by an actual admin. This blocks a
+    // visitor from self-promoting to gardener/admin (which would let them write
+    // to the live garden database). A normal user may only set role to 'visitor'.
+    function privFieldsSafe() {
+      return (!('isAdmin' in request.resource.data)
+              || request.resource.data.isAdmin == false
+              || isAdmin())
+        && (!('role' in request.resource.data)
+              || request.resource.data.role == 'visitor'
+              || isAdmin());
     }
 
     // ── Users (profile, tier, badges, fcmToken) + private chat history ──
     match /users/{uid} {
       allow read: if isOwner(uid) || isAdmin();
-      allow create: if isOwner(uid) && adminFieldIsSafe();
-      allow update: if (isOwner(uid) && adminFieldIsSafe()) || isAdmin();
+      allow create: if isOwner(uid) && privFieldsSafe();
+      allow update: if (isOwner(uid) && privFieldsSafe()) || isAdmin();
       allow delete: if isAdmin();
 
       // Chat history is strictly private to its owner.

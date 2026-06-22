@@ -3,6 +3,7 @@ import 'package:flutter_tts/flutter_tts.dart';
 import 'package:provider/provider.dart';
 import 'package:speech_to_text/speech_to_text.dart' as stt;
 import '../../services/agent/agent_service.dart';
+import '../../services/auth_service.dart';
 import '../../services/language_service.dart';
 import '../../services/navigation/nav_graph.dart';
 import '../navigation/navigation_view.dart';
@@ -29,6 +30,7 @@ class _AgentScreenState extends State<AgentScreen> {
   final _input = TextEditingController();
   final _scroll = ScrollController();
   final List<_Message> _messages = [];
+  List<String> _suggestions = const [];
   bool _busy = false;
 
   // ── Voice (Phase 3) ──
@@ -135,13 +137,36 @@ class _AgentScreenState extends State<AgentScreen> {
   Future<void> _send() async {
     final text = _input.text.trim();
     if (text.isEmpty || _busy) return;
+    _input.clear();
+    await _sendTurn(text);
+  }
+
+  /// Last 15 user/agent text turns, oldest→newest, for the agent's memory.
+  List<Map<String, String>> _history() {
+    final turns = _messages
+        .where((m) => m.kind == _Kind.user || m.kind == _Kind.agent)
+        .where((m) => (m.text ?? '').trim().isNotEmpty)
+        .map((m) => {
+              'role': m.kind == _Kind.user ? 'user' : 'assistant',
+              'content': m.text!.trim(),
+            })
+        .toList();
+    return turns.length > 15 ? turns.sublist(turns.length - 15) : turns;
+  }
+
+  /// One turn. [context] is set when the user tapped a disambiguation button
+  /// (pins the exact plant). Used by both typing and button taps.
+  Future<void> _sendTurn(String text, {AgentContext? context}) async {
+    if (text.isEmpty || _busy) return;
     final wasVoice = _lastInputWasVoice;
     _lastInputWasVoice = false;
     final correction = _editingPending;
     _editingPending = null;
-    _input.clear();
+
+    final history = _history(); // capture BEFORE adding this user turn
     setState(() {
       _messages.add(_Message.user(text));
+      _suggestions = const []; // clear stale quick-replies
       _busy = true;
     });
     _scrollToEnd();
@@ -149,11 +174,13 @@ class _AgentScreenState extends State<AgentScreen> {
     try {
       // .name gives the stable 'en'/'fi'/'sv' — .code has a legacy quirk
       // where en's code is the string 'English'.
-      final lang = context.read<LanguageService>().current.name;
+      final lang = LanguageService.instance.current.name;
       final result = await AgentService.instance.send(
         text: text,
         language: lang,
+        context: context,
         correctionOf: correction,
+        history: history,
       );
       setState(() {
         // A corrected draft replaces the old card (server already cancelled
@@ -164,9 +191,14 @@ class _AgentScreenState extends State<AgentScreen> {
               m.pending?.pendingId == correction.pendingId);
         }
         _messages.add(_Message.agent(result.reply));
+        if (result.clarification != null &&
+            result.clarification!.options.isNotEmpty) {
+          _messages.add(_Message.clarify(result.clarification!));
+        }
         for (final p in result.pendingActions) {
           _messages.add(_Message.pending(p));
         }
+        _suggestions = result.suggestions;
       });
       if (wasVoice && result.reply.isNotEmpty) {
         _speak(result.reply);
@@ -177,6 +209,37 @@ class _AgentScreenState extends State<AgentScreen> {
       if (mounted) setState(() => _busy = false);
       _scrollToEnd();
     }
+  }
+
+  /// Starter quick-replies shown on the empty screen — role-aware + localized.
+  List<String> _starterSuggestions() {
+    final lang = LanguageService.instance.current.name;
+    final staff = AuthService.instance.currentUser?.isAdmin ?? false;
+    String t(String en, String fi, String sv) =>
+        lang == 'fi' ? fi : (lang == 'sv' ? sv : en);
+    if (staff) {
+      return [
+        t('What needs attention?', 'Mikä tarvitsee huomiota?', 'Vad behöver uppmärksamhet?'),
+        t('Find a plant', 'Etsi kasvi', 'Hitta en växt'),
+        t('Record an action', 'Kirjaa toimenpide', 'Registrera en åtgärd'),
+      ];
+    }
+    return [
+      t('Find a plant', 'Etsi kasvi', 'Hitta en växt'),
+      t('Plan a 30-minute tour', 'Suunnittele 30 min kierros', 'Planera en 30-min rundtur'),
+      t("What's interesting to see?", 'Mitä kannattaa nähdä?', 'Vad är intressant att se?'),
+    ];
+  }
+
+  /// User tapped a clarification button.
+  void _onClarifyOption(ClarOption opt) {
+    if (_busy) return;
+    _sendTurn(
+      opt.sendText,
+      context: opt.hankintaID != null
+          ? AgentContext(scannedHankintaID: opt.hankintaID)
+          : null,
+    );
   }
 
   /// DEMO: build a real door-to-door route (main gate → tropical greenhouse
@@ -301,7 +364,10 @@ class _AgentScreenState extends State<AgentScreen> {
           children: [
             Expanded(
               child: _messages.isEmpty
-                  ? const _EmptyHint()
+                  ? _EmptyHint(
+                      suggestions: _starterSuggestions(),
+                      onSuggestion: _sendTurn,
+                    )
                   : ListView.builder(
                       controller: _scroll,
                       padding: const EdgeInsets.all(16),
@@ -311,6 +377,7 @@ class _AgentScreenState extends State<AgentScreen> {
                         onConfirm: _confirmPending,
                         onEdit: _editPending,
                         onCancel: _cancelPending,
+                        onClarifyOption: _onClarifyOption,
                       ),
                     ),
             ),
@@ -321,6 +388,34 @@ class _AgentScreenState extends State<AgentScreen> {
                   backgroundColor: Color(0xFF111F16),
                   color: Color(0xFF66BB6A),
                   minHeight: 2,
+                ),
+              ),
+            if (_suggestions.isNotEmpty && !_busy)
+              SizedBox(
+                height: 52,
+                child: ListView(
+                  scrollDirection: Axis.horizontal,
+                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                  children: [
+                    for (final s in _suggestions)
+                      Padding(
+                        padding: const EdgeInsets.only(right: 8),
+                        child: ActionChip(
+                          label: Text(s),
+                          labelStyle: const TextStyle(
+                              color: Color(0xFFE8F5E9), fontSize: 12.5),
+                          backgroundColor: const Color(0xFF173024),
+                          side: const BorderSide(color: Color(0xFF2E7D32)),
+                          materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                          visualDensity: VisualDensity.compact,
+                          onPressed: () {
+                            final text = s;
+                            setState(() => _suggestions = const []);
+                            _sendTurn(text);
+                          },
+                        ),
+                      ),
+                  ],
                 ),
               ),
             _InputBar(
@@ -341,14 +436,15 @@ class _AgentScreenState extends State<AgentScreen> {
 
 // ─── Internal message model ───────────────────────────────────────────────
 
-enum _Kind { user, agent, pending, confirmed }
+enum _Kind { user, agent, pending, confirmed, clarify }
 
 class _Message {
   final _Kind kind;
   final String? text;
   final PendingAction? pending;
+  final Clarification? clarification;
 
-  _Message._({required this.kind, this.text, this.pending});
+  _Message._({required this.kind, this.text, this.pending, this.clarification});
 
   factory _Message.user(String t) => _Message._(kind: _Kind.user, text: t);
   factory _Message.agent(String t) => _Message._(kind: _Kind.agent, text: t);
@@ -356,37 +452,68 @@ class _Message {
       _Message._(kind: _Kind.pending, pending: p);
   factory _Message.confirmed(PendingAction p) =>
       _Message._(kind: _Kind.confirmed, pending: p);
+  factory _Message.clarify(Clarification c) =>
+      _Message._(kind: _Kind.clarify, clarification: c);
 }
 
 // ─── UI parts ─────────────────────────────────────────────────────────────
 
 class _EmptyHint extends StatelessWidget {
-  const _EmptyHint();
+  final List<String> suggestions;
+  final ValueChanged<String> onSuggestion;
+
+  const _EmptyHint({required this.suggestions, required this.onSuggestion});
 
   @override
   Widget build(BuildContext context) {
-    return Center(
-      child: Padding(
-        padding: const EdgeInsets.all(32),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: const [
-            Icon(Icons.eco_rounded, color: Color(0xFF66BB6A), size: 64),
-            SizedBox(height: 16),
-            Text(
-              'Ask me about a plant, log an update, or plan a tour.',
-              textAlign: TextAlign.center,
-              style: TextStyle(color: Color(0xFFE8F5E9), fontSize: 16),
+    // Centred when there's room, scrollable when the keyboard shrinks the area
+    // (prevents the "bottom overflowed by N pixels" banner).
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        return SingleChildScrollView(
+          child: ConstrainedBox(
+            constraints: BoxConstraints(minHeight: constraints.maxHeight),
+            child: Center(
+              child: Padding(
+                padding: const EdgeInsets.all(24),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    const Icon(Icons.eco_rounded,
+                        color: Color(0xFF66BB6A), size: 56),
+                    const SizedBox(height: 16),
+                    const Text(
+                      'Ask me about a plant, log an update, or plan a tour.',
+                      textAlign: TextAlign.center,
+                      style: TextStyle(color: Color(0xFFE8F5E9), fontSize: 16),
+                    ),
+                    const SizedBox(height: 20),
+                    Wrap(
+                      alignment: WrapAlignment.center,
+                      spacing: 8,
+                      runSpacing: 8,
+                      children: [
+                        for (final s in suggestions)
+                          ActionChip(
+                            label: Text(s),
+                            labelStyle: const TextStyle(
+                                color: Color(0xFFE8F5E9), fontSize: 13),
+                            backgroundColor: const Color(0xFF173024),
+                            side: const BorderSide(color: Color(0xFF2E7D32)),
+                            materialTapTargetSize:
+                                MaterialTapTargetSize.shrinkWrap,
+                            visualDensity: VisualDensity.compact,
+                            onPressed: () => onSuggestion(s),
+                          ),
+                      ],
+                    ),
+                  ],
+                ),
+              ),
             ),
-            SizedBox(height: 8),
-            Text(
-              'Try:  "Fertilized the Valerian today"\n     "What is the Coffee plant?"\n     "I have 30 minutes, what should I see?"',
-              textAlign: TextAlign.center,
-              style: TextStyle(color: Color(0xFF81C784), fontSize: 12, height: 1.5),
-            ),
-          ],
-        ),
-      ),
+          ),
+        );
+      },
     );
   }
 }
@@ -396,12 +523,14 @@ class _MessageBubble extends StatelessWidget {
   final ValueChanged<PendingAction> onConfirm;
   final ValueChanged<PendingAction> onEdit;
   final ValueChanged<PendingAction> onCancel;
+  final ValueChanged<ClarOption> onClarifyOption;
 
   const _MessageBubble({
     required this.message,
     required this.onConfirm,
     required this.onEdit,
     required this.onCancel,
+    required this.onClarifyOption,
   });
 
   @override
@@ -420,7 +549,68 @@ class _MessageBubble extends StatelessWidget {
         );
       case _Kind.confirmed:
         return _ConfirmedCard(action: message.pending!);
+      case _Kind.clarify:
+        return _ClarifyCard(
+          clarification: message.clarification!,
+          onSelect: onClarifyOption,
+        );
     }
+  }
+}
+
+/// "Which plant?" / "Did you mean?" — renders the options as tappable chips
+/// plus a hint that the user can still type the correct name.
+class _ClarifyCard extends StatelessWidget {
+  final Clarification clarification;
+  final ValueChanged<ClarOption> onSelect;
+
+  const _ClarifyCard({required this.clarification, required this.onSelect});
+
+  @override
+  Widget build(BuildContext context) {
+    return Align(
+      alignment: Alignment.centerLeft,
+      child: Container(
+        margin: const EdgeInsets.only(bottom: 12, right: 40),
+        padding: const EdgeInsets.all(12),
+        decoration: BoxDecoration(
+          color: const Color(0xFF13251A),
+          borderRadius: BorderRadius.circular(14),
+          border: Border.all(color: const Color(0xFF2E7D32)),
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Wrap(
+              spacing: 8,
+              runSpacing: 8,
+              children: clarification.options
+                  .map((o) => ActionChip(
+                        label: Text(o.label),
+                        labelStyle: const TextStyle(
+                            color: Color(0xFFE8F5E9), fontSize: 13),
+                        backgroundColor: const Color(0xFF1E3D24),
+                        side: const BorderSide(color: Color(0xFF66BB6A)),
+                        onPressed: () => onSelect(o),
+                      ))
+                  .toList(),
+            ),
+            if (clarification.allowFreeText) ...[
+              const SizedBox(height: 8),
+              Text(
+                clarification.kind == 'did_you_mean'
+                    ? '…or type the correct name.'
+                    : '…or type the section / plant id.',
+                style: const TextStyle(
+                    color: Color(0xFF81C784),
+                    fontSize: 11,
+                    fontStyle: FontStyle.italic),
+              ),
+            ],
+          ],
+        ),
+      ),
+    );
   }
 }
 
@@ -528,10 +718,10 @@ class _PendingCard extends StatelessWidget {
             ...action.changes.map((c) => _ChangeRow(change: c)),
           ],
 
-          // ── Exact SQL (read-only) ──
+          // ── Exact database operation (read-only) ──
           if (action.sqlDisplay != null) ...[
             const SizedBox(height: 12),
-            const Text('SQL TO RUN',
+            const Text('DATABASE OPERATION',
                 style: TextStyle(
                     color: Color(0xFF64B5F6),
                     fontSize: 10,

@@ -123,6 +123,8 @@ class _UserTile extends StatelessWidget {
     final name = (user['displayName'] as String? ?? '').trim();
     final email = user['email'] as String? ?? '';
     final isAdmin = user['isAdmin'] as bool? ?? false;
+    final isGardener = (user['role'] as String?) == 'gardener';
+    final uid = user['_id'] as String? ?? '';
     final isPremium = (user['tier'] as String?) == 'premium';
     final joined = DateTime.tryParse(user['joinedAt'] as String? ?? '');
     final joinedStr = joined == null
@@ -174,6 +176,8 @@ class _UserTile extends StatelessWidget {
                   ),
                   if (isAdmin)
                     _badge(s.adminBadge, const Color(0xFFFFD54F))
+                  else if (isGardener)
+                    _badge(s.gardenerBadge, const Color(0xFF66BB6A))
                   else if (isPremium)
                     _badge(s.premium, const Color(0xFFB8860B))
                   else
@@ -205,12 +209,68 @@ class _UserTile extends StatelessWidget {
                             color: Color(0xFF66BB6A), fontSize: 11)),
                   ]),
                 ],
+                // Gardener access control. Admins are already full staff, so the
+                // toggle is shown only for non-admin accounts.
+                if (!isAdmin && uid.isNotEmpty) ...[
+                  const SizedBox(height: 10),
+                  Align(
+                    alignment: Alignment.centerLeft,
+                    child: OutlinedButton.icon(
+                      icon: Icon(
+                        isGardener
+                            ? Icons.person_remove_rounded
+                            : Icons.yard_rounded,
+                        size: 15,
+                      ),
+                      label: Text(
+                        isGardener ? s.removeGardener : s.makeGardener,
+                        style: const TextStyle(fontSize: 12),
+                      ),
+                      style: OutlinedButton.styleFrom(
+                        foregroundColor: isGardener
+                            ? const Color(0xFFEF9A9A)
+                            : const Color(0xFF66BB6A),
+                        side: BorderSide(
+                          color: isGardener
+                              ? const Color(0xFF7A3A3A)
+                              : const Color(0xFF2E7D32),
+                        ),
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 12, vertical: 4),
+                        minimumSize: const Size(0, 34),
+                      ),
+                      onPressed: () => _setGardener(context, uid, !isGardener),
+                    ),
+                  ),
+                ],
               ],
             ),
           ),
         ],
       ),
     );
+  }
+
+  /// Writes users/{uid}.role. Firestore rules only allow an admin to set a
+  /// non-visitor role, so this succeeds only from an allow-listed admin account.
+  Future<void> _setGardener(
+      BuildContext context, String uid, bool make) async {
+    final messenger = ScaffoldMessenger.of(context);
+    try {
+      await FirebaseFirestore.instance
+          .collection('users')
+          .doc(uid)
+          .set({'role': make ? 'gardener' : 'visitor'}, SetOptions(merge: true));
+      messenger.showSnackBar(SnackBar(
+        content: Text(make ? s.gardenerPromoted : s.gardenerRemoved),
+        backgroundColor: const Color(0xFF1E3D24),
+      ));
+    } catch (e) {
+      messenger.showSnackBar(SnackBar(
+        content: Text('${s.roleChangeFailed}: $e'),
+        backgroundColor: const Color(0xFF4A1F1F),
+      ));
+    }
   }
 
   Widget _badge(String text, Color color) {

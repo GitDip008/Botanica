@@ -1,4 +1,4 @@
-// deploy-stamp: 1781920197 (force redeploy: rate limit + app check)
+// deploy-stamp: 1781990523 (app check unenforced for sideloaded/GitHub distribution)
 /**
  * Botanica Cloud Functions
  * ------------------------
@@ -179,7 +179,7 @@ function parseHolidayHours(html: string): { label: string; hours: string }[] {
 // Replaces direct Flutter → Groq calls so the API key never ships in the APK.
 // Client just calls `httpsCallable('groqChat')` with messages + model.
 export const groqChat = onCall(
-  { secrets: [GROQ_API_KEY], cors: true, timeoutSeconds: 60, enforceAppCheck: true },
+  { secrets: [GROQ_API_KEY], cors: true, timeoutSeconds: 60, enforceAppCheck: false },
   async (req) => {
     if (!req.auth) {
       throw new HttpsError("unauthenticated", "Sign-in required.");
@@ -231,7 +231,7 @@ export const geminiCall = onCall(
     cors: true,
     timeoutSeconds: 60,
     memory: "512MiB", // image payloads can be a few MB
-    enforceAppCheck: true,
+    enforceAppCheck: false,
   },
   async (req) => {
     if (!req.auth) {
@@ -447,7 +447,7 @@ export const plantnetIdentify = onCall(
     cors: true,
     timeoutSeconds: 40,
     memory: "512MiB", // image payloads
-    enforceAppCheck: true,
+    enforceAppCheck: false,
   },
   async (req) => {
     if (!req.auth) {

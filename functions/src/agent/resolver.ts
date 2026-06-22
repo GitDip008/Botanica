@@ -32,19 +32,27 @@ export interface PlantCandidate {
 export async function resolveCandidates(
   context?: LocationContext
 ): Promise<PlantCandidate[]> {
-  if (context?.scanned_hankintaID) {
-    const exact = listCandidates({ hankintaID: context.scanned_hankintaID });
-    if (exact.length) return exact;
+  // Each resolver step is wrapped: T's API is flaky, and a candidate-resolution
+  // failure must NEVER crash the turn — we just fall back to an empty set and
+  // let the LLM resolve the plant by name via find_plant.
+  try {
+    if (context?.scanned_hankintaID) {
+      const exact = await listCandidates({ hankintaID: context.scanned_hankintaID });
+      if (exact.length) return exact;
+    }
+    // Indoor cells ARE section codes in this garden (G-HA, G-HD, ...).
+    const section = context?.indoor_cell_label ?? context?.outdoor_section_code;
+    if (section) {
+      const inSection = await listCandidates({ section_code: section });
+      if (inSection.length) return dedupeByTaxon(inSection);
+    }
+  } catch (_) {
+    // fall through to empty
   }
-  // Indoor cells ARE section codes in this garden (G-HA, G-HD, ...).
-  const section = context?.indoor_cell_label ?? context?.outdoor_section_code;
-  if (section) {
-    const inSection = listCandidates({ section_code: section });
-    if (inSection.length) return inSection;
-  }
-  // No location signal: test DB is small enough to offer one candidate per
-  // taxon. (Production swap: require a signal or fall back to name search.)
-  return dedupeByTaxon(listCandidates({ limit: 50 }));
+  // No location/scan signal → no pre-resolved candidates. The LLM uses
+  // find_plant to look up the plant by name (production DB is far too large to
+  // slice generically, and doing so cost 20+ API calls per turn).
+  return [];
 }
 
 function dedupeByTaxon(all: PlantCandidate[]): PlantCandidate[] {

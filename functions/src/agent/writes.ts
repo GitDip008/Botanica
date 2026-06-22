@@ -1,26 +1,82 @@
 /**
- * Writes ledger + LIVE EXECUTOR.
+ * Writes ledger + LIVE EXECUTOR (REST).
  *
- * On confirm we ACTUALLY apply the change to the live database (SQLite in
- * Cloud Storage today; T's MySQL later) through the safety engine, then record
- * it in the Firestore ledger (`agent_writes`) for audit + undo. Every write:
- *   - runs a fixed, parameterized statement (no LLM-generated SQL),
- *   - is bounded to affect exactly 1 row (row-count guard inside a tx),
- *   - is reversible via a guarded single-row delete (undo).
+ * On confirm we ACTUALLY apply the change to T's production database through
+ * the REST API, then record it in the Firestore ledger (`agent_writes`) for
+ * audit + undo. Every write:
+ *   - sends a fixed, validated request built by the safety engine (no
+ *     LLM-generated SQL/JSON shapes),
+ *   - targets exactly one resource (POST one row / PUT one id),
+ *   - is reversible: inserts via a guarded single-row DELETE, status updates by
+ *     restoring the previous value with a PUT.
  *
- * Pending actions live in `agent_pending/{pending_id}` between the LLM turn
- * and the user's Save/Cancel tap, and carry the pre-built WritePlan.
+ * Pending actions live in `agent_pending/{pending_id}` between the LLM turn and
+ * the user's Save/Cancel tap, carrying the pre-built WritePlan.
  */
 
 import * as admin from "firebase-admin";
 import { logger } from "firebase-functions/v2";
 import type { PendingAction } from "./dispatcher";
 import type { HistoryEntry } from "./dal";
-import { executePlan, undoInsert, type WritePlan } from "./safety";
-import { withWriteDb } from "./live_db";
+import type { WritePlan } from "./safety";
+import { apiPost, apiPut, apiGetOne, apiDelete, GardenApiError } from "./garden_api";
 
 const PENDING = "agent_pending";
 const LEDGER = "agent_writes";
+const INTENTS = "agent_intents";
+
+// ─── Disambiguation intent (carries a write across the "which plant?" tap) ───
+// When a write names a plant with several instances, we stash the action here.
+// When the user taps a plant chip, we complete THAT exact action deterministically
+// — no LLM, no lost context.
+export async function storeIntent(
+  uid: string,
+  intent: { tool: string; args: Record<string, unknown> }
+): Promise<void> {
+  await admin.firestore().collection(INTENTS).doc(uid).set({
+    tool: intent.tool,
+    args: intent.args,
+    ts: Date.now(),
+  });
+}
+
+export async function loadIntent(
+  uid: string
+): Promise<{ tool: string; args: Record<string, unknown>; ts: number } | null> {
+  const s = await admin.firestore().collection(INTENTS).doc(uid).get();
+  if (!s.exists) return null;
+  return s.data() as { tool: string; args: Record<string, unknown>; ts: number };
+}
+
+export async function clearIntent(uid: string): Promise<void> {
+  await admin.firestore().collection(INTENTS).doc(uid).delete().catch(() => {});
+}
+
+interface ExecResult {
+  ok: boolean;
+  insertedId?: number | null;
+  message: string;
+}
+
+// ─── Live executor (REST) ───────────────────────────────────────────────────
+
+async function executePlanRest(plan: WritePlan): Promise<ExecResult> {
+  // UPDATE: the API's PUT needs the whole row, so read-modify-write.
+  if (plan.readModifyWrite) {
+    const current = await apiGetOne<Record<string, unknown>>(plan.readModifyWrite.getPath);
+    if (!current) return { ok: false, message: "The row to update no longer exists." };
+    const merged = { ...current, ...plan.rest.body };
+    await apiPut(plan.rest.path, merged);
+    return { ok: true, message: "Updated." };
+  }
+
+  // INSERT: POST returns the created row (with its auto PK).
+  const created = await apiPost<Record<string, any>>(plan.rest.path, plan.rest.body);
+  const pkField =
+    plan.undo?.kind === "delete" ? plan.undo.pkField : undefined;
+  const insertedId = pkField ? (created?.[pkField] ?? null) : null;
+  return { ok: true, insertedId, message: "Created." };
+}
 
 // ─── Pending lifecycle ──────────────────────────────────────────────────────
 
@@ -47,21 +103,24 @@ export async function confirmPending(
   if (data.status !== "pending") return { ok: false, message: `Already ${data.status}.` };
 
   const plan = (data.params as any)?._plan as WritePlan | undefined;
-  if (!plan || !plan.statement) {
+  if (!plan || !plan.rest) {
     return { ok: false, message: "No safe write plan attached — cannot apply." };
   }
 
-  // APPLY to the live DB through the safety executor (row-count guarded).
-  let exec;
+  // APPLY to the live database via the REST executor.
+  let exec: ExecResult;
   try {
-    exec = await withWriteDb((db) => executePlan(db, plan));
+    exec = await executePlanRest(plan);
   } catch (e) {
-    logger.error("agent.live_write_failed", { pendingId, err: String(e) });
-    return { ok: false, message: `Could not reach the database: ${String(e)}` };
+    const status = e instanceof GardenApiError ? e.status : 0;
+    logger.error("agent.live_write_failed", { pendingId, status, err: String(e) });
+    const msg =
+      status === 403
+        ? "The database rejected the write (permission denied for this account)."
+        : `Could not reach the database: ${String(e)}`;
+    return { ok: false, message: msg };
   }
-  if (!exec.ok) {
-    return { ok: false, message: exec.message };
-  }
+  if (!exec.ok) return { ok: false, message: exec.message };
 
   // Record in the ledger for audit + undo.
   await admin.firestore().collection(LEDGER).add({
@@ -71,21 +130,17 @@ export async function confirmPending(
     preview: data.preview,
     table: plan.table,
     operation: plan.operation,
-    sql_statement: plan.statement,
-    sql_params: plan.params,
-    sql_display: plan.displaySql,
+    rest_method: plan.rest.method,
+    rest_path: plan.rest.path,
+    rest_body: plan.rest.body,
+    undo: plan.undo ?? null,
     hankintaID: (data.params as any).hankintaID ?? null,
     inserted_pk: exec.insertedId ?? null,
     applied_to_live_db: true,
     confirmed_at: admin.firestore.FieldValue.serverTimestamp(),
   });
   await ref.update({ status: "confirmed" });
-  logger.info("agent.write_applied", {
-    pendingId,
-    tool: data.tool,
-    table: plan.table,
-    rows: exec.changedRows,
-  });
+  logger.info("agent.write_applied", { pendingId, tool: data.tool, table: plan.table });
   return { ok: true, message: "Saved to the database." };
 }
 
@@ -97,16 +152,11 @@ export async function cancelPending(uid: string, pendingId: string): Promise<voi
   }
 }
 
-/** Undo: reverses the most recent applied write by deleting the exact row we
- *  inserted (guarded single-row delete). INSERT-only for now — status updates
- *  aren't auto-reverted because we don't keep the prior value yet. */
+/** Undo: reverses the most recent applied write.
+ *   - insert  → guarded single-row DELETE (needs delete permission)
+ *   - update  → restore the previous field value with a PUT */
 export async function undoLast(uid: string): Promise<{ ok: boolean; message: string }> {
-  const q = await admin
-    .firestore()
-    .collection(LEDGER)
-    .where("uid", "==", uid)
-    .limit(100)
-    .get();
+  const q = await admin.firestore().collection(LEDGER).where("uid", "==", uid).limit(100).get();
   const docs = q.docs
     .filter((d) => d.data().revoked !== true)
     .sort((a, b) => {
@@ -117,20 +167,34 @@ export async function undoLast(uid: string): Promise<{ ok: boolean; message: str
   if (docs.length === 0) return { ok: false, message: "Nothing to undo." };
   const doc = docs[0];
   const x = doc.data();
+  const undo = x.undo as WritePlan["undo"] | undefined;
 
-  if (x.operation === "insert" && x.inserted_pk) {
-    const table = x.table as "toimenpide" | "tarkastusmerkinta";
-    const pkCol =
-      table === "toimenpide" ? "toimenpide_nro" : "tarkastusnro";
-    try {
-      const res = await withWriteDb((db) =>
-        undoInsert(db, table, pkCol as any, Number(x.inserted_pk))
-      );
-      if (!res.ok) return { ok: false, message: res.message };
-    } catch (e) {
-      return { ok: false, message: `Could not reach the database: ${String(e)}` };
+  try {
+    if (undo?.kind === "delete") {
+      if (!x.inserted_pk) {
+        return { ok: false, message: "Can't undo: the created row's id wasn't recorded." };
+      }
+      await apiDelete(undo.pathTemplate.replace("{id}", String(x.inserted_pk)));
+    } else if (undo?.kind === "restore") {
+      const current = await apiGetOne<Record<string, unknown>>(undo.path);
+      if (current) {
+        await apiPut(undo.path, { ...current, [undo.field]: undo.previous });
+      }
+    } else {
+      return { ok: false, message: "This change can't be undone automatically." };
     }
+  } catch (e) {
+    const status = e instanceof GardenApiError ? e.status : 0;
+    if (status === 403) {
+      return {
+        ok: false,
+        message:
+          "The database account can't delete rows. Ask T for delete permission, or remove it manually.",
+      };
+    }
+    return { ok: false, message: `Could not reach the database: ${String(e)}` };
   }
+
   await doc.ref.update({
     revoked: true,
     revoked_at: admin.firestore.FieldValue.serverTimestamp(),
@@ -170,7 +234,7 @@ export async function ledgerHistory(hankintaID: number): Promise<HistoryEntry[]>
       const x = d.data();
       return {
         kind: x.tool === "record_action" ? ("action" as const) : ("inspection" as const),
-        date: (x.sql_params?.[x.sql_params.length - 1] as string) ?? "",
+        date: (x.rest_body?.uus_pvm ?? x.rest_body?.uus_tarkastuspvm ?? "") as string,
         detail: x.preview as string,
         source: "agent" as const,
       };

@@ -594,6 +594,38 @@ class AppStrings {
         AppLanguage.sv: 'ADMIN',
       });
 
+  // ── Gardener access control (admin user list) ─────────────────────────
+  String get gardenerBadge => _pick({
+        AppLanguage.en: 'GARDENER',
+        AppLanguage.fi: 'PUUTARHURI',
+        AppLanguage.sv: 'TRÄDGÅRDSMÄSTARE',
+      });
+  String get makeGardener => _pick({
+        AppLanguage.en: 'Make gardener',
+        AppLanguage.fi: 'Tee puutarhuriksi',
+        AppLanguage.sv: 'Gör till trädgårdsmästare',
+      });
+  String get removeGardener => _pick({
+        AppLanguage.en: 'Remove gardener access',
+        AppLanguage.fi: 'Poista puutarhurioikeudet',
+        AppLanguage.sv: 'Ta bort trädgårdsmästaråtkomst',
+      });
+  String get gardenerPromoted => _pick({
+        AppLanguage.en: 'Promoted to gardener — can now update plant records.',
+        AppLanguage.fi: 'Ylennetty puutarhuriksi — voi nyt päivittää kasvitietoja.',
+        AppLanguage.sv: 'Befordrad till trädgårdsmästare — kan nu uppdatera växtuppgifter.',
+      });
+  String get gardenerRemoved => _pick({
+        AppLanguage.en: 'Gardener access removed.',
+        AppLanguage.fi: 'Puutarhurioikeudet poistettu.',
+        AppLanguage.sv: 'Trädgårdsmästaråtkomst borttagen.',
+      });
+  String get roleChangeFailed => _pick({
+        AppLanguage.en: 'Could not change role',
+        AppLanguage.fi: 'Roolin vaihto epäonnistui',
+        AppLanguage.sv: 'Kunde inte ändra roll',
+      });
+
   // ── Feature usage chart ───────────────────────────────────────────────
   String get totalUses => _pick({
         AppLanguage.en: 'Total uses',

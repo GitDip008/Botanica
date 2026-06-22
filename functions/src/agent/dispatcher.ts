@@ -15,7 +15,7 @@ import type { Role } from "./roles";
 import type { PlantCandidate } from "./resolver";
 import { llmTurn, composeAnswer, type LlmKeys, type LlmToolCall } from "./llm";
 import * as dal from "./dal";
-import { storePending, ledgerHistory } from "./writes";
+import { storePending, ledgerHistory, storeIntent, loadIntent, clearIntent } from "./writes";
 import { buildPlan, SafetyError, type WritePlan, type PlanChange } from "./safety";
 
 export interface DispatchInput {
@@ -27,12 +27,36 @@ export interface DispatchInput {
   keys: LlmKeys;
   /** Legacy inspector initials of the signed-in user (tarkastaja). */
   inspectorCode?: string;
+  /** If the user scanned a label, the exact plant is known and unambiguous. */
+  scannedHankintaID?: number;
+  /** Recent conversation turns (oldest→newest) so the LLM keeps context. */
+  history?: { role: "user" | "assistant"; content: string }[];
+}
+
+/** A tappable choice rendered as a button in the app. */
+export interface ClarOption {
+  label: string;
+  /** Text sent back as the next user message when tapped. */
+  send_text: string;
+  /** When set, tapping pins this exact plant (sent as scanned context). */
+  hankintaID?: number;
+}
+
+export interface Clarification {
+  kind: "disambiguation" | "did_you_mean";
+  question: string;
+  options: ClarOption[];
+  /** Whether to still allow free typing (always true here). */
+  allow_free_text: boolean;
 }
 
 export interface DispatchResult {
   reply: string;
   data?: unknown;
   pending_actions?: PendingAction[];
+  clarification?: Clarification;
+  /** Tap-to-send follow-up prompts, contextual to this turn. */
+  suggestions?: string[];
   tool_calls: ToolCallRecord[];
   llm_model: string;
 }
@@ -64,17 +88,49 @@ const GARDENER_ONLY = new Set([
 ]);
 
 export async function dispatch(input: DispatchInput): Promise<DispatchResult> {
+  // ── Deterministic disambiguation completion ──
+  // The user tapped a plant chip (scannedHankintaID set) and we have a stashed
+  // write intent → complete THAT exact action on the chosen plant, no LLM, no
+  // lost context. This is what makes the chip→card chain reliable.
+  if (input.scannedHankintaID && input.role !== "visitor") {
+    try {
+      const intent = await loadIntent(input.uid);
+      if (intent && Date.now() - intent.ts < 300_000) {
+        await clearIntent(input.uid);
+        const outcome = await buildPendingAction(
+          { name: intent.tool, arguments: intent.args },
+          input // input.scannedHankintaID pins the plant
+        );
+        if (outcome.kind === "pending") {
+          await storePending(input.uid, outcome.pending);
+          return {
+            reply: outcome.pending.preview,
+            pending_actions: [outcome.pending],
+            tool_calls: [{ tool: intent.tool, params: intent.args, result: "pending" }],
+            llm_model: "deterministic",
+          };
+        }
+      }
+    } catch (e) {
+      // Flaky DB during completion → fall through to the normal LLM path.
+      logger.warn("agent.deterministic_complete_failed", { err: String(e) });
+    }
+  }
+
   const turn = await llmTurn({
     keys: input.keys,
     role: input.role,
     language: input.language,
     text: input.text,
     candidates: input.candidates,
+    history: input.history?.slice(-15),
   });
 
   const pending: PendingAction[] = [];
   const records: ToolCallRecord[] = [];
   const readResults: { tool: string; result: unknown }[] = [];
+  let clarification: Clarification | undefined;
+  let dbSlow = false;
   let data: unknown;
 
   for (const call of turn.tool_calls) {
@@ -85,11 +141,25 @@ export async function dispatch(input: DispatchInput): Promise<DispatchResult> {
     }
 
     if (WRITE_TOOLS.has(call.name)) {
-      const p = buildPendingAction(call, input);
-      if (p) {
-        await storePending(input.uid, p); // survives until Save/Cancel tap
-        pending.push(p);
+      let outcome: PendingOutcome;
+      try {
+        outcome = await buildPendingAction(call, input);
+      } catch (e) {
+        // A slow/flaky garden API must not crash the turn — degrade gracefully.
+        logger.error("agent.build_pending_failed", { tool: call.name, err: String(e) });
+        dbSlow = true;
+        records.push({ tool: call.name, params: call.arguments, result: "unknown_tool" });
+        continue;
+      }
+      if (outcome.kind === "pending") {
+        await storePending(input.uid, outcome.pending); // survives until Save/Cancel tap
+        pending.push(outcome.pending);
         records.push({ tool: call.name, params: call.arguments, result: "pending" });
+      } else if (outcome.kind === "clarify") {
+        clarification = clarification ?? outcome.clarification;
+        records.push({ tool: call.name, params: call.arguments, result: "denied" });
+      } else {
+        records.push({ tool: call.name, params: call.arguments, result: "unknown_tool" });
       }
       continue;
     }
@@ -107,11 +177,39 @@ export async function dispatch(input: DispatchInput): Promise<DispatchResult> {
     });
   }
 
+  // find_plant that matched MANY physical plants → disambiguation chips so the
+  // user picks the exact one (tapping pins it for the next turn).
+  if (!clarification) {
+    const fpMulti = readResults.find(
+      (r) => r.tool === "find_plant" && ((r.result as any)?.count ?? 0) > 1
+    );
+    if (fpMulti) {
+      const matches = (fpMulti.result as any).matches as dal.PlantInstance[];
+      clarification = disambiguation(matches[0].scientific_name, matches.slice(0, 8), input.language);
+    }
+  }
+
+  // Any read that found nothing but produced fuzzy suggestions becomes a
+  // "did you mean" clarification (buttons of the closest real names).
+  if (!clarification) {
+    const fp = readResults.find((r) => ((r.result as any)?.suggestions?.length ?? 0) > 0);
+    if (fp) {
+      const sugg = (fp.result as any).suggestions as { scientific_name: string }[];
+      clarification = {
+        kind: "did_you_mean",
+        question: didYouMeanQuestion(input.language),
+        options: sugg
+          .slice(0, 4)
+          .map((s) => ({ label: s.scientific_name, send_text: s.scientific_name })),
+        allow_free_text: true,
+      };
+    }
+  }
+
   // Second round-trip: read tools produced data → let the LLM compose the
-  // actual answer from it. (Without this, the user gets a generic fallback
-  // while the data sits unused.)
+  // actual answer from it. Skip when we're asking a clarification.
   let composed = "";
-  if (readResults.length > 0) {
+  if (readResults.length > 0 && !clarification) {
     composed = await composeAnswer({
       keys: input.keys,
       language: input.language,
@@ -120,44 +218,223 @@ export async function dispatch(input: DispatchInput): Promise<DispatchResult> {
     });
   }
 
+  const dbSlowMsg =
+    input.language === "fi"
+      ? "Puutarhan tietokanta on juuri nyt hidas. Yritä hetken kuluttua uudelleen."
+      : input.language === "sv"
+        ? "Trädgårdens databas är långsam just nu. Försök igen om en stund."
+        : "The garden database is slow right now. Please try again in a moment.";
+
   const reply =
+    (clarification ? clarification.question : "") ||
     composed ||
     turn.text.trim() ||
     (pending.length
       ? pending.map((p) => p.preview).join("\n")
-      : fallbackReply(input.language));
+      : dbSlow
+        ? dbSlowMsg
+        : fallbackReply(input.language));
+
+  const suggestions = buildSuggestions({
+    role: input.role,
+    lang: input.language,
+    readResults,
+    hasClarification: !!clarification,
+    hasPending: pending.length > 0,
+  });
 
   logger.info("agent.dispatch", {
     model: turn.model,
     toolCalls: records.length,
     pendings: pending.length,
+    clarify: clarification?.kind ?? null,
   });
 
   return {
     reply,
     data,
     pending_actions: pending.length ? pending : undefined,
+    clarification,
+    suggestions,
     tool_calls: records,
     llm_model: turn.model,
   };
 }
 
+// ─── Contextual follow-up suggestions (tap-to-send quick replies) ───────────
+
+/** Pulls the plant in focus from the reads, if any, so suggestions can name it. */
+function subjectName(readResults: { tool: string; result: unknown }[]): string | undefined {
+  for (const r of readResults) {
+    const res = r.result as any;
+    if (r.tool === "query_plant_details" && res?.scientific_name) return res.scientific_name;
+    if (r.tool === "find_plant" && res?.count === 1 && res?.matches?.[0]?.scientific_name) {
+      return res.matches[0].scientific_name;
+    }
+  }
+  return undefined;
+}
+
+/** Strictly-contextual quick replies. Empty when chips/a card already need a tap. */
+function buildSuggestions(opts: {
+  role: Role;
+  lang: "en" | "fi" | "sv";
+  readResults: { tool: string; result: unknown }[];
+  hasClarification: boolean;
+  hasPending: boolean;
+}): string[] {
+  if (opts.hasClarification || opts.hasPending) return []; // already actionable
+  const gardener = opts.role === "gardener" || opts.role === "admin";
+  const n = subjectName(opts.readResults);
+  const L = opts.lang;
+
+  const t = (en: string, fi: string, sv: string) => (L === "fi" ? fi : L === "sv" ? sv : en);
+
+  if (n) {
+    if (gardener) {
+      return [
+        t(`Does ${n} need attention?`, `Tarvitseeko ${n} huomiota?`, `Behöver ${n} uppmärksamhet?`),
+        t(`Show ${n}'s history`, `Näytä ${n} historia`, `Visa historiken för ${n}`),
+        t(`Mark ${n} watered`, `Merkitse ${n} kastelluksi`, `Markera ${n} som vattnad`),
+      ];
+    }
+    return [
+      t(`Where is ${n}?`, `Missä ${n} on?`, `Var finns ${n}?`),
+      t(`What is ${n} used for?`, `Mihin ${n} käytetään?`, `Vad används ${n} till?`),
+    ];
+  }
+  // No plant in focus → starters.
+  if (gardener) {
+    return [
+      t("What needs attention?", "Mikä tarvitsee huomiota?", "Vad behöver uppmärksamhet?"),
+      t("Find a plant", "Etsi kasvi", "Hitta en växt"),
+      t("Record an action", "Kirjaa toimenpide", "Registrera en åtgärd"),
+    ];
+  }
+  return [
+    t("Find a plant", "Etsi kasvi", "Hitta en växt"),
+    t("Plan a 30-minute tour", "Suunnittele 30 min kierros", "Planera en 30-min rundtur"),
+  ];
+}
+
+function didYouMeanQuestion(lang: string): string {
+  return lang === "fi"
+    ? "En löytänyt tarkkaa osumaa. Tarkoititko jotakin näistä?"
+    : lang === "sv"
+      ? "Hittade ingen exakt träff. Menade du någon av dessa?"
+      : "I couldn't find an exact match. Did you mean one of these?";
+}
+
 // ─── Pending-action builder ─────────────────────────────────────────────────
 
-function buildPendingAction(
+type PendingOutcome =
+  | { kind: "pending"; pending: PendingAction }
+  | { kind: "clarify"; clarification: Clarification }
+  | { kind: "reject" };
+
+/** Builds a disambiguation clarification (buttons per physical plant). */
+function disambiguation(name: string, instances: dal.PlantInstance[], lang: string): Clarification {
+  const head =
+    lang === "fi"
+      ? `Löysin ${instances.length} kasvia "${name}". Mitä näistä tarkoitat?`
+      : lang === "sv"
+        ? `Jag hittade ${instances.length} plantor av "${name}". Vilken menar du?`
+        : `I found ${instances.length} "${name}" plants. Which one do you mean?`;
+  return {
+    kind: "disambiguation",
+    question: head,
+    options: instances.map((i) => {
+      // Each chip must be visually distinct — several plants of one species can
+      // sit in the SAME section, so always include the unique plant id.
+      const loc =
+        i.location_label && !i.location_label.startsWith(i.section_code ?? " ")
+          ? ` ${i.location_label}`
+          : "";
+      const where = i.section_code ? `${i.section_code}${loc}` : "no section";
+      return {
+        label: `${where} · #${i.hankintaID}${i.status ? ` · ${i.status}` : ""}`,
+        send_text: `${name} — id ${i.hankintaID}`,
+        hankintaID: i.hankintaID,
+      };
+    }),
+    allow_free_text: true,
+  };
+}
+
+async function buildPendingAction(
   call: LlmToolCall,
   input: DispatchInput
-): PendingAction | null {
+): Promise<PendingOutcome> {
   const a = { ...call.arguments };
-  const plant = input.candidates.find((c) => c.hankintaID === a.hankintaID);
-  // Refuse to create a pending action for a plant outside the candidate set —
-  // anti-hallucination guarantee.
-  if (!plant) {
-    logger.warn("agent.pending_rejected_unknown_plant", { args: a });
-    return null;
+
+  // ── Resolve which physical plant this write targets ──
+  let hankintaID = 0;
+  let verified: { taksonin_nro: number; scientific_name: string } | null = null;
+  let pinned = false;
+
+  const explicitId = Number(a.hankintaID);
+  if (Number.isInteger(explicitId) && explicitId > 0) {
+    hankintaID = explicitId;
+  } else if (input.scannedHankintaID) {
+    hankintaID = input.scannedHankintaID;
+    pinned = true; // user scanned / tapped a specific plant
   }
 
-  const name = plant.common_name_en ?? plant.scientific_name;
+  if (hankintaID) {
+    verified = await dal.verifyPlant(hankintaID);
+    if (!verified) {
+      logger.warn("agent.pending_rejected_unknown_plant", { hankintaID });
+      return { kind: "reject" };
+    }
+    if (!pinned) {
+      // Unambiguous only if location-resolved candidates already narrowed this
+      // taxon to exactly this plant; otherwise ask which one.
+      const sameTaxon = input.candidates.filter((c) => c.taksonin_nro === verified!.taksonin_nro);
+      pinned = sameTaxon.length === 1 && sameTaxon[0].hankintaID === hankintaID;
+      if (!pinned) {
+        const instances = await dal.plantInstances(verified.taksonin_nro);
+        if (instances.length > 1) {
+          await storeIntent(input.uid, { tool: call.name, args: a });
+          return { kind: "clarify", clarification: disambiguation(verified.scientific_name, instances.slice(0, 8), input.language) };
+        }
+      }
+    }
+  } else {
+    // No id — resolve by the name the user spoke (+ optional section).
+    const nameQ = typeof a.name_query === "string" ? a.name_query.trim() : "";
+    if (!nameQ) {
+      logger.warn("agent.pending_rejected_no_id_or_name", { args: a });
+      return { kind: "reject" };
+    }
+    const section = typeof a.section_code === "string" ? a.section_code : undefined;
+    const instances = await dal.findPlantInstances(nameQ, section);
+    if (instances.length === 0) {
+      const suggestions = await dal.suggestSimilarPlants(nameQ);
+      if (suggestions.length) {
+        return {
+          kind: "clarify",
+          clarification: {
+            kind: "did_you_mean",
+            question: didYouMeanQuestion(input.language),
+            options: suggestions.slice(0, 4).map((s) => ({ label: s.scientific_name, send_text: s.scientific_name })),
+            allow_free_text: true,
+          },
+        };
+      }
+      return { kind: "reject" };
+    }
+    if (instances.length === 1) {
+      hankintaID = instances[0].hankintaID;
+      verified = { taksonin_nro: instances[0].taksonin_nro, scientific_name: instances[0].scientific_name };
+      pinned = true; // the name (+ section) uniquely identified it
+    } else {
+      // Several physical plants → ask which, stashing the action to complete on tap.
+      await storeIntent(input.uid, { tool: call.name, args: a });
+      return { kind: "clarify", clarification: disambiguation(instances[0].scientific_name, instances.slice(0, 8), input.language) };
+    }
+  }
+
+  const name = verified!.scientific_name;
   const date = (a.date as string) || new Date().toISOString().slice(0, 10);
   a.date = date;
 
@@ -173,32 +450,35 @@ function buildPendingAction(
     a.composed_stocktake = segs.join(", ");
   }
 
-  // Build the SAFE write plan now so the user sees the exact SQL + a detailed
-  // diff before confirming. This validates everything; on any safety failure
-  // we reject the pending action rather than show something unsafe.
+  // Build the SAFE write plan now so the user sees the exact operation + a
+  // detailed diff before confirming. This validates everything; on any safety
+  // failure we reject rather than show something unsafe.
   let plan: WritePlan;
   try {
     plan = buildPlan(call.name, a, {
       inspectorCode: input.inspectorCode ?? "",
       plantName: name,
-      placementNro: dal.latestPlacementNro(plant.hankintaID),
+      placementNro: await dal.latestPlacementNro(hankintaID),
     });
   } catch (e) {
     if (e instanceof SafetyError) {
       logger.warn("agent.plan_rejected", { tool: call.name, err: e.message });
-      return null;
+      return { kind: "reject" };
     }
     throw e;
   }
 
   return {
-    pending_id: randomUUID(),
-    tool: call.name,
-    params: { ...a, _plan: plan }, // plan persisted for the confirm step
-    preview: plan.summary,
-    requires_confirmation: true,
-    sql_display: plan.displaySql,
-    changes: plan.changes,
+    kind: "pending",
+    pending: {
+      pending_id: randomUUID(),
+      tool: call.name,
+      params: { ...a, _plan: plan }, // plan persisted for the confirm step
+      preview: plan.summary,
+      requires_confirmation: true,
+      sql_display: plan.displaySql,
+      changes: plan.changes,
+    },
   };
 }
 
@@ -229,28 +509,76 @@ async function executeRead(call: LlmToolCall, input: DispatchInput): Promise<unk
   try {
     switch (call.name) {
       case "query_plant_details": {
-        const details = dal.plantDetails({
+        const details = await dal.plantDetails({
           hankintaID: a.hankintaID as number | undefined,
           taksonin_nro: a.taksonin_nro as number | undefined,
           name_query: a.name_query as string | undefined,
         });
-        if (!details) return { error: "Plant not found." };
+        if (!details) {
+          // Typo tolerance on info lookups too — offer closest names.
+          const nq = a.name_query as string | undefined;
+          const suggestions = nq ? await dal.suggestSimilarPlants(nq) : [];
+          return { error: "Plant not found.", suggestions };
+        }
         return input.role === "visitor" ? stripForVisitor(details) : details;
+      }
+      case "find_plant": {
+        const query = String(a.name_query ?? "");
+        const instances = await dal.findPlantInstances(
+          query,
+          a.section_code as string | undefined
+        );
+        const vis = input.role === "visitor";
+        if (instances.length === 0) {
+          // Typo tolerance: offer the closest real names as "did you mean".
+          const suggestions = await dal.suggestSimilarPlants(query);
+          return { count: 0, matches: [], suggestions };
+        }
+        return {
+          count: instances.length,
+          matches: instances.map((i) =>
+            vis
+              ? {
+                  hankintaID: i.hankintaID,
+                  scientific_name: i.scientific_name,
+                  section_code: i.section_code,
+                  location_label: i.location_label,
+                }
+              : i
+          ),
+        };
       }
       case "query_plant_history": {
         if (input.role === "visitor") return undefined; // role-gated, belt+braces
         const id = Number(a.hankintaID);
-        const legacy = dal.plantHistory(id, Number(a.days_back) || 36500);
+        const legacy = await dal.plantHistory(id, Number(a.days_back) || 36500);
         const agentRows = await ledgerHistory(id);
         const merged = [...agentRows, ...legacy].sort((x, y) =>
           y.date > x.date ? 1 : -1
         );
-        return { history: merged.slice(0, 50) };
+        // Grounded assessment so "what next / needs attention" is data-driven.
+        const daysSince = (d?: string): number | null => {
+          if (!d) return null;
+          const t = Date.parse(d);
+          return Number.isNaN(t) ? null : Math.floor((Date.now() - t) / 86400_000);
+        };
+        const lastAction = merged.find((m) => m.kind === "action");
+        const lastInsp = merged.find((m) => m.kind === "inspection");
+        return {
+          history: merged.slice(0, 50),
+          assessment: {
+            has_records: merged.length > 0,
+            last_action_date: lastAction?.date ?? null,
+            last_inspection_date: lastInsp?.date ?? null,
+            days_since_last_action: daysSince(lastAction?.date),
+            days_since_last_inspection: daysSince(lastInsp?.date),
+          },
+        };
       }
       case "find_overdue_inspections": {
         if (input.role === "visitor") return undefined;
         return {
-          overdue: dal.overdueInspections(
+          overdue: await dal.overdueInspections(
             Number(a.days_threshold) || 365,
             a.section_code as string | undefined
           ),
@@ -258,7 +586,7 @@ async function executeRead(call: LlmToolCall, input: DispatchInput): Promise<unk
       }
       case "navigate_to_plant": {
         const id = Number(a.hankintaID);
-        const details = dal.plantDetails({ hankintaID: id });
+        const details = await dal.plantDetails({ hankintaID: id });
         const placement = details?.placements?.[0];
         if (!placement) return { error: "No location on record for this plant." };
         const indoor = String(placement.section_code ?? "").startsWith("G-H");

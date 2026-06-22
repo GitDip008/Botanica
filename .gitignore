@@ -70,3 +70,6 @@ app.*.map.json
 # (CAD maps .dwg/.vwx, and the plant database .sqlite)
 /resources/
 *.sqlite
+
+# API spec dumps (large, from external API)
+*.tmp.json

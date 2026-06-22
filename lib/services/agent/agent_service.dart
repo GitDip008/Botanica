@@ -23,16 +23,18 @@ class AgentService {
     AgentContext? context,
     String language = 'en',
     PendingAction? correctionOf,
+    List<Map<String, String>> history = const [],
   }) async {
     final callable = _functions.httpsCallable(
       'agent',
-      options: HttpsCallableOptions(timeout: const Duration(seconds: 45)),
+      options: HttpsCallableOptions(timeout: const Duration(seconds: 75)),
     );
     final result = await callable.call<Map<String, dynamic>>({
       'text': text,
       'context': context?.toJson(),
       'language': language,
       'session_id': sessionId,
+      if (history.isNotEmpty) 'history': history,
       if (correctionOf != null)
         'correction_of': {
           'pending_id': correctionOf.pendingId,
@@ -100,15 +102,20 @@ class AgentTurnResult {
   final String reply;
   final dynamic data;
   final List<PendingAction> pendingActions;
+  final Clarification? clarification;
+  final List<String> suggestions;
 
   AgentTurnResult({
     required this.reply,
     this.data,
     this.pendingActions = const [],
+    this.clarification,
+    this.suggestions = const [],
   });
 
   factory AgentTurnResult.fromJson(Map<String, dynamic> j) {
     final list = (j['pending_actions'] as List?) ?? const [];
+    final clar = j['clarification'];
     return AgentTurnResult(
       reply: (j['reply'] as String?) ?? '',
       data: j['data'],
@@ -116,8 +123,55 @@ class AgentTurnResult {
           .whereType<Map>()
           .map((m) => PendingAction.fromJson(Map<String, dynamic>.from(m)))
           .toList(),
+      clarification: clar is Map
+          ? Clarification.fromJson(Map<String, dynamic>.from(clar))
+          : null,
+      suggestions: ((j['suggestions'] as List?) ?? const [])
+          .whereType<String>()
+          .toList(),
     );
   }
+}
+
+/// A "which plant?" or "did you mean?" prompt rendered as tappable buttons.
+@immutable
+class Clarification {
+  final String kind; // "disambiguation" | "did_you_mean"
+  final String question;
+  final List<ClarOption> options;
+  final bool allowFreeText;
+
+  const Clarification({
+    required this.kind,
+    required this.question,
+    required this.options,
+    this.allowFreeText = true,
+  });
+
+  factory Clarification.fromJson(Map<String, dynamic> j) => Clarification(
+        kind: (j['kind'] as String?) ?? 'disambiguation',
+        question: (j['question'] as String?) ?? '',
+        options: ((j['options'] as List?) ?? const [])
+            .whereType<Map>()
+            .map((m) => ClarOption.fromJson(Map<String, dynamic>.from(m)))
+            .toList(),
+        allowFreeText: (j['allow_free_text'] as bool?) ?? true,
+      );
+}
+
+@immutable
+class ClarOption {
+  final String label;
+  final String sendText;
+  final int? hankintaID;
+
+  const ClarOption({required this.label, required this.sendText, this.hankintaID});
+
+  factory ClarOption.fromJson(Map<String, dynamic> j) => ClarOption(
+        label: (j['label'] as String?) ?? '',
+        sendText: (j['send_text'] as String?) ?? '',
+        hankintaID: (j['hankintaID'] as num?)?.toInt(),
+      );
 }
 
 /// A single field-level change in a pending write.

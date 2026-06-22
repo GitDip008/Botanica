@@ -1,4 +1,4 @@
-// deploy-stamp: 1781920197
+// deploy-stamp: 1781990523 (app check unenforced)
 /**
  * Botanica Smart Agent — Cloud Function entry point.
  *
@@ -16,6 +16,7 @@ import { resolveCandidates, type LocationContext } from "./resolver";
 import { writeAuditEntry } from "./audit";
 import { confirmPending, cancelPending, undoLast, logCorrection } from "./writes";
 import { enforceRateLimit } from "../ratelimit";
+import { GARDEN_API_USER, GARDEN_API_PASS } from "./garden_api";
 
 const GROQ_API_KEY = defineSecret("GROQ_API_KEY");
 const GEMINI_API_KEY = defineSecret("GEMINI_API_KEY");
@@ -28,15 +29,20 @@ interface AgentRequest {
   /** Present when the user tapped Edit on a pending card — the old draft is
    *  cancelled and the LLM re-parses with the correction in context. */
   correction_of?: { pending_id: string; original_preview: string };
+  /** Recent conversation turns (oldest→newest) for context memory. */
+  history?: { role: "user" | "assistant"; content: string }[];
 }
 
 export const agent = onCall(
   {
     cors: true,
-    timeoutSeconds: 60,
-    memory: "256MiB",
-    enforceAppCheck: true,
-    secrets: [GROQ_API_KEY, GEMINI_API_KEY],
+    timeoutSeconds: 90, // headroom for T's cold-start spikes (per-call capped at 11s)
+    memory: "512MiB", // more memory => more CPU => faster parallel HTTP + JSON
+    // minInstances kept at 0: our cold start is minor next to T's slow API, and
+    // a warm instance bills 24/7. Flip to 1 only for an active demo day.
+    minInstances: 0,
+    enforceAppCheck: false,
+    secrets: [GROQ_API_KEY, GEMINI_API_KEY, GARDEN_API_USER, GARDEN_API_PASS],
   },
   async (req) => {
     if (!req.auth) {
@@ -50,7 +56,13 @@ export const agent = onCall(
     }
 
     const role: Role = await resolveRole(uid);
-    const candidates = await resolveCandidates(payload.context);
+    // Never let candidate resolution (flaky external API) crash the turn.
+    let candidates: Awaited<ReturnType<typeof resolveCandidates>> = [];
+    try {
+      candidates = await resolveCandidates(payload.context);
+    } catch (e) {
+      logger.warn("agent.resolve_candidates_failed", { err: String(e) });
+    }
 
     // Correction loop: cancel the old draft, log the correction for prompt
     // mining, and give the LLM the original to re-parse against.
@@ -89,6 +101,8 @@ export const agent = onCall(
         candidates,
         keys: { groq: GROQ_API_KEY.value(), gemini: GEMINI_API_KEY.value() },
         inspectorCode: (await resolveInspectorCode(uid)) ?? "",
+        scannedHankintaID: payload.context?.scanned_hankintaID,
+        history: payload.history,
       });
     } catch (e) {
       // Never surface a raw INTERNAL to the phone — give a retryable message.
@@ -130,6 +144,8 @@ export const agent = onCall(
       reply: result.reply,
       data: result.data,
       pending_actions: clientPendings,
+      clarification: result.clarification ?? null,
+      suggestions: result.suggestions ?? [],
     };
   }
 );
@@ -140,7 +156,13 @@ export const agent = onCall(
  * undo affordance.
  */
 export const agentConfirm = onCall(
-  { cors: true, timeoutSeconds: 30, memory: "256MiB", enforceAppCheck: true },
+  {
+    cors: true,
+    timeoutSeconds: 30,
+    memory: "256MiB",
+    enforceAppCheck: false,
+    secrets: [GARDEN_API_USER, GARDEN_API_PASS],
+  },
   async (req) => {
     if (!req.auth) {
       throw new HttpsError("unauthenticated", "Sign-in required.");
@@ -151,6 +173,16 @@ export const agentConfirm = onCall(
       op?: "confirm" | "cancel" | "undo";
       pending_id?: string;
     };
+
+    // HARD GATE: only staff (gardener/admin) may commit or undo a DB write.
+    // Visitors cannot reach here through the UI, but enforce it server-side too —
+    // a write to the live database must never come from a non-authority account.
+    if (op === "confirm" || op === "undo") {
+      const role = await resolveRole(uid);
+      if (role === "visitor") {
+        throw new HttpsError("permission-denied", "Only garden staff can change records.");
+      }
+    }
 
     if (op === "confirm") {
       if (!pending_id) throw new HttpsError("invalid-argument", "pending_id required.");
