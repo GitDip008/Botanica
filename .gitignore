@@ -73,3 +73,6 @@ app.*.map.json
 
 # API spec dumps (large, from external API)
 *.tmp.json
+
+# FVM Version Cache
+.fvm/

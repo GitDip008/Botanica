@@ -60,7 +60,7 @@ dependencies:
   # Markdown rendering for chat bubbles
   flutter_markdown: ^0.7.4+1
   # Brand icons (GitHub, LinkedIn, WhatsApp)
-  font_awesome_flutter: ^10.7.0
+  font_awesome_flutter: 10.12.0
   # Read the installed app version (for force-update check)
   package_info_plus: ^8.0.2
   # Push notifications via FCM
@@ -73,6 +73,7 @@ dependencies:
   speech_to_text: ^7.0.0
   # Agent voice replies
   flutter_tts: ^4.1.0
+  flutter_svg: ^2.0.10
 
 dependency_overrides:
   # record_linux 0.7.2 doesn't implement startStream from record_platform_interface 1.5.0.
@@ -117,6 +118,7 @@ flutter:
   uses-material-design: true
 
   assets:
+    - greenhouse.png
     - logo.png
     - agent_assets/navigation_graph.json
 
