@@ -60,8 +60,13 @@ class _IndoorMapScreenState extends State<IndoorMapScreen> {
   MapPoint? _startMarker;
   MapPoint? _endMarker;
   String _statusMsg = '';
-  bool _showInputPanel = false; // toggle ẩn/hiện panel
+  bool _showInputPanel = false;
   late List<PathNode> _pathNodes;
+
+  // ── State mới ──────────────────────────────────────────────
+  MapPoint? _tappedPoint; // tọa độ CAD của điểm vừa tap
+  Offset? _tappedPixel; // vị trí pixel để hiện popup
+  bool _showTapPopup = false; // hiện/ẩn popup chọn start/end
 
   @override
   void initState() {
@@ -125,26 +130,16 @@ class _IndoorMapScreenState extends State<IndoorMapScreen> {
       _startMarker = MapPoint(startNode.x, startNode.y);
       _endMarker = MapPoint(endNode.x, endNode.y);
       _computedPath = result.map((n) => MapPoint(n.x, n.y)).toList();
-      _showInputPanel = false; // tự đóng panel sau khi search
+      _showInputPanel = false;
     });
   }
 
-  // ── Chuyển tọa độ CAD (x, y) → pixel trên widget ──────────
-  //
-  // Vì SVG được render vừa khít trong widget (BoxFit.contain),
-  // ta cần tính scale và offset để biết điểm (x, y) trong CAD
-  // nằm ở pixel nào trên màn hình.
-  //
-  // Công thức:
-  //   pixelX = offsetX + (cadX / mapWidth)  * renderedWidth
-  //   pixelY = offsetY + (cadY / mapHeight) * renderedHeight
-  //
-  static const double _cadMinX = -177.6683 - 14.5; // shift phải
+  static const double _cadMinX = -177.6683 - 14.5;
   static const double _cadMinY = -14.3375;
-  static const double _cadMaxX = -120.9942 - 2.0; // giữ width không đổi
-  static const double _cadMaxY = 23.6977 + 16; // shift lên
-  static const double _cadW = 86; // giữ nguyên
-  static const double _cadH = 40.0352; // giữ nguyên
+  static const double _cadMaxX = -120.9942 - 2.0;
+  static const double _cadMaxY = 23.6977 + 16;
+  static const double _cadW = 86;
+  static const double _cadH = 40.0352;
 
   Offset cadToPixel({required MapPoint point, required Size widgetSize}) {
     final mapW = widget.mapSize.width;
@@ -158,7 +153,6 @@ class _IndoorMapScreenState extends State<IndoorMapScreen> {
 
     final renderedW = mapW * scale;
     final renderedH = mapH * scale;
-
     final offsetX = (widgetW - renderedW) / 2;
     final offsetY = (widgetH - renderedH) / 2;
 
@@ -180,19 +174,56 @@ class _IndoorMapScreenState extends State<IndoorMapScreen> {
 
     final renderedW = mapW * scale;
     final renderedH = mapH * scale;
-
     final offsetX = (widgetW - renderedW) / 2;
     final offsetY = (widgetH - renderedH) / 2;
 
-    // Đảo ngược lại normalizedX, normalizedY từ cadToPixel
     final normalizedX = (pixel.dx - offsetX) / scale;
     final normalizedY = (pixel.dy - offsetY) / scale;
-
-    // Đảo ngược lại point.x, point.y
     final cadX = normalizedX / mapW * _cadW + _cadMinX;
     final cadY = _cadMaxY - normalizedY / mapH * _cadH;
 
     return MapPoint(cadX, cadY);
+  }
+
+  void _onMapTap(TapDownDetails details, Size widgetSize) {
+    final RenderBox box = context.findRenderObject() as RenderBox;
+    final localPos = box.globalToLocal(details.globalPosition);
+    final matrix = _transformController.value;
+    final inverseMatrix = Matrix4.inverted(matrix);
+    final transformed = MatrixUtils.transformPoint(inverseMatrix, localPos);
+    final cad = pixelToCad(transformed, widgetSize);
+
+    setState(() {
+      _tappedPoint = cad;
+      _tappedPixel =
+          localPos; // dùng localPos (chưa transform) để hiện popup đúng chỗ
+      _showTapPopup = true;
+    });
+  }
+
+  void _dismissPopup() {
+    setState(() => _showTapPopup = false);
+  }
+
+  void _setAsStart() {
+    if (_tappedPoint == null) return;
+    setState(() {
+      _startXCtrl.text = _tappedPoint!.x.toStringAsFixed(2);
+      _startYCtrl.text = _tappedPoint!.y.toStringAsFixed(2);
+      _showTapPopup = false;
+      // Mở input panel để user thấy đã điền
+      _showInputPanel = true;
+    });
+  }
+
+  void _setAsDestination() {
+    if (_tappedPoint == null) return;
+    setState(() {
+      _endXCtrl.text = _tappedPoint!.x.toStringAsFixed(2);
+      _endYCtrl.text = _tappedPoint!.y.toStringAsFixed(2);
+      _showTapPopup = false;
+      _showInputPanel = true;
+    });
   }
 
   @override
@@ -207,7 +238,6 @@ class _IndoorMapScreenState extends State<IndoorMapScreen> {
         ),
         iconTheme: const IconThemeData(color: Colors.white),
         actions: [
-          // Status badge
           if (_statusMsg.isNotEmpty && _computedPath.isNotEmpty)
             Center(
               child: Container(
@@ -227,18 +257,17 @@ class _IndoorMapScreenState extends State<IndoorMapScreen> {
                 ),
               ),
             ),
-
-          // Toggle input panel button
           IconButton(
             icon: Icon(
               _showInputPanel ? Icons.close : Icons.search,
               color: _showInputPanel ? const Color(0xFFEF5350) : Colors.white,
             ),
             tooltip: _showInputPanel ? 'Đóng' : 'Tìm đường',
-            onPressed: () => setState(() => _showInputPanel = !_showInputPanel),
+            onPressed: () => setState(() {
+              _showInputPanel = !_showInputPanel;
+              _showTapPopup = false; // đóng popup khi mở panel
+            }),
           ),
-
-          // Reset view
           IconButton(
             icon: const Icon(Icons.center_focus_strong_outlined),
             tooltip: 'Reset view',
@@ -252,36 +281,16 @@ class _IndoorMapScreenState extends State<IndoorMapScreen> {
 
           return Stack(
             children: [
-              // ── Map layer ─────────────────────────────────
+              // ── Map + GestureDetector ─────────────────────
               GestureDetector(
-                onTapDown: (details) {
-                  // Lấy tọa độ tap trong hệ widget (chưa bị zoom/pan ảnh hưởng)
-                  final RenderBox box = context.findRenderObject() as RenderBox;
-                  final localPos = box.globalToLocal(details.globalPosition);
-
-                  // Lấy current transform matrix của InteractiveViewer
-                  final matrix = _transformController.value;
-                  final inverseMatrix = Matrix4.inverted(matrix);
-
-                  // Áp inverse transform để quy về tọa độ gốc trước khi zoom/pan
-                  final transformed = MatrixUtils.transformPoint(
-                    inverseMatrix,
-                    localPos,
-                  );
-
-                  final cad = pixelToCad(transformed, widgetSize);
-                  debugPrint(
-                    'CAD: (${cad.x.toStringAsFixed(2)}, ${cad.y.toStringAsFixed(2)})',
-                  );
-                },
+                onTapDown: (details) => _onMapTap(details, widgetSize),
                 child: InteractiveViewer(
                   transformationController: _transformController,
                   minScale: 0.5,
-                  maxScale: 5.0,
+                  maxScale: 20,
                   boundaryMargin: const EdgeInsets.all(100),
                   child: Stack(
                     children: [
-                      // Layer 1: Map image
                       SizedBox(
                         width: widgetSize.width,
                         height: widgetSize.height,
@@ -290,8 +299,6 @@ class _IndoorMapScreenState extends State<IndoorMapScreen> {
                           fit: BoxFit.contain,
                         ),
                       ),
-
-                      // Layer 2: Graph edges
                       if (widget.graphNodes != null &&
                           widget.graphEdges != null)
                         Positioned.fill(
@@ -305,8 +312,6 @@ class _IndoorMapScreenState extends State<IndoorMapScreen> {
                             ),
                           ),
                         ),
-
-                      // Layer 3: A* path
                       if (_computedPath.length >= 2)
                         Positioned.fill(
                           child: CustomPaint(
@@ -318,8 +323,6 @@ class _IndoorMapScreenState extends State<IndoorMapScreen> {
                             ),
                           ),
                         ),
-
-                      // Layer 4: Start marker
                       if (_startMarker != null)
                         _buildMarker(
                           point: _startMarker!,
@@ -328,11 +331,9 @@ class _IndoorMapScreenState extends State<IndoorMapScreen> {
                           child: const Icon(
                             Icons.my_location,
                             color: Color(0xFF4FC3F7),
-                            size: 20,
+                            size: 8,
                           ),
                         ),
-
-                      // Layer 5: End marker
                       if (_endMarker != null)
                         _buildMarker(
                           point: _endMarker!,
@@ -340,7 +341,7 @@ class _IndoorMapScreenState extends State<IndoorMapScreen> {
                           child: const Icon(
                             Icons.location_pin,
                             color: Color(0xFFEF5350),
-                            size: 20,
+                            size: 8,
                           ),
                         ),
                     ],
@@ -348,7 +349,11 @@ class _IndoorMapScreenState extends State<IndoorMapScreen> {
                 ),
               ),
 
-              // ── Input panel overlay (slide down) ──────────
+              // ── Tap Popup ─────────────────────────────────
+              if (_showTapPopup && _tappedPixel != null && _tappedPoint != null)
+                _buildTapPopup(widgetSize),
+
+              // ── Input Panel ───────────────────────────────
               AnimatedSlide(
                 offset: _showInputPanel ? Offset.zero : const Offset(0, -1),
                 duration: const Duration(milliseconds: 250),
@@ -366,6 +371,123 @@ class _IndoorMapScreenState extends State<IndoorMapScreen> {
     );
   }
 
+  Widget _buildTapPopup(Size widgetSize) {
+    const popupW = 200.0;
+    const popupH = 110.0;
+    const margin = 8.0;
+
+    // Tính vị trí popup — hiện phía trên điểm tap, căn giữa theo X
+    double left = _tappedPixel!.dx - popupW / 2;
+    double top = _tappedPixel!.dy - popupH - 12;
+
+    // Tránh ra ngoài màn hình
+    left = left.clamp(margin, widgetSize.width - popupW - margin);
+    top = top.clamp(margin, widgetSize.height - popupH - margin);
+
+    return Positioned(
+      left: left,
+      top: top,
+      width: popupW,
+      child: Material(
+        color: Colors.transparent,
+        child: Container(
+          decoration: BoxDecoration(
+            color: const Color(0xFF16213E),
+            borderRadius: BorderRadius.circular(10),
+            border: Border.all(color: const Color(0xFF4FC3F7).withOpacity(0.4)),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withOpacity(0.4),
+                blurRadius: 8,
+                offset: const Offset(0, 4),
+              ),
+            ],
+          ),
+          padding: const EdgeInsets.all(10),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              // Tọa độ CAD
+              Text(
+                'X: ${_tappedPoint!.x.toStringAsFixed(2)}',
+                style: const TextStyle(color: Colors.white70, fontSize: 11),
+              ),
+              Text(
+                'Y: ${_tappedPoint!.y.toStringAsFixed(2)}',
+                style: const TextStyle(color: Colors.white70, fontSize: 11),
+              ),
+              const SizedBox(height: 8),
+              // Câu hỏi
+              const Text(
+                'Set as:',
+                style: TextStyle(color: Colors.white54, fontSize: 10),
+              ),
+              const SizedBox(height: 6),
+              // 2 buttons
+              Row(
+                children: [
+                  Expanded(
+                    child: GestureDetector(
+                      onTap: _setAsStart,
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(vertical: 5),
+                        decoration: BoxDecoration(
+                          color: const Color(0xFF4FC3F7).withOpacity(0.2),
+                          borderRadius: BorderRadius.circular(6),
+                          border: Border.all(
+                            color: const Color(0xFF4FC3F7),
+                            width: 0.8,
+                          ),
+                        ),
+                        child: const Center(
+                          child: Text(
+                            'Start',
+                            style: TextStyle(
+                              color: Color(0xFF4FC3F7),
+                              fontSize: 11,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                        ),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: 6),
+                  Expanded(
+                    child: GestureDetector(
+                      onTap: _setAsDestination,
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(vertical: 5),
+                        decoration: BoxDecoration(
+                          color: const Color(0xFFEF5350).withOpacity(0.2),
+                          borderRadius: BorderRadius.circular(6),
+                          border: Border.all(
+                            color: const Color(0xFFEF5350),
+                            width: 0.8,
+                          ),
+                        ),
+                        child: const Center(
+                          child: Text(
+                            'Destination',
+                            style: TextStyle(
+                              color: Color(0xFFEF5350),
+                              fontSize: 11,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
   Widget _buildInputPanel() {
     return Container(
       color: const Color(0xFF16213E).withOpacity(0.97),
@@ -373,7 +495,6 @@ class _IndoorMapScreenState extends State<IndoorMapScreen> {
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
-          // Start row
           Row(
             children: [
               const Icon(Icons.my_location, color: Color(0xFF4FC3F7), size: 16),
@@ -392,7 +513,6 @@ class _IndoorMapScreenState extends State<IndoorMapScreen> {
             ],
           ),
           const SizedBox(height: 8),
-          // End row
           Row(
             children: [
               const Icon(
@@ -415,7 +535,6 @@ class _IndoorMapScreenState extends State<IndoorMapScreen> {
             ],
           ),
           const SizedBox(height: 10),
-          // Error msg
           if (_statusMsg.isNotEmpty && _computedPath.isEmpty)
             Padding(
               padding: const EdgeInsets.only(bottom: 8),
@@ -424,7 +543,6 @@ class _IndoorMapScreenState extends State<IndoorMapScreen> {
                 style: const TextStyle(color: Color(0xFFEF5350), fontSize: 11),
               ),
             ),
-          // Search button
           SizedBox(
             width: double.infinity,
             child: ElevatedButton.icon(
@@ -480,7 +598,7 @@ class _IndoorMapScreenState extends State<IndoorMapScreen> {
     double anchorY = 1.0,
   }) {
     final pixel = cadToPixel(point: point, widgetSize: widgetSize);
-    const markerSize = 24.0;
+    const markerSize = 14.0;
     return Positioned(
       left: pixel.dx - markerSize * anchorX,
       top: pixel.dy - markerSize * anchorY,
