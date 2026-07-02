@@ -3,6 +3,7 @@ import 'dart:math';
 import 'package:botanica_ar/models/a_star_algorithm.dart';
 import 'package:botanica_ar/models/graph_data.dart';
 import 'package:flutter/material.dart';
+import 'package:vector_math/vector_math_64.dart' show Vector3;
 
 // ============================================================
 // DATA MODELS
@@ -50,6 +51,7 @@ class _IndoorMapScreenState extends State<IndoorMapScreen> {
   // Transform controller để quản lý pan + zoom
   final TransformationController _transformController =
       TransformationController();
+  final GlobalKey _mapKey = GlobalKey();
 
   final _startXCtrl = TextEditingController();
   final _startYCtrl = TextEditingController();
@@ -73,6 +75,24 @@ class _IndoorMapScreenState extends State<IndoorMapScreen> {
     super.initState();
     _pathNodes = List.from(graphPathNodes);
     buildGraphEdges(_pathNodes);
+    debugPrint(widget.navigationPath?.length.toString());
+    _computedPath = widget.navigationPath ?? [];
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      final renderBox = context.findRenderObject() as RenderBox?;
+      if (renderBox == null) return;
+
+      final size = renderBox.size;
+      const scale = 1.1;
+
+      final dx = -(size.width * (scale - 1) / 2);
+      final dy = -(size.height * (scale - 1) / 2);
+
+      final matrix = Matrix4.identity()
+        ..scaleByDouble(scale, scale, scale, 1.0)
+        ..translateByVector3(Vector3(dx / scale, dy / scale, 0));
+
+      _transformController.value = matrix;
+    });
   }
 
   @override
@@ -124,7 +144,15 @@ class _IndoorMapScreenState extends State<IndoorMapScreen> {
       });
       return;
     }
-
+    debugPrint('=== A* DEBUG ===');
+    debugPrint('Input Start: ($startX, $startY)');
+    debugPrint(
+      'Nearest Start Node: id=${startNode.id} (${startNode.x}, ${startNode.y})',
+    );
+    debugPrint('Input End: ($endX, $endY)');
+    debugPrint(
+      'Nearest End Node:   id=${endNode.id} (${endNode.x}, ${endNode.y})',
+    );
     setState(() {
       _statusMsg = '${result.length} nodes';
       _startMarker = MapPoint(startNode.x, startNode.y);
@@ -134,11 +162,11 @@ class _IndoorMapScreenState extends State<IndoorMapScreen> {
     });
   }
 
-  static const double _cadMinX = -177.6683 - 14.5;
+  static const double _cadMinX = -177.6683 - 13.7;
   static const double _cadMinY = -14.3375;
-  static const double _cadMaxX = -120.9942 - 2.0;
-  static const double _cadMaxY = 23.6977 + 16;
-  static const double _cadW = 86;
+  static const double _cadMaxX = -120.9942;
+  static const double _cadMaxY = 23.6977 + 15.7;
+  static const double _cadW = 84;
   static const double _cadH = 40.0352;
 
   Offset cadToPixel({required MapPoint point, required Size widgetSize}) {
@@ -186,17 +214,25 @@ class _IndoorMapScreenState extends State<IndoorMapScreen> {
   }
 
   void _onMapTap(TapDownDetails details, Size widgetSize) {
-    final RenderBox box = context.findRenderObject() as RenderBox;
+    // Dùng _mapKey để lấy đúng RenderBox của InteractiveViewer
+    final RenderBox? box =
+        _mapKey.currentContext?.findRenderObject() as RenderBox?;
+    if (box == null) return;
+
+    // Convert global position về local position của InteractiveViewer
     final localPos = box.globalToLocal(details.globalPosition);
+
+    // Inverse transform để quy về tọa độ gốc trước zoom/pan
     final matrix = _transformController.value;
     final inverseMatrix = Matrix4.inverted(matrix);
     final transformed = MatrixUtils.transformPoint(inverseMatrix, localPos);
+
     final cad = pixelToCad(transformed, widgetSize);
 
     setState(() {
       _tappedPoint = cad;
       _tappedPixel =
-          localPos; // dùng localPos (chưa transform) để hiện popup đúng chỗ
+          details.localPosition; // giữ localPosition gốc để hiện popup đúng chỗ
       _showTapPopup = true;
     });
   }
@@ -285,9 +321,10 @@ class _IndoorMapScreenState extends State<IndoorMapScreen> {
               GestureDetector(
                 onTapDown: (details) => _onMapTap(details, widgetSize),
                 child: InteractiveViewer(
+                  key: _mapKey, // thêm vào đây
                   transformationController: _transformController,
                   minScale: 0.5,
-                  maxScale: 20,
+                  maxScale: 50,
                   boundaryMargin: const EdgeInsets.all(100),
                   child: Stack(
                     children: [
@@ -598,7 +635,7 @@ class _IndoorMapScreenState extends State<IndoorMapScreen> {
     double anchorY = 1.0,
   }) {
     final pixel = cadToPixel(point: point, widgetSize: widgetSize);
-    const markerSize = 14.0;
+    const markerSize = 5.0;
     return Positioned(
       left: pixel.dx - markerSize * anchorX,
       top: pixel.dy - markerSize * anchorY,
@@ -620,23 +657,23 @@ class _IndoorMapScreenState extends State<IndoorMapScreen> {
         child: Row(
           children: [
             // User position info
-            const Icon(Icons.my_location, color: Color(0xFF4FC3F7), size: 18),
+            const Icon(Icons.my_location, color: Color(0xFF4FC3F7), size: 8),
             const SizedBox(width: 8),
             Text(
               widget.userPosition != null
                   ? 'User: (${widget.userPosition!.x.toStringAsFixed(1)}, ${widget.userPosition!.y.toStringAsFixed(1)})'
                   : 'User: –',
-              style: const TextStyle(color: Colors.white70, fontSize: 12),
+              style: const TextStyle(color: Colors.white70, fontSize: 8),
             ),
             const SizedBox(width: 16),
             // Destination info
-            const Icon(Icons.place, color: Color(0xFFEF5350), size: 18),
+            const Icon(Icons.place, color: Color(0xFFEF5350), size: 8),
             const SizedBox(width: 8),
             Text(
               widget.destination != null
                   ? 'Dest: (${widget.destination!.x.toStringAsFixed(1)}, ${widget.destination!.y.toStringAsFixed(1)})'
                   : 'Dest: –',
-              style: const TextStyle(color: Colors.white70, fontSize: 12),
+              style: const TextStyle(color: Colors.white70, fontSize: 9),
             ),
             const Spacer(),
             // Path node count
@@ -750,7 +787,7 @@ class _DestinationMarker extends StatelessWidget {
     return const Icon(
       Icons.location_pin,
       color: Color(0xFFEF5350),
-      size: 40,
+      size: 20,
       shadows: [
         Shadow(color: Colors.black54, blurRadius: 8, offset: Offset(0, 2)),
       ],
@@ -792,7 +829,7 @@ class PathPainter extends CustomPainter {
     // ── Vẽ path chính ─────────────────────────────────────
     final pathPaint = Paint()
       ..color = const Color(0xFF00E5FF)
-      ..strokeWidth = 1
+      ..strokeWidth = 0.3
       ..strokeCap = StrokeCap.round
       ..strokeJoin = StrokeJoin.round
       ..style = PaintingStyle.stroke;
@@ -807,12 +844,12 @@ class PathPainter extends CustomPainter {
     final dotBorderPaint = Paint()
       ..color = const Color(0xFF00E5FF)
       ..style = PaintingStyle.stroke
-      ..strokeWidth = 0.5;
+      ..strokeWidth = 0.3;
 
     for (int i = 1; i < path.length - 1; i++) {
       final pixel = cadToPixel(path[i]);
-      canvas.drawCircle(pixel, 1, dotPaint);
-      canvas.drawCircle(pixel, 1, dotBorderPaint);
+      canvas.drawCircle(pixel, 0.3, dotPaint);
+      canvas.drawCircle(pixel, 0.3, dotBorderPaint);
     }
   }
 

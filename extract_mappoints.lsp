@@ -32,7 +32,7 @@
   (strcat "(" (rtos (car pt) 2 2) ", " (rtos (cadr pt) 2 2) ")")
 )
 
-(defun c:XuatMangLuoi ( / ss i ent plist total j pt1 pt2 nodes extList
+(defun c:ExtractMapPoints ( / ss i ent plist total j pt1 pt2 nodes extList
                           nodeCount node nodeStr idxA idxB pairKey
                           printedPairs neighborIdxList nbIdx nbNode
                           edgeKey edgeSet)
@@ -138,18 +138,6 @@
         (princ "\n--------------------------------------------------------")
       )
 
-      ;; ============================================================
-      ;; BUOC 5: Xuat kem code Dart connect() de paste truc tiep
-      ;; vao buildGraphEdges(). ID node = so thu tu (1-based), giong
-      ;; cach danh so 'id' trong PathNode cua ban.
-      ;; ============================================================
-      (princ "\n\n========================================================")
-      (princ "\n   CODE DART - PASTE VAO buildGraphEdges()")
-      (princ "\n========================================================")
-      (foreach edge edgeSet
-        (setq idxA (car edge) idxB (cadr edge))
-        (princ (strcat "\n  connect('" (itoa (1+ idxA)) "', '" (itoa (1+ idxB)) "');"))
-      )
 
       ;; ============================================================
       ;; BUOC 6: Xuat kem danh sach PathNode(...) de doi chieu toa do
@@ -159,8 +147,8 @@
       (princ "\n========================================================")
       (setq nodeCount 0)
       (foreach node nodes
-        (princ (strcat "\n  PathNode(id: '" (itoa (1+ nodeCount)) "', x: "
-                        (rtos (car node) 2 4) ", y: " (rtos (cadr node) 2 4) "),"))
+        (princ (strcat "\n  MapPoint("
+                        (rtos (car node) 2 4) "," (rtos (cadr node) 2 4) "),"))
         (setq nodeCount (1+ nodeCount))
       )
       (princ "\n")

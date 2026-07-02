@@ -74,6 +74,7 @@ dependencies:
   # Agent voice replies
   flutter_tts: ^4.1.0
   flutter_svg: ^2.0.10
+  vector_math: ^2.2.0
 
 dependency_overrides:
   # record_linux 0.7.2 doesn't implement startStream from record_platform_interface 1.5.0.

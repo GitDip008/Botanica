@@ -6,7 +6,7 @@
 ;; ============================================================
 
 ;; Nguong sai so hinh hoc (don vi ban ve). Tang/giam tuy theo scale CAD.
-(setq *PT-TOL* 0.01)
+(setq *PT-TOL* 0.4)
 
 ;; So sanh 2 diem theo tolerance thay vi so sanh string lam tron
 (defun pt-equal (p1 p2 / tol)
@@ -32,7 +32,7 @@
   (strcat "(" (rtos (car pt) 2 2) ", " (rtos (cadr pt) 2 2) ")")
 )
 
-(defun c:XuatMangLuoi ( / ss i ent plist total j pt1 pt2 nodes extList
+(defun c:ExtractConnection ( / ss i ent plist total j pt1 pt2 nodes extList
                           nodeCount node nodeStr idxA idxB pairKey
                           printedPairs neighborIdxList nbIdx nbNode
                           edgeKey edgeSet)
@@ -151,18 +151,6 @@
         (princ (strcat "\n  connect('" (itoa (1+ idxA)) "', '" (itoa (1+ idxB)) "');"))
       )
 
-      ;; ============================================================
-      ;; BUOC 6: Xuat kem danh sach PathNode(...) de doi chieu toa do
-      ;; ============================================================
-      (princ "\n\n========================================================")
-      (princ "\n   DANH SACH NODE - DOI CHIEU TOA DO (id, x, y)")
-      (princ "\n========================================================")
-      (setq nodeCount 0)
-      (foreach node nodes
-        (princ (strcat "\n  PathNode(id: '" (itoa (1+ nodeCount)) "', x: "
-                        (rtos (car node) 2 4) ", y: " (rtos (cadr node) 2 4) "),"))
-        (setq nodeCount (1+ nodeCount))
-      )
       (princ "\n")
     )
     (princ "\nKhong chon duoc Polyline nao!")
