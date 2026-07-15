@@ -1,4 +1,4 @@
-import 'package:botanica_ar/screens/navigation_screen.dart';
+import 'package:botanica_ar/screens/navigation_screen/navigation_screen.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../services/user_state.dart';
