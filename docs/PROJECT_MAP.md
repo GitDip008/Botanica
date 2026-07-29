@@ -117,7 +117,11 @@ inspector initials ≠ usernames.
 
 ---
 
-## 4. The one real problem: three navigation stacks
+> **Update 2026-07-30** — Sections 4 and 5 below are superseded. Navigation was
+> consolidated onto Phuc's implementation (`8d5a47e`) and the agent's LLM
+> boundary was rewritten (`afa197e`). Section 7 records the result.
+
+## 4. The one real problem: three navigation stacks (RESOLVED)
 
 All three are reachable in the shipped UI. A visitor can find a plant three
 different ways, with three different UX languages.
@@ -219,3 +223,98 @@ Neither is a coding task, both block finished features:
 | `api_spec.tmp.json` (455 KB) | temp file committed to the working tree |
 | whole app | no test coverage beyond `test/`; agent write paths are guarded but unverified by tests |
 | `main.dart` | two state-management systems (provider + riverpod) for one feature |
+
+---
+
+## 7. What changed on 2026-07-30
+
+### Navigation consolidated (`8d5a47e`)
+
+Phuc is actively developing on `origin/feature/navigation` — he pushed
+`e26017f` on 2026-07-15, after local work stopped. `main` was running his
+2026-07-02 code. His latest is now in, including `finger_print_algorithm.dart`
+(RSSI positioning), `beacons_service`, `ble_permission`, `plants.dart`, the
+9-component refactor of `navigation_screen`, and the five AutoCAD `.lsp`
+extractors that generate `graph_data`'s coordinates.
+
+**Never merge his branch.** Two dev shortcuts on it must not reach `main`:
+
+| File | What it does |
+|---|---|
+| `lib/screens/auth/auth_gate.dart` | replaces `LoginScreen` with a hardcoded 200-node nav harness — disables authentication |
+| `.firebaserc` | repoints `default` to `botanica-c885c`, his own Firebase project |
+
+Cherry-pick paths instead:
+`git checkout origin/feature/navigation -- lib/models/... lib/screens/navigation_screen/ ...`
+
+Deleted: `lib/navigation/**` (3352 lines — a vendored copy of
+`resources/from_navteam`, duplicating Phuc's indoor nav with beacon UUIDs that
+were never provisioned), `plant_index.dart`, `plant_tags_bar.dart`,
+`api_spec.tmp.json`, and `flutter_riverpod` / `equatable` / `sensors_plus`.
+
+`lib/services/navigation/nav_graph.dart` was **kept** — it is outdoor GPS with
+door nodes and serves the agent's "show me", while Phuc's graph is indoor CAD
+coordinates. Different spaces, not duplicates.
+
+Recoverable from `wip/pre-cleanup-2026-07-30` / `3bf6ebc`.
+
+### Agent LLM boundary rewritten (`afa197e`)
+
+The unreliable step was tool **choice**, not the data layer. With 8 tool
+schemas the model answered "what's the status of the Cacao" by calling
+`find_plant`, `query_plant_details`, or from memory on different days.
+
+The LLM is now confined to two jobs:
+
+1. free-form speech → fixed JSON slots (`update_mode.ts`, temperature 0)
+2. rephrasing rows already fetched and validated (`llm.ts` `composeAnswer`)
+
+```
+READS   text ─→ router.ts (patterns, EN/FI/SV, no model)
+                  ├─ recognised   → fixed tool calls → existing read pipeline
+                  └─ unrecognised → llmTurn(), exactly as before (no regression)
+
+WRITES  [Update] button ─→ update_mode.ts slot-filling state machine
+                              missing plant     → asks back
+                              several matches   → tappable section options
+                              missing action    → legacy vocabulary buttons
+                              complete          → buildPendingAction (guarded SQL)
+                              settled           → [Update another] [Done]
+```
+
+The LLM does **not** emit SQL. It emits `{action_family, count, location_code,
+...}` and the server builds the statement, so parameterized queries, the
+operation whitelist, row-count caps, the audit log, and T's veto over statement
+shapes all survive. `action_family` is accepted only if it appears in the
+hardcoded legacy vocabulary.
+
+New: `functions/src/agent/router.ts`, `functions/src/agent/update_mode.ts`,
+`agentUpdateMode` callable (gardener-gated server-side), an `agent_update_mode`
+deny-all Firestore rule, and a gardener-only Update/Done button in the agent app
+bar whose eligibility comes from a server probe rather than a client role copy.
+
+Router self-check: `cd functions && npx tsx src/agent/router.ts`
+
+### Verification
+
+| Check | Result |
+|---|---|
+| `flutter analyze` | 0 errors, 4 warnings (595 issues → 114, all info) |
+| `functions` `tsc` | clean |
+| Net lines | −1574 (cleanup) then +1100 (agent rework) |
+
+`analysis_options.yaml` now excludes `resources/**`, which was contributing 481
+phantom errors from the nav team's original unbuilt drop.
+
+### Still outstanding
+
+- **Not run on a device.** Update mode and the router are compile-verified only;
+  the slot extraction and the disambiguation loop need a real gardener session.
+- Rewrite `README.md` — it predates the agent, the navigation module, and
+  `functions/` entirely. `../botanica_knowledge_base.md` has the same problem.
+- Tell Phuc his `auth_gate.dart` and `.firebaserc` changes are on the branch.
+- The human dependencies in section 5 (head gardener's `G-H*` mapping, the
+  curator's highlight plants) are unchanged and still block indoor accuracy and
+  tour planning.
+- Voice (`plan.md` Phase 3) still unbuilt: `speech_to_text` and `flutter_tts`
+  are declared, Whisper on Cloud Run and the offline retry queue are not.
