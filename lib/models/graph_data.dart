@@ -2,7 +2,7 @@
 // FULL GRAPH DATA + A* INTEGRATION
 // ============================================================
 
-// 1. Define all nodes with their IDs
+// 1. Định nghĩa tất cả nodes với ID
 import 'dart:math';
 
 import 'package:botanica_ar/models/a_star_algorithm.dart';
@@ -222,9 +222,9 @@ final List<PathNode> graphPathNodes = [
   PathNode(id: '212', x: -156.9031, y: 6.9526),
 ];
 
-// 2. Build edges from the graph data
+// 2. Hàm build edges từ graph data
 void buildGraphEdges(List<PathNode> nodes) {
-  // Map id -> node for fast lookup
+  // Map id -> node để lookup nhanh
   final map = {for (final n in nodes) n.id: n};
 
   double dist(PathNode a, PathNode b) {
@@ -238,10 +238,10 @@ void buildGraphEdges(List<PathNode> nodes) {
     final b = map[idB]!;
     final w = dist(a, b);
     a.edges.add(PathEdge(target: b, weight: w));
-    b.edges.add(PathEdge(target: a, weight: w)); // bidirectional
+    b.edges.add(PathEdge(target: a, weight: w)); // 2 chiều
   }
 
-  // Edges from the graph data
+  // Edges từ graph data
   connect('1', '2');
   connect('1', '3');
   connect('3', '4');

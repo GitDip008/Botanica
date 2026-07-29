@@ -7,8 +7,7 @@ import '../services/garden_schedule.dart';
 import '../services/language_service.dart';
 import 'camera_screen.dart';
 import 'bloom_screen.dart';
-import '../navigation/nav_routes.dart';
-import 'navigation_screen.dart';
+import 'navigation_screen/navigation_screen.dart';
 import 'plant_hunt_screen.dart';
 import 'report_screen.dart';
 import 'events_screen.dart';
@@ -104,23 +103,7 @@ class HomeScreen extends StatelessWidget {
 
                     const SizedBox(height: 10),
 
-                    // ── Find a Plant (search + navigate) ────
-                    _PrimaryCard(
-                      icon: Icons.eco_rounded,
-                      iconColor: const Color(0xFF81C784),
-                      title: s.findAPlant,
-                      subtitle: s.findAPlantSub,
-                      gradient: const LinearGradient(
-                        colors: [Color(0xFF0A2A3D), Color(0xFF1565C0)],
-                        begin: Alignment.topLeft,
-                        end: Alignment.bottomRight,
-                      ),
-                      onTap: () => openNavigationModule(context),
-                    ).animate().slideY(begin: 0.15, duration: 400.ms, delay: 180.ms, curve: Curves.easeOut),
-
-                    const SizedBox(height: 10),
-
-                    // ── Navigating Map (Phuc's A* walking paths) ────
+                    // ── Greenhouse navigation (A* over the CAD path graph) ────
                     _PrimaryCard(
                       icon: Icons.route_rounded,
                       iconColor: const Color(0xFF4DD0E1),

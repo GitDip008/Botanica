@@ -61,7 +61,7 @@ class AStarAlgorithm {
           path.insert(0, node);
           node = cameFrom[node.id];
         }
-        // ---- LOG RESULT ----
+        // ---- LOG KẾT QUẢ ----
         final totalWeight = gScore[goal.id]!;
         final straightLine = heuristic(start, goal);
         debugPrint('[A*] PATH FOUND: ${path.map((n) => n.id).join(' -> ')}');

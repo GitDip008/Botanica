@@ -2,7 +2,6 @@ import 'package:firebase_app_check/firebase_app_check.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart' show ProviderScope;
 import 'package:provider/provider.dart';
 import 'firebase_options.dart';
 import 'screens/auth/auth_gate.dart';
@@ -36,9 +35,7 @@ void main() async {
   NotificationService.instance.init();
   ConnectivityService.instance.init();
 
-  // ProviderScope hosts the vendored navigation module's riverpod state.
-  // It sits above the provider-based app and does not affect existing code.
-  runApp(const ProviderScope(child: BotanicaApp()));
+  runApp(const BotanicaApp());
 }
 
 class BotanicaApp extends StatelessWidget {

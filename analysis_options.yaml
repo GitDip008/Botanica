@@ -9,6 +9,13 @@
 # packages, and plugins designed to encourage good coding practices.
 include: package:flutter_lints/flutter.yaml
 
+analyzer:
+  exclude:
+    # Reference material, not built code: the nav team's original BotaniNav drop
+    # and the CAD/DB handoffs. Gitignored, but the analyzer still walks it and
+    # it drowns real findings in ~480 phantom errors.
+    - resources/**
+
 linter:
   # The lint rules applied to this project can be customized in the
   # section below to disable rules from the `package:flutter_lints/flutter.yaml`
