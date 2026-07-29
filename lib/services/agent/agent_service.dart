@@ -242,6 +242,8 @@ class PendingAction {
   final String pendingId;
   final String tool;
   final String preview;
+  /// Jargon-free one-liner shown above the technical detail.
+  final String? plainSummary;
   final String? sqlDisplay;
   final List<PlanChange> changes;
 
@@ -249,6 +251,7 @@ class PendingAction {
     required this.pendingId,
     required this.tool,
     required this.preview,
+    this.plainSummary,
     this.sqlDisplay,
     this.changes = const [],
   });
@@ -257,6 +260,7 @@ class PendingAction {
         pendingId: (j['pending_id'] as String?) ?? '',
         tool: (j['tool'] as String?) ?? '',
         preview: (j['preview'] as String?) ?? '',
+        plainSummary: j['plain_summary'] as String?,
         sqlDisplay: j['sql_display'] as String?,
         changes: ((j['changes'] as List?) ?? const [])
             .whereType<Map>()

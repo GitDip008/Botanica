@@ -199,12 +199,12 @@ export async function apiPut<T = any>(path: string, body: unknown): Promise<T> {
   return r;
 }
 
-/** DELETE — used only by the guarded single-row undo. May throw GardenApiError
- *  with status 403 if the service account lacks delete permission. */
-export async function apiDelete(path: string): Promise<void> {
-  await request<void>("DELETE", path, {});
-  clearReadCache();
-}
+// No apiDelete. Deliberate: the garden's records are append-only, so nothing in
+// this codebase is able to issue a DELETE against T's API. Removal is expressed
+// as kasvin_status = 'removed' (osastopaikka), and undoing an insert annuls the
+// row in place with a PERUUTETTU: prefix (see undoLast in writes.ts). If a real
+// delete is ever genuinely needed, that is a decision for T, done by hand — not
+// a function the agent should be able to reach.
 
 /** Cheap connectivity/auth probe for diagnostics. */
 export async function apiWhoAmI(): Promise<{ username?: string; role_name?: string }> {

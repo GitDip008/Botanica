@@ -72,6 +72,8 @@ export interface PendingAction {
   tool: string;
   params: Record<string, unknown>;
   preview: string;
+  /** Jargon-free one-liner — the line the gardener actually reads before Save. */
+  plain_summary?: string;
   requires_confirmation: true;
   /** The exact statement that will run, shown read-only in the card. */
   sql_display?: string;
@@ -718,6 +720,7 @@ async function buildPendingAction(
       tool: call.name,
       params: { ...a, _plan: plan }, // plan persisted for the confirm step
       preview: plan.summary,
+      plain_summary: plan.plainSummary,
       requires_confirmation: true,
       sql_display: plan.displaySql,
       changes: plan.changes,

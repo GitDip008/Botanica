@@ -157,6 +157,7 @@ export const agent = onCall(
       pending_id: p.pending_id,
       tool: p.tool,
       preview: p.preview,
+      plain_summary: p.plain_summary,
       requires_confirmation: p.requires_confirmation,
       sql_display: p.sql_display,
       changes: p.changes,
@@ -223,6 +224,16 @@ export const agentConfirm = onCall(
     if (op === "cancel") {
       if (!pending_id) throw new HttpsError("invalid-argument", "pending_id required.");
       await cancelPending(uid, pending_id);
+      const lang = (req.data?.language ?? "en") as string;
+      // Declining in update mode is a correction, not an exit. The slots are
+      // deliberately KEPT so the gardener only has to say the part that was
+      // wrong; handleUpdateTurn merges the correction over what it already has.
+      if (await um.loadState(uid).catch(() => null)) {
+        return {
+          ok: true,
+          message: um.updateDeclinedPrompt(lang),
+        };
+      }
       return { ok: true, message: "Cancelled." };
     }
     if (op === "undo") {

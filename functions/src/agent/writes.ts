@@ -19,7 +19,7 @@ import { logger } from "firebase-functions/v2";
 import type { PendingAction } from "./dispatcher";
 import type { HistoryEntry } from "./dal";
 import type { WritePlan } from "./safety";
-import { apiPost, apiPut, apiGetOne, apiDelete, GardenApiError } from "./garden_api";
+import { apiPost, apiPut, apiGetOne, GardenApiError } from "./garden_api";
 
 const PENDING = "agent_pending";
 const LEDGER = "agent_writes";
@@ -152,8 +152,16 @@ export async function cancelPending(uid: string, pendingId: string): Promise<voi
   }
 }
 
-/** Undo: reverses the most recent applied write.
- *   - insert  → guarded single-row DELETE (needs delete permission)
+/**
+ * PERUUTETTU = "cancelled" in Finnish. Prefixed onto an annulled row's text so
+ * the legacy system and any gardener reading the raw table both see it is void.
+ */
+const ANNUL_PREFIX = "PERUUTETTU:";
+/** Text column to annul, per table. First match wins. */
+const ANNUL_FIELDS = ["toimenpide", "menestymista_koskevat_havainnot", "huomautuksia"];
+
+/** Undo: reverses the most recent applied write. Never deletes.
+ *   - insert  → annul the row in place (prefix its text with PERUUTETTU:)
  *   - update  → restore the previous field value with a PUT */
 export async function undoLast(uid: string): Promise<{ ok: boolean; message: string }> {
   const q = await admin.firestore().collection(LEDGER).where("uid", "==", uid).limit(100).get();
@@ -174,7 +182,26 @@ export async function undoLast(uid: string): Promise<{ ok: boolean; message: str
       if (!x.inserted_pk) {
         return { ok: false, message: "Can't undo: the created row's id wasn't recorded." };
       }
-      await apiDelete(undo.pathTemplate.replace("{id}", String(x.inserted_pk)));
+      // The garden's rule is that nothing is ever really deleted, so undoing an
+      // insert ANNULS the row instead of removing it: the row stays, its text
+      // prefixed so both the app and the legacy system read it as void. A real
+      // DELETE would erase a line of the plant's history, which is exactly what
+      // the append-only convention exists to prevent — and it needed a delete
+      // permission on T's account that we should not be relying on either.
+      const path = undo.pathTemplate.replace("{id}", String(x.inserted_pk));
+      const row = await apiGetOne<Record<string, unknown>>(path);
+      if (!row) {
+        return { ok: false, message: "Can't undo: that record is no longer readable." };
+      }
+      const textField = ANNUL_FIELDS.find((f) => f in row);
+      if (!textField) {
+        return { ok: false, message: "Can't undo this record type automatically." };
+      }
+      const existing = String(row[textField] ?? "");
+      if (existing.startsWith(ANNUL_PREFIX)) {
+        return { ok: false, message: "That record was already cancelled." };
+      }
+      await apiPut(path, { ...row, [textField]: `${ANNUL_PREFIX} ${existing}`.slice(0, 500) });
     } else if (undo?.kind === "restore") {
       const current = await apiGetOne<Record<string, unknown>>(undo.path);
       if (current) {

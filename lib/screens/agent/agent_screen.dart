@@ -345,7 +345,13 @@ class _AgentScreenState extends State<AgentScreen> {
       );
     });
     try {
-      await AgentService.instance.cancel(p.pendingId);
+      final r = await AgentService.instance.cancel(p.pendingId);
+      // In update mode the server answers with "tell me just what to change",
+      // which the gardener needs to see — otherwise declining looks like the
+      // conversation simply stopped.
+      if (mounted && r.message.isNotEmpty && r.message != 'Cancelled.') {
+        setState(() => _messages.add(_Message.agent(r.message)));
+      }
     } catch (_) {
       // Cancel is best-effort — the card is already gone locally.
     }
@@ -777,9 +783,35 @@ class _PendingCard extends StatelessWidget {
                     letterSpacing: 1.5)),
           ]),
           const SizedBox(height: 8),
+
+          // ── Plain-language sentence first ──
+          // A gardener confirming a write should not have to read a table name
+          // to know what they are agreeing to. The technical detail stays below
+          // for whoever wants it.
+          if (action.plainSummary != null)
+            Container(
+              width: double.infinity,
+              padding: const EdgeInsets.all(10),
+              decoration: BoxDecoration(
+                color: const Color(0xFF13301A),
+                borderRadius: BorderRadius.circular(8),
+                border: Border.all(color: const Color(0xFF2E7D32), width: 1),
+              ),
+              child: Text(
+                action.plainSummary!,
+                style: const TextStyle(
+                    color: Color(0xFFE8F5E9), fontSize: 14, height: 1.45),
+              ),
+            ),
+          if (action.plainSummary != null) const SizedBox(height: 10),
+
           Text(action.preview,
-              style: const TextStyle(
-                  color: Color(0xFFE8F5E9), fontSize: 14, height: 1.45)),
+              style: TextStyle(
+                  color: action.plainSummary != null
+                      ? const Color(0xFF9CCC9F)
+                      : const Color(0xFFE8F5E9),
+                  fontSize: action.plainSummary != null ? 12 : 14,
+                  height: 1.45)),
 
           // ── Detailed change breakdown ──
           if (action.changes.isNotEmpty) ...[

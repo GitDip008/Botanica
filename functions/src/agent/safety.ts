@@ -46,12 +46,17 @@ export interface WritePlan {
     | { kind: "delete"; pathTemplate: string; pkField: string }
     | { kind: "restore"; path: string; field: string; previous: string | null };
   /** Human-readable representation of the request — FOR DISPLAY ONLY. Kept on
-   *  the `sql_display` client field; the card labels it "Database operation". */
+   *  the `sql_display` client field; the card labels it "Database operation".
+   *  Shows the SQL equivalent first (what the gardener and T both read) then the
+   *  literal REST call that actually runs. */
   displaySql: string;
   /** Field-by-field breakdown shown to the user before they confirm. */
   changes: PlanChange[];
-  /** Plain-language summary line. */
+  /** Semi-technical summary naming the record type. */
   summary: string;
+  /** ONE sentence, no jargon — no table, column, id or SQL words. This is what
+   *  a gardener actually reads before tapping Save, so it must stand alone. */
+  plainSummary: string;
 }
 
 // ─── Validators ─────────────────────────────────────────────────────────────
@@ -87,9 +92,36 @@ function isoToLegacy(iso: string): string {
   return m ? `${m[3]}.${m[2]}.${m[1]}` : iso;
 }
 
-/** Readable one-liner of a REST op for the confirmation card. NEVER executed. */
-function displayFor(step: RestStep): string {
-  return `${step.method} ${step.path}\n${JSON.stringify(step.body, null, 2)}`;
+/**
+ * Renders the pending write for the confirmation card. NEVER executed — this
+ * string is display-only and no code path parses it back.
+ *
+ * Shows the SQL equivalent above the literal REST call. There is no real SQL
+ * in the system any more (see the header: requests go to T's REST API, which is
+ * why injection is structurally impossible), but SQL is the form gardeners and
+ * T can both actually check, and REST JSON is not. So we show both: the SQL to
+ * be read, the REST line so nobody is misled about what runs.
+ *
+ * ponytail: string building over a query-builder dependency. This produces one
+ * statement shape per operation and is never round-tripped.
+ */
+function displayFor(step: RestStep, table: string, pkClause?: string): string {
+  const quote = (v: string | number | null) =>
+    v === null ? "NULL" : typeof v === "number" ? String(v) : `'${String(v).replace(/'/g, "''")}'`;
+
+  let sql: string;
+  if (step.method === "POST") {
+    const cols = Object.keys(step.body);
+    sql =
+      `INSERT INTO ${table} (${cols.join(", ")})\n` +
+      `VALUES (${cols.map((c) => quote(step.body[c])).join(", ")});`;
+  } else {
+    const sets = Object.entries(step.body)
+      .map(([k, v]) => `${k} = ${quote(v)}`)
+      .join(", ");
+    sql = `UPDATE ${table} SET ${sets}\nWHERE ${pkClause ?? "<single row>"};`;
+  }
+  return `${sql}\n\n-- actually sent as: ${step.method} ${step.path}`;
 }
 
 // ─── Plan builders (one per write tool) ─────────────────────────────────────
@@ -130,7 +162,7 @@ function planRecordAction(args: Record<string, unknown>, ctx: PlanContext): Writ
     table: "toimenpide",
     rest,
     undo: { kind: "delete", pathTemplate: "/api/toimenpide/{id}", pkField: "toimenpide_nro" },
-    displaySql: displayFor(rest),
+    displaySql: displayFor(rest, "toimenpide"),
     changes: [
       { table: "toimenpide", column: "(new row)", current: null, next: "CREATE", note: `A new action record will be added for ${ctx.plantName} (#${hankintaID}).` },
       { table: "toimenpide", column: "toimenpide", current: null, next: toimenpide, note: "The action text (legacy garden convention)." },
@@ -139,6 +171,9 @@ function planRecordAction(args: Record<string, unknown>, ctx: PlanContext): Writ
       { table: "toimenpide", column: "hankintaID", current: null, next: String(hankintaID), note: "The plant this action belongs to." },
     ],
     summary: `Add a new ACTION record to "${ctx.plantName}" (#${hankintaID}): ${toimenpide}`,
+    plainSummary:
+      `This adds a note to ${ctx.plantName}'s history: "${toimenpide}", dated ${isoDate}. ` +
+      `Nothing already in the garden records is changed or removed.`,
   };
 }
 
@@ -181,7 +216,7 @@ function planRecordObservation(args: Record<string, unknown>, ctx: PlanContext):
     table: "tarkastusmerkinta",
     rest,
     undo: { kind: "delete", pathTemplate: "/api/tarkastusmerkinta/{id}", pkField: "tarkastusnro" },
-    displaySql: displayFor(rest),
+    displaySql: displayFor(rest, "tarkastusmerkinta"),
     changes: [
       { table: "tarkastusmerkinta", column: "(new row)", current: null, next: "CREATE", note: `A new inspection record will be added for ${ctx.plantName} (#${hankintaID}).` },
       { table: "tarkastusmerkinta", column: "menestymista_koskevat_havainnot", current: null, next: stocktake || "(empty)", note: "Condition observation (stars/kpl/size/status)." },
@@ -191,6 +226,9 @@ function planRecordObservation(args: Record<string, unknown>, ctx: PlanContext):
       { table: "tarkastusmerkinta", column: "uus_tarkastuspvm", current: null, next: isoDate, note: "ISO inspection date." },
     ],
     summary: `Add a new INSPECTION record to "${ctx.plantName}" (#${hankintaID}): ${stocktake || "(no detail)"}`,
+    plainSummary:
+      `This saves today's check on ${ctx.plantName}: "${stocktake || "no detail given"}", dated ${isoDate}. ` +
+      `It is added alongside the earlier checks — none of them are changed or removed.`,
   };
 }
 
@@ -219,7 +257,7 @@ function planMarkStatus(args: Record<string, unknown>, ctx: PlanContext): WriteP
     rest,
     readModifyWrite: { getPath: `/api/osastopaikka/${osastoNro}` },
     undo: { kind: "restore", path: `/api/osastopaikka/${osastoNro}`, field: "kasvin_status", previous: current },
-    displaySql: displayFor(rest),
+    displaySql: displayFor(rest, "osastopaikka", `osaston_numero = ${osastoNro}`),
     changes: [
       {
         table: "osastopaikka",
@@ -230,6 +268,13 @@ function planMarkStatus(args: Record<string, unknown>, ctx: PlanContext): WriteP
       },
     ],
     summary: `Change status of "${ctx.plantName}" to ${status.toUpperCase()} (placement #${osastoNro}).`,
+    // The only write that overwrites an existing value, so it is the only one
+    // whose plain summary must name what is being replaced.
+    plainSummary:
+      `This marks ${ctx.plantName} as "${status}"` +
+      (current ? `, instead of "${current}" as it is now. ` : ". ") +
+      `The plant stays in the records with its full history — marking it ` +
+      `"removed" or "dead" is how removal is recorded here, and it never deletes anything.`,
   };
 }
 

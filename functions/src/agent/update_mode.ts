@@ -127,6 +127,20 @@ export function updateModePrompt(lang: string): string {
   );
 }
 
+/**
+ * Shown when the gardener declines a confirmation card while in update mode.
+ * Deliberately asks for the CHANGE only, not the whole update again — retyping
+ * a correct sentence to fix one wrong word is how people give up on a tool.
+ */
+export function updateDeclinedPrompt(lang: string): string {
+  return pick(
+    lang,
+    "Not saved — nothing was written. Tell me just what needs to be different, and I'll show you the change again.",
+    "Ei tallennettu — mitään ei kirjattu. Kerro vain mikä pitää muuttaa, niin näytän muutoksen uudelleen.",
+    "Inte sparat — ingenting skrevs. Berätta bara vad som behöver ändras, så visar jag ändringen igen."
+  );
+}
+
 export function updateModeExitMessage(lang: string): string {
   return pick(lang, "Update mode off.", "Päivitystila pois.", "Uppdateringsläge av.");
 }
@@ -198,6 +212,38 @@ async function extractSlots(
     if (slots[k] === undefined) delete slots[k];
   }
   return { kind, slots };
+}
+
+/**
+ * Merge a correction over the slots already gathered.
+ *
+ * The one rule that matters: if the gardener names a DIFFERENT plant or a
+ * different section, the previously resolved hankintaID is now wrong and must be
+ * dropped so it re-resolves. Without this, correcting the plant on a declined
+ * card would keep writing to the original one — a silent write to the wrong
+ * plant is the worst failure this flow can produce. A tapped option
+ * (`pinned`) always wins, because that is an explicit choice, not an inference.
+ *
+ * Pure, so it can be checked without Firestore or an LLM.
+ */
+export function mergeSlots(
+  known: UpdateSlots,
+  incoming: UpdateSlots,
+  pinned?: number
+): UpdateSlots {
+  const namedAnotherPlant =
+    !!incoming.plant_query &&
+    !!known.plant_query &&
+    incoming.plant_query.toLowerCase() !== known.plant_query.toLowerCase();
+  const namedAnotherSection =
+    !!incoming.section_code && incoming.section_code !== known.section_code;
+
+  const merged: UpdateSlots = { ...known, ...incoming };
+  if ((namedAnotherPlant || namedAnotherSection) && !pinned) {
+    delete merged.hankintaID;
+  }
+  if (pinned) merged.hankintaID = pinned;
+  return merged;
 }
 
 /** Groq JSON mode, Gemini fallback. Returns null if both fail. */
@@ -294,7 +340,7 @@ export async function handleUpdateTurn(opts: {
   }
   if (opts.text.trim()) {
     const extracted = await extractSlots(opts.keys, opts.text, slots);
-    slots = { ...slots, ...extracted.slots };
+    slots = mergeSlots(slots, extracted.slots, opts.pinnedHankintaID);
     kind = kind ?? extracted.kind;
   }
 
@@ -499,4 +545,62 @@ export function readFollowUp(text: string): "again" | "done" | null {
   if (/^(update another|another|päivitä toinen|toinen|uppdatera en till|en till)$/.test(t)) return "again";
   if (/^(done|finished|exit|stop|valmis|lopeta|klar|sluta)$/.test(t)) return "done";
   return null;
+}
+
+// ─── Self-check ─────────────────────────────────────────────────────────────
+// ponytail: covers mergeSlots only — the rest of the machine needs Firestore and
+// an LLM, and this is the branch where a bug writes to the wrong plant.
+// Run: `npx tsx src/agent/update_mode.ts`
+if (require.main === module) {
+  const assert: typeof import("assert") = require("assert");
+
+  // Correcting the plant must drop the stale resolved id.
+  assert.strictEqual(
+    mergeSlots(
+      { plant_query: "Valerian", hankintaID: 4421, action_family: "IST." },
+      { plant_query: "Chamomile" }
+    ).hankintaID,
+    undefined,
+    "a different plant name must invalidate the resolved id"
+  );
+
+  // Correcting only the count must NOT re-resolve the plant.
+  assert.strictEqual(
+    mergeSlots({ plant_query: "Valerian", hankintaID: 4421 }, { count: 3 }).hankintaID,
+    4421,
+    "an unrelated correction must keep the resolved plant"
+  );
+
+  // Restating the same name (different case) is not a change of plant.
+  assert.strictEqual(
+    mergeSlots({ plant_query: "Valerian", hankintaID: 4421 }, { plant_query: "valerian" })
+      .hankintaID,
+    4421,
+    "the same name in another case is not a new plant"
+  );
+
+  // A narrowed section must re-resolve.
+  assert.strictEqual(
+    mergeSlots({ plant_query: "Valerian", hankintaID: 4421 }, { section_code: "G-HA" })
+      .hankintaID,
+    undefined,
+    "a new section must invalidate the resolved id"
+  );
+
+  // A tapped option always wins, even alongside a new name.
+  assert.strictEqual(
+    mergeSlots({ plant_query: "Valerian", hankintaID: 4421 }, { plant_query: "Chamomile" }, 9999)
+      .hankintaID,
+    9999,
+    "an explicitly tapped plant overrides inference"
+  );
+
+  // Corrections overwrite, they don't append.
+  assert.strictEqual(
+    mergeSlots({ action_family: "IST.", count: 3 }, { count: 5 }).count,
+    5,
+    "a corrected value must replace the old one"
+  );
+
+  console.log("update_mode self-check ok");
 }
