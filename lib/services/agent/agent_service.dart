@@ -44,30 +44,64 @@ class AgentService {
     return AgentTurnResult.fromJson(result.data);
   }
 
-  /// Commit a pending write. Returns the server's human-readable outcome.
-  Future<({bool ok, String message})> confirm(String pendingId) =>
-      _confirmOp('confirm', pendingId);
+  /// Commit a pending write. Returns the server's human-readable outcome, plus
+  /// the follow-up choice when the write happened inside update mode.
+  Future<({bool ok, String message, Clarification? clarification})> confirm(
+    String pendingId, {
+    String language = 'en',
+  }) =>
+      _confirmOp('confirm', pendingId, language: language);
 
   /// Discard a pending write.
-  Future<({bool ok, String message})> cancel(String pendingId) =>
+  Future<({bool ok, String message, Clarification? clarification})> cancel(
+          String pendingId) =>
       _confirmOp('cancel', pendingId);
 
   /// Soft-undo the most recent confirmed write (24h window server-side).
-  Future<({bool ok, String message})> undoLast() => _confirmOp('undo', null);
+  Future<({bool ok, String message, Clarification? clarification})>
+      undoLast() => _confirmOp('undo', null);
 
-  Future<({bool ok, String message})> _confirmOp(
-      String op, String? pendingId) async {
+  Future<({bool ok, String message, Clarification? clarification})> _confirmOp(
+      String op, String? pendingId, {String language = 'en'}) async {
     final callable = _functions.httpsCallable(
       'agentConfirm',
       options: HttpsCallableOptions(timeout: const Duration(seconds: 20)),
     );
     final result = await callable.call<Map<String, dynamic>>({
       'op': op,
+      'language': language,
       if (pendingId != null) 'pending_id': pendingId,
     });
+    final clar = result.data['clarification'];
     return (
       ok: (result.data['ok'] as bool?) ?? false,
       message: (result.data['message'] as String?) ?? '',
+      // In update mode the server appends [Update another] / [Done] here.
+      clarification: clar == null
+          ? null
+          : Clarification.fromJson(Map<String, dynamic>.from(clar as Map)),
+    );
+  }
+
+  /// Enter / leave gardener update mode. Server rejects visitors outright, so a
+  /// permission-denied here means the account is not garden staff.
+  ///
+  /// Returns the prompt to show in the thread.
+  Future<({bool active, String reply})> setUpdateMode(
+    String op, {
+    String language = 'en',
+  }) async {
+    final callable = _functions.httpsCallable(
+      'agentUpdateMode',
+      options: HttpsCallableOptions(timeout: const Duration(seconds: 20)),
+    );
+    final result = await callable.call<Map<String, dynamic>>({
+      'op': op,
+      'language': language,
+    });
+    return (
+      active: (result.data['active'] as bool?) ?? false,
+      reply: (result.data['reply'] as String?) ?? '',
     );
   }
 }

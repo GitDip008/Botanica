@@ -17,6 +17,7 @@ import { writeAuditEntry } from "./audit";
 import { confirmPending, cancelPending, undoLast, logCorrection } from "./writes";
 import { enforceRateLimit } from "../ratelimit";
 import { GARDEN_API_USER, GARDEN_API_PASS } from "./garden_api";
+import * as um from "./update_mode";
 
 const GROQ_API_KEY = defineSecret("GROQ_API_KEY");
 const GEMINI_API_KEY = defineSecret("GEMINI_API_KEY");
@@ -207,7 +208,17 @@ export const agentConfirm = onCall(
 
     if (op === "confirm") {
       if (!pending_id) throw new HttpsError("invalid-argument", "pending_id required.");
-      return await confirmPending(uid, pending_id);
+      const res = await confirmPending(uid, pending_id);
+      // In update mode a settled write is not the end of the conversation —
+      // offer [Update another] / [Done] instead of dumping the gardener back
+      // into free chat. Applies to both success and failure: either way they
+      // need to know what happens next.
+      const lang = (req.data?.language ?? "en") as string;
+      if (await um.loadState(uid).catch(() => null)) {
+        await um.resetSlots(uid);
+        return { ...res, clarification: um.followUpOptions(lang) };
+      }
+      return res;
     }
     if (op === "cancel") {
       if (!pending_id) throw new HttpsError("invalid-argument", "pending_id required.");
@@ -218,5 +229,51 @@ export const agentConfirm = onCall(
       return await undoLast(uid);
     }
     throw new HttpsError("invalid-argument", "op must be confirm | cancel | undo.");
+  }
+);
+
+/**
+ * agentUpdateMode — the gardener's "Update" button.
+ *
+ * Enters or leaves the slot-filling update conversation. Gated to garden staff
+ * server-side: the button is hidden from visitors in the app, but the mode is
+ * the only path that writes to T's production database, so the gate lives here
+ * too and not only in the UI.
+ */
+export const agentUpdateMode = onCall(
+  {
+    cors: true,
+    timeoutSeconds: 30,
+    memory: "256MiB",
+    enforceAppCheck: false,
+  },
+  async (req) => {
+    if (!req.auth) throw new HttpsError("unauthenticated", "Sign-in required.");
+    const uid = req.auth.uid;
+    await enforceRateLimit(uid, "agentUpdateMode");
+
+    const { op, language } = (req.data ?? {}) as {
+      op?: "start" | "exit" | "status";
+      language?: "en" | "fi" | "sv";
+    };
+    const lang = language ?? "en";
+
+    const role = await resolveRole(uid);
+    if (role === "visitor") {
+      throw new HttpsError("permission-denied", "Only garden staff can record updates.");
+    }
+
+    if (op === "start") {
+      await um.startUpdateMode(uid);
+      return { active: true, reply: um.updateModePrompt(lang) };
+    }
+    if (op === "exit") {
+      await um.exitUpdateMode(uid);
+      return { active: false, reply: um.updateModeExitMessage(lang) };
+    }
+    if (op === "status") {
+      return { active: (await um.loadState(uid)) !== null };
+    }
+    throw new HttpsError("invalid-argument", "op must be start | exit | status.");
   }
 );

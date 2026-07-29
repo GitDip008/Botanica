@@ -18,7 +18,7 @@ admin.initializeApp();
 setGlobalOptions({ region: "europe-north1" });
 
 // Smart Agent (see functions/src/agent/)
-export { agent, agentConfirm } from "./agent";
+export { agent, agentConfirm, agentUpdateMode } from "./agent";
 export { plantsCatalogue } from "./catalogue";
 import { enforceRateLimit } from "./ratelimit";
 import { apiList, GARDEN_API_USER, GARDEN_API_PASS } from "./agent/garden_api";

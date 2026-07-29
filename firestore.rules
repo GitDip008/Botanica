@@ -106,6 +106,9 @@ service cloud.firestore {
     match /agent_corrections/{doc}{ allow read, write: if false; }
     match /agent_pending/{doc}    { allow read, write: if false; }
     match /agent_writes/{doc}     { allow read, write: if false; }
+    // Update-mode slots. Client-writable would let a visitor hand themselves a
+    // half-built write intent, so it stays admin-SDK only like the rest.
+    match /agent_update_mode/{doc}{ allow read, write: if false; }
 
     // ── Default deny for anything not matched above. ─────────────────────
     match /{document=**} {

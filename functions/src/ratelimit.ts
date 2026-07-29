@@ -32,6 +32,9 @@ export const RATE_RULES: Record<string, RateRule> = {
   geminiCall: { limit: 20, windowSec: 60 },    // vision / fallback (pricier)
   plantnetIdentify: { limit: 30, windowSec: 60 }, // plant photo ID bursts
   plantsCatalogue: { limit: 40, windowSec: 60 },  // navigation catalogue search/browse
+  // Mode toggles + the status probe on every agent screen open. Generous
+  // because it is a cheap Firestore write, not an LLM or garden-API call.
+  agentUpdateMode: { limit: 60, windowSec: 60 },
 };
 
 /**

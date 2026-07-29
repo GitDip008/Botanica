@@ -32,6 +32,10 @@ class _AgentScreenState extends State<AgentScreen> {
   final List<_Message> _messages = [];
   List<String> _suggestions = const [];
   bool _busy = false;
+  /// Whether this account may record updates (garden staff). Server-decided.
+  bool _canUpdate = false;
+  /// Whether an update-mode conversation is currently open.
+  bool _updateMode = false;
 
   // ── Voice (Phase 3) ──
   final stt.SpeechToText _speech = stt.SpeechToText();
@@ -47,6 +51,7 @@ class _AgentScreenState extends State<AgentScreen> {
   void initState() {
     super.initState();
     _initSpeech();
+    _probeUpdateMode();
   }
 
   Future<void> _initSpeech() async {
@@ -211,6 +216,49 @@ class _AgentScreenState extends State<AgentScreen> {
     }
   }
 
+  /// Ask the server whether this account may record updates, and whether a mode
+  /// session is already open (it survives app restarts within its TTL).
+  ///
+  /// The role lives in Firestore server-side, so the server is the authority —
+  /// a permission-denied here IS the answer for a visitor. Deliberately not
+  /// mirrored into client state: two copies of an authorization fact drift.
+  Future<void> _probeUpdateMode() async {
+    try {
+      final r = await AgentService.instance.setUpdateMode(
+        'status',
+        language: LanguageService.instance.current.name,
+      );
+      if (!mounted) return;
+      setState(() {
+        _canUpdate = true;
+        _updateMode = r.active;
+      });
+    } catch (_) {
+      // Visitor, or offline. Either way: no button.
+    }
+  }
+
+  Future<void> _toggleUpdateMode() async {
+    if (_busy) return;
+    setState(() => _busy = true);
+    try {
+      final r = await AgentService.instance.setUpdateMode(
+        _updateMode ? 'exit' : 'start',
+        language: LanguageService.instance.current.name,
+      );
+      if (!mounted) return;
+      setState(() {
+        _updateMode = r.active;
+        if (r.reply.isNotEmpty) _messages.add(_Message.agent(r.reply));
+      });
+    } catch (e) {
+      if (!mounted) return;
+      setState(() => _messages.add(_Message.agent('⚠️ $e')));
+    } finally {
+      if (mounted) setState(() => _busy = false);
+    }
+  }
+
   /// Starter quick-replies shown on the empty screen — role-aware + localized.
   List<String> _starterSuggestions() {
     final lang = LanguageService.instance.current.name;
@@ -306,7 +354,8 @@ class _AgentScreenState extends State<AgentScreen> {
   Future<void> _confirmPending(PendingAction p) async {
     setState(() => _busy = true);
     try {
-      final result = await AgentService.instance.confirm(p.pendingId);
+      final result = await AgentService.instance
+          .confirm(p.pendingId, language: LanguageService.instance.current.name);
       setState(() {
         final idx = _messages.indexWhere(
           (m) => m.kind == _Kind.pending && m.pending?.pendingId == p.pendingId,
@@ -315,6 +364,12 @@ class _AgentScreenState extends State<AgentScreen> {
           _messages[idx] = _Message.confirmed(p);
         } else if (idx >= 0) {
           _messages.add(_Message.agent('⚠️ ${result.message}'));
+        }
+        // Update mode: offer [Update another] / [Done] after either outcome, so
+        // the gardener is never left guessing whether the mode is still on.
+        if (result.clarification != null &&
+            result.clarification!.options.isNotEmpty) {
+          _messages.add(_Message.clarify(result.clarification!));
         }
       });
     } catch (e) {
@@ -347,6 +402,27 @@ class _AgentScreenState extends State<AgentScreen> {
         title: const Text('Botanica Agent'),
         elevation: 0,
         actions: [
+          // Gardener-only: enter the slot-filling update conversation. Hidden
+          // from visitors, and the server refuses them regardless.
+          if (_canUpdate)
+            Padding(
+              padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 4),
+              child: FilledButton.icon(
+                onPressed: _busy ? null : _toggleUpdateMode,
+                icon: Icon(
+                  _updateMode ? Icons.check_rounded : Icons.edit_note_rounded,
+                  size: 18,
+                ),
+                label: Text(_updateMode ? 'Done' : 'Update'),
+                style: FilledButton.styleFrom(
+                  backgroundColor:
+                      _updateMode ? const Color(0xFF2E7D32) : const Color(0xFF1B4020),
+                  foregroundColor: const Color(0xFFE8F5E9),
+                  padding: const EdgeInsets.symmetric(horizontal: 12),
+                  visualDensity: VisualDensity.compact,
+                ),
+              ),
+            ),
           IconButton(
             tooltip: 'Demo: route to greenhouse',
             icon: const Icon(Icons.directions_rounded, color: Color(0xFF66BB6A)),

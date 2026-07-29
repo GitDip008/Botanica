@@ -1,12 +1,16 @@
 /**
- * Tool dispatcher — Phase 2: real LLM (Groq + Gemini fallback).
+ * Tool dispatcher.
  *
  * Flow:
- *   1. llmTurn() — Groq tool-calling round-trip with role-scoped tools
+ *   0. Update mode active? → slot-filling state machine (update_mode.ts), the
+ *      LLM never chooses anything here
+ *   1. Pattern-route the message (router.ts). Recognised → fixed tool calls.
+ *      Unrecognised → llmTurn() picks the tool, as before.
  *   2. For each tool_call:
  *        WRITE tools  → build a pending_action (UI confirms before commit)
- *        READ tools   → execute against the DAL (Phase 4 — stubbed for now)
- *   3. Compose reply text
+ *        READ tools   → execute against the DAL
+ *   3. composeAnswer() rephrases the fetched rows — the LLM's only job on a
+ *      read is language, never facts and never tool choice.
  */
 
 import { randomUUID } from "node:crypto";
@@ -17,6 +21,8 @@ import { llmTurn, composeAnswer, type LlmKeys, type LlmToolCall } from "./llm";
 import * as dal from "./dal";
 import { storePending, ledgerHistory, storeIntent, loadIntent, clearIntent } from "./writes";
 import { buildPlan, SafetyError, type WritePlan, type PlanChange } from "./safety";
+import { routeRead } from "./router";
+import * as um from "./update_mode";
 
 export interface DispatchInput {
   uid: string;
@@ -43,7 +49,7 @@ export interface ClarOption {
 }
 
 export interface Clarification {
-  kind: "disambiguation" | "did_you_mean";
+  kind: "disambiguation" | "did_you_mean" | "update_ask" | "update_followup";
   question: string;
   options: ClarOption[];
   /** Whether to still allow free typing (always true here). */
@@ -88,6 +94,90 @@ const GARDENER_ONLY = new Set([
 ]);
 
 export async function dispatch(input: DispatchInput): Promise<DispatchResult> {
+  // ── Update mode (gardener/admin only) ──
+  // An explicit mode, entered by a button, in which the conversation is a
+  // slot-filling state machine rather than an LLM agent. Checked FIRST so a
+  // tapped plant option routes into the machine instead of the generic
+  // disambiguation path below. See update_mode.ts for why.
+  if (input.role !== "visitor") {
+    const umState = await um.loadState(input.uid).catch(() => null);
+    if (umState) {
+      const followUp = um.readFollowUp(input.text);
+      if (followUp === "done") {
+        await um.exitUpdateMode(input.uid);
+        return {
+          reply: um.updateModeExitMessage(input.language),
+          tool_calls: [],
+          llm_model: "update-mode",
+        };
+      }
+      if (followUp === "again") {
+        await um.resetSlots(input.uid);
+        return {
+          reply: um.updateModePrompt(input.language),
+          tool_calls: [],
+          llm_model: "update-mode",
+        };
+      }
+
+      const turn = await um.handleUpdateTurn({
+        uid: input.uid,
+        text: input.text,
+        language: input.language,
+        keys: input.keys,
+        pinnedHankintaID: input.scannedHankintaID,
+      });
+
+      if (turn.kind === "ask") {
+        return {
+          reply: turn.question,
+          clarification: {
+            kind: "update_ask",
+            question: turn.question,
+            options: turn.options ?? [],
+            allow_free_text: true,
+          },
+          tool_calls: [],
+          llm_model: "update-mode",
+        };
+      }
+
+      // Slots complete → the SAME guarded write path the LLM path uses, so the
+      // parameterized SQL, row-count caps and audit log all still apply.
+      const outcome = await buildPendingAction({ name: turn.tool, arguments: turn.args }, input);
+      if (outcome.kind === "pending") {
+        await storePending(input.uid, outcome.pending);
+        return {
+          reply: outcome.pending.preview,
+          pending_actions: [outcome.pending],
+          tool_calls: [{ tool: turn.tool, params: turn.args, result: "pending" }],
+          llm_model: "update-mode",
+        };
+      }
+      if (outcome.kind === "clarify") {
+        return {
+          reply: outcome.clarification.question,
+          clarification: outcome.clarification,
+          tool_calls: [{ tool: turn.tool, params: turn.args, result: "denied" }],
+          llm_model: "update-mode",
+        };
+      }
+      // Plan couldn't be built (bad slot combination) — stay in the mode and
+      // let the gardener restate rather than dropping them back to free chat.
+      await um.resetSlots(input.uid);
+      return {
+        reply:
+          input.language === "fi"
+            ? "En saanut tuosta kirjausta. Kerro uudelleen: kasvi, toimenpide, määrä."
+            : input.language === "sv"
+              ? "Jag kunde inte registrera det. Säg igen: växt, åtgärd, antal."
+              : "I couldn't turn that into a record. Say it again: plant, action, count.",
+        tool_calls: [{ tool: turn.tool, params: turn.args, result: "unknown_tool" }],
+        llm_model: "update-mode",
+      };
+    }
+  }
+
   // ── Deterministic disambiguation completion ──
   // The user tapped a plant chip (scannedHankintaID set) and we have a stashed
   // write intent → complete THAT exact action on the chosen plant, no LLM, no
@@ -175,14 +265,33 @@ export async function dispatch(input: DispatchInput): Promise<DispatchResult> {
     }
   }
 
-  const turn = await llmTurn({
-    keys: input.keys,
-    role: input.role,
-    language: input.language,
-    text: input.text,
-    candidates: input.candidates,
-    history: input.history?.slice(-6), // keep recent context, save tokens
-  });
+  // ── Deterministic read routing ──
+  // Decide WHICH query to run by pattern, not by asking a model. Tool choice
+  // was the unreliable step: the same question could resolve to find_plant,
+  // query_plant_details, or an answer from memory on different days. The
+  // resulting tool calls then flow through the exact same pipeline below
+  // (disambiguation buttons, composeAnswer, suggestions), so the LLM still
+  // does the rephrasing — it just no longer decides intent.
+  //
+  // Anything the router doesn't recognise falls through to llmTurn untouched,
+  // so no phrasing that worked before regresses. See router.ts.
+  let routed: LlmToolCall[] | null = null;
+  try {
+    routed = await routeToToolCalls(input);
+  } catch (e) {
+    logger.warn("agent.router_failed", { err: String(e) });
+  }
+
+  const turn = routed
+    ? { text: "", tool_calls: routed, model: "deterministic-router" }
+    : await llmTurn({
+        keys: input.keys,
+        role: input.role,
+        language: input.language,
+        text: input.text,
+        candidates: input.candidates,
+        history: input.history?.slice(-6), // keep recent context, save tokens
+      });
 
   const pending: PendingAction[] = [];
   const records: ToolCallRecord[] = [];
@@ -335,6 +444,69 @@ export async function dispatch(input: DispatchInput): Promise<DispatchResult> {
 // ─── Contextual follow-up suggestions (tap-to-send quick replies) ───────────
 
 /** Pulls the plant in focus from the reads, if any, so suggestions can name it. */
+/**
+ * Turn a pattern-matched intent into the tool calls the read pipeline already
+ * understands. Returns null to mean "not confident — let the LLM decide", which
+ * is what keeps this safe to add incrementally.
+ */
+async function routeToToolCalls(input: DispatchInput): Promise<LlmToolCall[] | null> {
+  const route = routeRead(input.text);
+  if (route.intent === "unknown") return null;
+
+  // Staff-only intents: let visitors fall through so the LLM path's role gate
+  // produces the normal refusal instead of an empty routed turn.
+  const isStaff = input.role !== "visitor";
+
+  if (route.intent === "overdue") {
+    if (!isStaff) return null;
+    return [
+      {
+        name: "find_overdue_inspections",
+        arguments: {
+          ...(route.days ? { days_threshold: route.days } : {}),
+          ...(route.sectionCode ? { section_code: route.sectionCode } : {}),
+        },
+      },
+    ];
+  }
+
+  if (!route.plantQuery) return null;
+
+  // History needs a specific plant. Resolve the name first: exactly one
+  // physical plant means we can answer now; several means hand the name to
+  // query_plant_details, whose existing post-loop turns the matches into
+  // section buttons.
+  if (route.intent === "plant_history" && isStaff) {
+    const instances = await dal.findPlantInstances(route.plantQuery, route.sectionCode);
+    if (instances.length === 1) {
+      return [
+        {
+          name: "query_plant_history",
+          arguments: {
+            hankintaID: instances[0].hankintaID,
+            ...(route.days ? { days_back: route.days } : {}),
+          },
+        },
+      ];
+    }
+    if (instances.length === 0) return null; // let the LLM path offer suggestions
+  }
+
+  // info / status / location / ambiguous-history all resolve through the same
+  // read, which already returns placements (location) and, for staff, the
+  // maintenance fields. composeAnswer receives the user's actual question, so
+  // one query answers all four phrasings.
+  return [
+    {
+      name: "query_plant_details",
+      arguments: {
+        name_query: route.plantQuery,
+        ...(route.sectionCode ? { section_code: route.sectionCode } : {}),
+      },
+    },
+  ];
+}
+
 function subjectName(readResults: { tool: string; result: unknown }[]): string | undefined {
   for (const r of readResults) {
     const res = r.result as any;
