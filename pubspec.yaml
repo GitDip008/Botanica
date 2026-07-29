@@ -73,6 +73,18 @@ dependencies:
   speech_to_text: ^7.0.0
   # Agent voice replies
   flutter_tts: ^4.1.0
+  # ── Navigation module (vendored from BotaniNav) ──────────────────────────
+  # Riverpod powers the nav module's state (coexists with provider, which the
+  # rest of the app uses). flutter_map/latlong2/geolocator/permission_handler/
+  # http are already declared above and shared.
+  flutter_riverpod: ^2.6.1
+  equatable: ^2.0.5
+  # BLE indoor positioning (nearest-beacon proximity)
+  flutter_blue_plus: ^1.35.0
+  # Magnetometer compass for the navigation arrow
+  sensors_plus: ^7.0.0
+  # Path-graph maths for Phuc's greenhouse walking navigation (A* on CAD nodes)
+  vector_math: ^2.2.0
 
 dependency_overrides:
   # record_linux 0.7.2 doesn't implement startStream from record_platform_interface 1.5.0.
@@ -118,7 +130,12 @@ flutter:
 
   assets:
     - logo.png
+    - greenhouse.png
     - agent_assets/navigation_graph.json
+    # Greenhouse indoor floor-plan layers (navigation module)
+    - assets/maps/
+    # Static plant index + curated tags (navigation / tag feature)
+    - assets/data/
 
   # An image asset can refer to one or more resolution-specific "variants", see
   # https://flutter.dev/to/resolution-aware-images

@@ -19,12 +19,39 @@ setGlobalOptions({ region: "europe-north1" });
 
 // Smart Agent (see functions/src/agent/)
 export { agent, agentConfirm } from "./agent";
+export { plantsCatalogue } from "./catalogue";
 import { enforceRateLimit } from "./ratelimit";
+import { apiList, GARDEN_API_USER, GARDEN_API_PASS } from "./agent/garden_api";
 
 // ─── Secrets (set with: firebase functions:secrets:set GROQ_API_KEY) ─────────
 const GROQ_API_KEY = defineSecret("GROQ_API_KEY");
 const PLANTNET_API_KEY = defineSecret("PLANTNET_API_KEY");
 const GEMINI_API_KEY = defineSecret("GEMINI_API_KEY");
+
+// ─── Keep T's garden API warm ────────────────────────────────────────────────
+// T's API (Vercel) cold-starts in 5-25s after idle, which is the agent's main
+// source of lag. A light authenticated ping every 5 minutes keeps the serverless
+// function AND its DB connection warm, so real user requests stay fast.
+// Region europe-west1 because Cloud Scheduler is not available in europe-north1.
+export const keepGardenApiWarm = onSchedule(
+  {
+    schedule: "*/5 * * * *",
+    region: "europe-west1",
+    secrets: [GARDEN_API_USER, GARDEN_API_PASS],
+    timeoutSeconds: 30,
+    memory: "256MiB",
+  },
+  async () => {
+    try {
+      const t0 = Date.now();
+      await apiList("/api/taksoni/", { page_size: 1 }); // tiny authed read warms auth + DB
+      logger.info("garden_api.warm_ok", { ms: Date.now() - t0 });
+    } catch (e) {
+      // A failed ping is harmless — the next one runs in 5 minutes.
+      logger.warn("garden_api.warm_failed", { err: String(e) });
+    }
+  }
+);
 
 // ─── 1. FCM push on public event approval ────────────────────────────────────
 export const onPublicEventApproved = onDocumentUpdated(

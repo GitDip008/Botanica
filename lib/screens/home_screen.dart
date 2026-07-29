@@ -7,7 +7,8 @@ import '../services/garden_schedule.dart';
 import '../services/language_service.dart';
 import 'camera_screen.dart';
 import 'bloom_screen.dart';
-import 'map_screen.dart';
+import '../navigation/nav_routes.dart';
+import 'navigation_screen.dart';
 import 'plant_hunt_screen.dart';
 import 'report_screen.dart';
 import 'events_screen.dart';
@@ -103,20 +104,36 @@ class HomeScreen extends StatelessWidget {
 
                     const SizedBox(height: 10),
 
-                    // ── Garden Map moved into Explore section ────
+                    // ── Find a Plant (search + navigate) ────
                     _PrimaryCard(
-                      icon: Icons.map_rounded,
-                      iconColor: const Color(0xFF64B5F6),
-                      title: s.gardenMap,
-                      subtitle: s.gpsSections,
+                      icon: Icons.eco_rounded,
+                      iconColor: const Color(0xFF81C784),
+                      title: s.findAPlant,
+                      subtitle: s.findAPlantSub,
                       gradient: const LinearGradient(
                         colors: [Color(0xFF0A2A3D), Color(0xFF1565C0)],
                         begin: Alignment.topLeft,
                         end: Alignment.bottomRight,
                       ),
-                      onTap: () => Navigator.push(context,
-                          _route(const MapScreen())),
+                      onTap: () => openNavigationModule(context),
                     ).animate().slideY(begin: 0.15, duration: 400.ms, delay: 180.ms, curve: Curves.easeOut),
+
+                    const SizedBox(height: 10),
+
+                    // ── Navigating Map (Phuc's A* walking paths) ────
+                    _PrimaryCard(
+                      icon: Icons.route_rounded,
+                      iconColor: const Color(0xFF4DD0E1),
+                      title: s.navigatingMap,
+                      subtitle: s.navigatingMapSub,
+                      gradient: const LinearGradient(
+                        colors: [Color(0xFF06303A), Color(0xFF00838F)],
+                        begin: Alignment.topLeft,
+                        end: Alignment.bottomRight,
+                      ),
+                      onTap: () => Navigator.push(context,
+                          _route(const IndoorMapScreen(mapSize: Size(1050, 500)))),
+                    ).animate().slideY(begin: 0.15, duration: 400.ms, delay: 220.ms, curve: Curves.easeOut),
 
                     const SizedBox(height: 24),
 

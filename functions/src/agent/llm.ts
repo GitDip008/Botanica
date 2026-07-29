@@ -197,41 +197,28 @@ function toolsForRole(role: Role) {
 // ─── System prompt ──────────────────────────────────────────────────────────
 
 function systemPrompt(role: Role, language: string, candidates: PlantCandidate[]): string {
-  const candidateBlock = candidates.length
-    ? `CANDIDATE PLANTS (the user is near these — NEVER use a hankintaID not in this list):\n${candidates
-        .map(
-          (c) =>
-            `- hankintaID=${c.hankintaID}: ${c.scientific_name}` +
-            (c.common_name_fi ? ` (fi: ${c.common_name_fi})` : "") +
-            (c.common_name_en ? ` (en: ${c.common_name_en})` : "") +
-            (c.location_label ? ` @ ${c.location_label}` : "")
-        )
+  const cands = candidates.length
+    ? `Nearby plants (use these hankintaIDs):\n${candidates
+        .slice(0, 10)
+        .map((c) => `- ${c.hankintaID}: ${c.scientific_name}${c.location_label ? ` @ ${c.location_label}` : ""}`)
         .join("\n")}`
-    : "NO pre-resolved candidate plants (the user gave no scan/location signal). That is FINE — to record an action/observation, call record_action/record_observation with name_query set to the plant the user named. To answer a 'where/which' question, call find_plant. Never refuse for lack of an id, and never invent a hankintaID.";
+    : `No nearby plants resolved — identify plants by name_query.`;
 
   const base =
     role === "visitor"
-      ? `You are the Botanica Garden Assistant for a VISITOR at Oulu Botanical Garden. Help them find plants, learn about species, plan tours. NEVER reveal maintenance history, pest issues, plant health status or staff notes. Reply in language "${language}". Be warm and brief.`
-      : `You are the Botanica Garden Assistant for a GARDENER at Oulu Botanical Garden. Parse their speech into structured records. Reply in language "${language}". Be terse and precise.
+      ? `You are the Botanica assistant for a VISITOR at Oulu Botanical Garden. Help find plants, learn about species, plan tours. Never reveal maintenance history, health status, pests or staff notes. Reply in "${language}", warm and brief.`
+      : `You are the Botanica assistant for a GARDENER at Oulu Botanical Garden. Reply in "${language}", terse and precise.
+Action codes: KYLVÖ=sow, IT.=germinated, KOULINTA=prick out, IST.=plant out, SIIRTO=transfer, PISTETTY=cuttings, KUOLLUT=died, POIST.=removed, MYYTY=sold.
+Stocktake: stars (*/**/***), "N kpl", size, status (kukkii=blooming), notes.
+To record: call record_action/record_observation with name_query (+ section_code if said). The app resolves the name and shows a picker if several match — never ask which plant yourself.
+For history / "needs attention": call query_plant_history first and use ONLY returned data; if none, say so, then optional general advice clearly labelled as general.`;
 
-GARDEN CONVENTIONS you must follow:
-- Actions use legacy Finnish codes: KYLVÖ (sow), IT. (germinated), KOULINTA (prick out), IST. (plant out), SIIRTO (transfer), PISTETTY (cuttings), KUOLLUT (died), POIST. (removed), MYYTY (sold).
-- Stocktake/inspection format: condition stars first (* poor, ** moderate, *** good), then count "N kpl", then size, then status words (kukkii=blooming), then free notes. Example: "*** 3 kpl, 2-4 m, kukkii, ovat liian tiheässä".
-- Locations use codes: G-H? = greenhouse cells, T-x.y.z = field plots, K-n, X-*, or bed numbers like "6/ 1".
-- If the gardener mentions BOTH an action and an observation in one utterance, emit BOTH tool calls.
-- Counts: "kpl" = pieces/individuals, "mätäs/mät." = clump.
+  return `${base}
 
-IDENTIFYING THE RIGHT PLANT (critical):
-- Every physical plant has its own hankintaID. The SAME species can exist as MANY separate plants in different sections. An update to one must never be applied to another.
-- To RECORD an action/observation: call record_action / record_observation directly, passing name_query (the plant the user said) and section_code if they named one. Do NOT call find_plant first, and do NOT ask which plant yourself — the app resolves the name and, if several plants match, shows the gardener a picker automatically. Just make the record_* call.
-- Only use a hankintaID if it is already in the candidate list or came from a scan. NEVER invent one.
-- Example: user says "mark Helianthus annuus as watered" → call record_action with name_query="Helianthus annuus", action_family="MUU", details="watered".
+${cands}
 
-GROUNDING (strict — never invent facts):
-- For "what's the latest", "what next", "does it need attention", FIRST call query_plant_history (gardener) or query_plant_details, and base every statement ONLY on the returned records.
-- If the records show nothing for that plant, say plainly that the database has no records for it, THEN you may add brief GENERAL gardening guidance — but clearly label it as general advice, not from the garden's data.`;
-
-  return `${base}\n\n${candidateBlock}\n\nCONVERSATION CONTEXT: Earlier turns are provided for reference (e.g. resolving "that one", "the X-TA one", or a plant named a moment ago). ACT ONLY on the user's LATEST message. Use history only to fill in references — never re-execute an older request, and never invent context that isn't there.\nEXCEPTION: if your OWN previous turn asked the user to choose or clarify (e.g. "which plant?" / "did you mean?"), the user's latest reply COMPLETES that original request — carry out the originally-requested action on the now-identified plant (use the hankintaID from the candidate list above). If the latest message is still ambiguous, ask again.\n\nFor any write action, your text reply must be a one-sentence summary of what will be saved (the app shows it as a confirmation card). Do not claim anything was saved yet.`;
+For ANY plant the user names, you MUST call a tool (query_plant_details or find_plant for questions; record_* for updates). Never say a plant does not exist, and never list a plant's locations or details, from memory — call the tool; the app turns multiple matches into buttons, so do not list options as text.
+Act on the user's LATEST message; use earlier turns only to resolve references ("that one") or to complete a choice you just asked for. For writes, reply with a one-sentence summary of what will be saved; do not claim it is saved yet.`;
 }
 
 // ─── Groq call ──────────────────────────────────────────────────────────────
@@ -253,7 +240,14 @@ export async function llmTurn(opts: {
 
   // 1) Groq — try the high-quality 70B first; if its DAILY token cap is hit
   //    (429) fall back to 8B-instant, which has a separate, much larger quota.
-  const groqModels = ["llama-3.3-70b-versatile", "llama-3.1-8b-instant"];
+  // Each Groq model has its OWN separate daily token quota, so listing several
+  // multiplies the free headroom: when one is exhausted (or emits a malformed
+  // tool call), we fall through to the next. Ordered best -> lightest.
+  const groqModels = [
+    "llama-3.3-70b-versatile",
+    "llama-3.1-8b-instant",
+    "openai/gpt-oss-20b",
+  ];
   for (const model of groqModels) {
     try {
       const r = await fetch("https://api.groq.com/openai/v1/chat/completions", {
@@ -285,8 +279,10 @@ export async function llmTurn(opts: {
         status: r.status,
         body: (await r.text()).slice(0, 200),
       });
-      // Non-quota errors won't be fixed by switching model — stop trying Groq.
-      if (r.status !== 429) break;
+      // Only auth errors are unfixable by switching model. Quota (429) AND the
+      // occasional malformed tool-call (400 tool_use_failed) are often resolved
+      // by retrying on the other model, so keep going.
+      if (r.status === 401 || r.status === 403) break;
     } catch (e) {
       logger.warn("agent.groq_failed", { model, err: String(e) });
     }
@@ -351,7 +347,7 @@ export async function composeAnswer(opts: {
     `Answer using ONLY this data — every fact and every care suggestion MUST be grounded in these results. Never invent dates, counts, conditions, or history. ` +
     `If the results contain an "assessment" or history, you may suggest concrete next steps, but ONLY ones justified by that data (e.g. overdue inspection, recorded status). ` +
     `If the results are empty / show no records for the plant, say clearly that the database has no records for it, THEN you may add brief general gardening guidance prefixed exactly with "General guidance (not from garden records): ". ` +
-    `If several plants match (a find_plant list with more than one entry), do NOT pick one — list them by section/location and ask which the user means. ` +
+    `When the user asks ABOUT a plant (e.g. "tell me about X"), present its details and the section(s) it is found in as plain STATEMENTS. Do NOT ask the user to choose a location or which plant — if a real choice is needed the app shows buttons separately; your job here is just to give the information. ` +
     `Be concise (2-6 sentences or a short list). Reply in language "${opts.language}". Dates are ISO format. ` +
     `"kpl" means individuals/pieces. Condition stars: * poor, ** moderate, *** good.`;
   const user =

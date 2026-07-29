@@ -140,6 +140,26 @@ class AppStrings {
         AppLanguage.fi: 'Puutarhakartta',
         AppLanguage.sv: 'Trädgårdskarta',
       });
+  String get findAPlant => _pick({
+        AppLanguage.en: 'Find a Plant',
+        AppLanguage.fi: 'Etsi kasvi',
+        AppLanguage.sv: 'Hitta en växt',
+      });
+  String get findAPlantSub => _pick({
+        AppLanguage.en: 'Search and navigate to any plant',
+        AppLanguage.fi: 'Hae ja navigoi mille tahansa kasville',
+        AppLanguage.sv: 'Sök och navigera till valfri växt',
+      });
+  String get navigatingMap => _pick({
+        AppLanguage.en: 'Navigating Map',
+        AppLanguage.fi: 'Reittikartta',
+        AppLanguage.sv: 'Navigeringskarta',
+      });
+  String get navigatingMapSub => _pick({
+        AppLanguage.en: 'Walk from any point to any point',
+        AppLanguage.fi: 'Kävele pisteestä toiseen',
+        AppLanguage.sv: 'Gå från punkt till punkt',
+      });
   String get trails => _pick({
         AppLanguage.en: 'Trails',
         AppLanguage.fi: 'Polut',

@@ -25,6 +25,12 @@ export function fixEncoding(s: string | null | undefined): string {
     .trim();
 }
 
+/** Normalize a section code for forgiving comparison: "g-ha", "g ha", "G-HA"
+ *  all collapse to "GHA". Lets users type sections however they like. */
+export function normalizeSection(s: string | null | undefined): string {
+  return (s ?? "").toUpperCase().replace(/[^A-Z0-9]/g, "");
+}
+
 // Tiny per-instance cache so repeated taxon-name lookups in one turn are cheap.
 const _taxonNameCache = new Map<number, string>();
 
@@ -152,9 +158,16 @@ export async function findPlantInstances(
   limit = 8
 ): Promise<PlantInstance[]> {
   const taxa = await apiList<any>("/api/taksoni/", { search: nameQuery, page_size: 6 });
+  // Prefer an EXACT name match so "Coffea arabica" resolves to that one species
+  // and does NOT drag in its cultivars ('Catuai', 'Nana', ...), which caused
+  // the section picker to loop.
+  const exact = taxa.find(
+    (t: any) => fixEncoding(t.tieteellinen_nimi).toLowerCase() === nameQuery.trim().toLowerCase()
+  );
+  const useTaxa = exact ? [exact] : taxa;
   // Gather raw acquisitions (cheap) WITHOUT enriching yet.
   const hakLists = await Promise.all(
-    taxa.map(async (t) => {
+    useTaxa.map(async (t: any) => {
       const haks = await apiList<any>(`/api/taksoni/${t.taksonin_nro}/hankintatiedot`, { page_size: 8 });
       return haks.map((h) => ({ h, name: fixEncoding(t.tieteellinen_nimi) }));
     })
@@ -164,8 +177,173 @@ export async function findPlantInstances(
   // superset, then filter.
   const raw = hakLists.flat().slice(0, sectionCode ? 25 : limit);
   const enriched = await Promise.all(raw.map((x) => enrichInstance(x.h, x.name)));
-  const filtered = sectionCode ? enriched.filter((i) => i.section_code === sectionCode) : enriched;
+  // Case/spacing-insensitive section match: "g-ha", "g ha", "G-HA" all match.
+  const wantSection = normalizeSection(sectionCode);
+  const filtered = sectionCode
+    ? enriched.filter((i) => normalizeSection(i.section_code) === wantSection)
+    : enriched;
   return filtered.slice(0, limit);
+}
+
+// ─── Plant sections (placement list for section buttons) ────────────────────
+
+export interface PlacementInfo {
+  hankintaID: number;
+  osaston_numero: number;
+  section_code?: string;
+  section_name?: string;
+  status?: string;
+}
+
+/** Every placement (section) a taxon's plants sit in — one per osastopaikka row.
+ *  Used to build the "which section?" buttons. */
+export async function plantSections(taksonin_nro: number, limit = 12): Promise<PlacementInfo[]> {
+  const haks = await apiList<any>(`/api/taksoni/${taksonin_nro}/hankintatiedot`, { page_size: limit });
+  const lists = await Promise.all(
+    haks.map(async (h) => {
+      const placements = await apiList<any>(`/api/hankintatiedot/${h.hankintaID}/osastopaikka`, { page_size: 10 });
+      return placements.map((p) => ({
+        hankintaID: h.hankintaID,
+        osaston_numero: p.osaston_numero,
+        section_code: p.osaston_koodi ?? undefined,
+        section_name: fixEncoding(p.osaston_nimi) || undefined,
+        status: fixEncoding(p.kasvin_status) || undefined,
+      }));
+    })
+  );
+  return lists.flat();
+}
+
+// ─── Full categorized plant card ────────────────────────────────────────────
+
+export interface PlantCard {
+  scientific_name: string;
+  family: string;
+  synonyms: string[];
+  general_notes: string;
+  last_updated: string;
+  acquisition: { number: string; arrival_date: string; received_as: string; material_value: string };
+  section: { code: string; name: string; status: string; notes: string; placement_date: string; location: string };
+  living_count: string;
+  last_inspection: { date: string; inspector: string; detail: string };
+  last_action: { date: string; detail: string };
+  caretakers: string[];
+  cultivation: { light: string; temperature: string; hardiness: string; toxicity: string; pests: string };
+}
+
+export async function plantCard(opts: {
+  hankintaID?: number;
+  taksonin_nro?: number;
+  section_code?: string;
+}): Promise<PlantCard | null> {
+  let hankintaID = opts.hankintaID;
+  let hak: any;
+  let taxon: any;
+
+  if (hankintaID) {
+    hak = await apiGetOne<any>(`/api/hankintatiedot/${hankintaID}`);
+    if (hak) taxon = await apiGetOne<any>(`/api/taksoni/${hak.taksonin_nro}`);
+  } else if (opts.taksonin_nro) {
+    taxon = await apiGetOne<any>(`/api/taksoni/${opts.taksonin_nro}`);
+    const haks = await apiList<any>(`/api/taksoni/${opts.taksonin_nro}/hankintatiedot`, { page_size: 1 });
+    hak = haks[0];
+    hankintaID = hak?.hankintaID;
+  }
+  if (!taxon) return null;
+
+  const [family, synRows, placements, cultRows, actions] = await Promise.all([
+    taxon.jarjestysnumero != null ? apiGetOne<any>(`/api/heimo/${taxon.jarjestysnumero}`) : Promise.resolve(null),
+    apiList<any>(`/api/taksoni/${taxon.taksonin_nro}/synonyymi`, { page_size: 5 }),
+    hankintaID ? apiList<any>(`/api/hankintatiedot/${hankintaID}/osastopaikka`, { page_size: 10 }) : Promise.resolve([]),
+    apiList<any>(`/api/taksoni/${taxon.taksonin_nro}/taksonin_viljelytiedot`, { page_size: 1 }),
+    hankintaID ? apiList<any>("/api/toimenpide/", { hankintaID, page_size: 50 }) : Promise.resolve([]),
+  ]);
+
+  // Pick the placement matching the requested section, else the first.
+  const wantSec = normalizeSection(opts.section_code);
+  const placement = wantSec
+    ? placements.find((p) => normalizeSection(p.osaston_koodi) === wantSec) ?? placements[0]
+    : placements[0];
+
+  // Sub-location + inspections for that placement.
+  let sijoitus: any;
+  let inspections: any[] = [];
+  if (placement) {
+    const spots = await apiList<any>(`/api/osastopaikka/${placement.osaston_numero}/sijoituspaikka`, { page_size: 5 });
+    sijoitus = spots[0];
+    const inspLists = await Promise.all(
+      spots.map((s) => apiList<any>(`/api/sijoituspaikka/${s.sijoituspaikan_nro}/tarkastusmerkinta`, { page_size: 20 }))
+    );
+    inspections = inspLists.flat().filter((i) => !i.deleted_at);
+  }
+  inspections.sort((a, b) => ((b.uus_tarkastuspvm ?? "") < (a.uus_tarkastuspvm ?? "") ? -1 : 1));
+  const lastInsp = inspections[0];
+  const caretakers = [...new Set(inspections.map((i) => i.tarkastaja).filter(Boolean))] as string[];
+
+  const liveActions = (actions as any[])
+    .filter((a) => !a.deleted_at)
+    .sort((a, b) => ((b.uus_pvm ?? "") < (a.uus_pvm ?? "") ? -1 : 1));
+  const lastAction = liveActions[0];
+  const cult = cultRows[0];
+
+  return {
+    scientific_name: fixEncoding(taxon.tieteellinen_nimi),
+    family: family ? fixEncoding(family.nimi) : "",
+    synonyms: synRows.map((s) => fixEncoding(s.nimi)),
+    general_notes: fixEncoding(taxon.muita_tietoja),
+    last_updated: taxon.viimeinen_paivityspvm ?? "",
+    acquisition: {
+      number: hak?.hankintanumero ?? "",
+      arrival_date: hak?.saapumispvm ?? "",
+      received_as: fixEncoding(hak?.millaisena_saatu),
+      material_value: fixEncoding(hak?.materiaalin_arvo),
+    },
+    section: {
+      code: placement?.osaston_koodi ?? "",
+      name: fixEncoding(placement?.osaston_nimi),
+      status: fixEncoding(placement?.kasvin_status) || fixEncoding(sijoitus?.kasvin_status),
+      notes: fixEncoding(placement?.kasvin_huomautuksia),
+      placement_date: sijoitus?.sijoituspvm ?? "",
+      location: fixEncoding(sijoitus?.sijoituspaikan_nimi),
+    },
+    living_count: fixEncoding(lastInsp?.elavia_yksiloita),
+    last_inspection: {
+      date: lastInsp?.uus_tarkastuspvm ?? lastInsp?.tarkastuspvm ?? "",
+      inspector: lastInsp?.tarkastaja ?? "",
+      detail: fixEncoding(lastInsp?.menestymista_koskevat_havainnot),
+    },
+    last_action: {
+      date: lastAction?.uus_pvm ?? lastAction?.pvm ?? "",
+      detail: fixEncoding(lastAction?.toimenpide),
+    },
+    caretakers,
+    cultivation: {
+      light: fixEncoding(cult?.erityisia_valovaatimuksia),
+      temperature: fixEncoding(cult?.erityisia_lampotila_tai_talvehtimisvaatimuksia),
+      hardiness: fixEncoding(cult?.ilmastollinen_kestavyys),
+      toxicity: fixEncoding(cult?.myrkyllisyys),
+      pests: fixEncoding(cult?.kasvitaudit_ja_tuholaiset),
+    },
+  };
+}
+
+/** Distinct species (taxa) matching a name — used to offer "did you mean
+ *  Coffea arabica?" when the user typed a partial/ambiguous name. */
+export async function searchTaxa(
+  query: string,
+  limit = 8
+): Promise<{ taksonin_nro: number; scientific_name: string }[]> {
+  const taxa = await apiList<any>("/api/taksoni/", { search: query, page_size: limit });
+  const seen = new Set<string>();
+  const out: { taksonin_nro: number; scientific_name: string }[] = [];
+  for (const t of taxa) {
+    const nm = fixEncoding(t.tieteellinen_nimi);
+    if (nm && !seen.has(nm)) {
+      seen.add(nm);
+      out.push({ taksonin_nro: t.taksonin_nro, scientific_name: nm });
+    }
+  }
+  return out;
 }
 
 /** Light verification for the write path — 1-2 cached calls instead of the
@@ -356,6 +534,8 @@ export async function plantHistory(hankintaID: number, daysBack = 36500): Promis
 
   const out: HistoryEntry[] = [
     ...actions
+      // Hide soft-deleted (undone) rows — the API returns them, we filter.
+      .filter((a) => !a.deleted_at)
       .filter((a) => (a.uus_pvm ?? "") >= since || daysBack >= 36500)
       .map((a) => ({
         kind: "action" as const,
@@ -364,6 +544,7 @@ export async function plantHistory(hankintaID: number, daysBack = 36500): Promis
         source: "legacy" as const,
       })),
     ...inspections
+      .filter((i) => !i.deleted_at)
       .filter((i) => (i.uus_tarkastuspvm ?? "") >= since || daysBack >= 36500)
       .map((i) => ({
         kind: "inspection" as const,
@@ -412,6 +593,7 @@ export async function overdueInspections(daysThreshold = 365, sectionCode?: stri
             { page_size: 50 }
           );
           for (const i of insp) {
+            if (i.deleted_at) continue; // ignore soft-deleted inspections
             const d = i.uus_tarkastuspvm ?? "";
             if (d > last) last = d;
           }

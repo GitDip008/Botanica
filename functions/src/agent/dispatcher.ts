@@ -117,13 +117,71 @@ export async function dispatch(input: DispatchInput): Promise<DispatchResult> {
     }
   }
 
+  // ── Deterministic READ completion ──
+  // A plant/section BUTTON was tapped (scannedHankintaID set, no write intent).
+  // Show THAT exact plant's info directly — bypassing the LLM tool choice, which
+  // substring-matches cultivars and loops. Skip only if the message is clearly a
+  // status/history question (let the LLM handle those).
+  if (input.scannedHankintaID) {
+    const wantsMore = /attention|histor|need|next|water|record|inspect|status|when|overdue|kastel|toimenpide|tarkast/i.test(
+      input.text
+    );
+    if (!wantsMore) {
+      try {
+        const details = await dal.plantDetails({ hankintaID: input.scannedHankintaID });
+        if (details) {
+          const safe = input.role === "visitor" ? stripForVisitor(details) : (details as any);
+          const rr = [{ tool: "query_plant_details", result: safe }];
+          // No-LLM fallback line so this still works when the AI is rate-limited.
+          const secs = [
+            ...new Set((safe.placements ?? []).map((p: any) => p.section_code).filter(Boolean)),
+          ];
+          const basic =
+            `${safe.scientific_name}` +
+            (safe.family?.latin ? `, family ${safe.family.latin}` : "") +
+            (secs.length ? `. Found in section${secs.length > 1 ? "s" : ""}: ${secs.join(", ")}` : "") +
+            (safe.general_notes ? `. ${safe.general_notes}` : ".");
+          let composed = "";
+          try {
+            composed = await composeAnswer({
+              keys: input.keys,
+              language: input.language,
+              userText: input.text,
+              toolResults: rr,
+            });
+          } catch {
+            /* AI down — use basic line */
+          }
+          const suggestions = buildSuggestions({
+            role: input.role,
+            lang: input.language,
+            readResults: rr,
+            hasClarification: false,
+            hasPending: false,
+          });
+          return {
+            reply: composed || basic,
+            data: safe,
+            suggestions,
+            tool_calls: [
+              { tool: "query_plant_details", params: { hankintaID: input.scannedHankintaID }, result: "executed" },
+            ],
+            llm_model: composed ? "deterministic-read" : "deterministic-read-basic",
+          };
+        }
+      } catch (e) {
+        logger.warn("agent.deterministic_read_failed", { err: String(e) });
+      }
+    }
+  }
+
   const turn = await llmTurn({
     keys: input.keys,
     role: input.role,
     language: input.language,
     text: input.text,
     candidates: input.candidates,
-    history: input.history?.slice(-15),
+    history: input.history?.slice(-6), // keep recent context, save tokens
   });
 
   const pending: PendingAction[] = [];
@@ -177,14 +235,27 @@ export async function dispatch(input: DispatchInput): Promise<DispatchResult> {
     });
   }
 
-  // find_plant that matched MANY physical plants → disambiguation chips so the
-  // user picks the exact one (tapping pins it for the next turn).
+  // A name that matched several SPECIES → "did you mean ...?" species buttons.
   if (!clarification) {
-    const fpMulti = readResults.find(
-      (r) => r.tool === "find_plant" && ((r.result as any)?.count ?? 0) > 1
+    const sc = readResults.find((r) => ((r.result as any)?.species_choices?.length ?? 0) > 0);
+    if (sc) {
+      const names = (sc.result as any).species_choices as string[];
+      clarification = {
+        kind: "did_you_mean",
+        question: didYouMeanQuestion(input.language),
+        options: names.map((nm) => ({ label: nm, send_text: `I am talking about ${nm}` })),
+        allow_free_text: true,
+      };
+    }
+  }
+
+  // ANY read that matched MANY physical plants → section disambiguation buttons.
+  if (!clarification) {
+    const multi = readResults.find(
+      (r) => ((r.result as any)?.count ?? 0) > 1 && (r.result as any)?.matches
     );
-    if (fpMulti) {
-      const matches = (fpMulti.result as any).matches as dal.PlantInstance[];
+    if (multi) {
+      const matches = (multi.result as any).matches as dal.PlantInstance[];
       clarification = disambiguation(matches[0].scientific_name, matches.slice(0, 8), input.language);
     }
   }
@@ -200,7 +271,7 @@ export async function dispatch(input: DispatchInput): Promise<DispatchResult> {
         question: didYouMeanQuestion(input.language),
         options: sugg
           .slice(0, 4)
-          .map((s) => ({ label: s.scientific_name, send_text: s.scientific_name })),
+          .map((s) => ({ label: s.scientific_name, send_text: `I am talking about ${s.scientific_name}` })),
         allow_free_text: true,
       };
     }
@@ -334,31 +405,31 @@ type PendingOutcome =
 
 /** Builds a disambiguation clarification (buttons per physical plant). */
 function disambiguation(name: string, instances: dal.PlantInstance[], lang: string): Clarification {
+  // One short button per DISTINCT section (e.g. "G-HA"); clean and quick to tap.
+  // If a section holds several plants we keep the first; the confirmation card
+  // still shows the exact plant before any write.
+  const seen = new Set<string>();
+  const options: ClarOption[] = [];
+  for (const i of instances) {
+    const key = i.section_code ? dal.normalizeSection(i.section_code) : `ID${i.hankintaID}`;
+    if (seen.has(key)) continue;
+    seen.add(key);
+    options.push({
+      label: i.section_code
+        ? `${i.section_code}${i.status ? ` (${i.status})` : ""}`
+        : `#${i.hankintaID}`,
+      send_text: `I am talking about ${name} from section ${i.section_code ?? `id ${i.hankintaID}`}`,
+      hankintaID: i.hankintaID,
+    });
+  }
+  const n = options.length;
   const head =
     lang === "fi"
-      ? `Löysin ${instances.length} kasvia "${name}". Mitä näistä tarkoitat?`
+      ? `"${name}" löytyy ${n} osastosta. Mitä tarkoitat? (voit myös kirjoittaa osaston, esim. g-ha)`
       : lang === "sv"
-        ? `Jag hittade ${instances.length} plantor av "${name}". Vilken menar du?`
-        : `I found ${instances.length} "${name}" plants. Which one do you mean?`;
-  return {
-    kind: "disambiguation",
-    question: head,
-    options: instances.map((i) => {
-      // Each chip must be visually distinct — several plants of one species can
-      // sit in the SAME section, so always include the unique plant id.
-      const loc =
-        i.location_label && !i.location_label.startsWith(i.section_code ?? " ")
-          ? ` ${i.location_label}`
-          : "";
-      const where = i.section_code ? `${i.section_code}${loc}` : "no section";
-      return {
-        label: `${where} · #${i.hankintaID}${i.status ? ` · ${i.status}` : ""}`,
-        send_text: `${name} — id ${i.hankintaID}`,
-        hankintaID: i.hankintaID,
-      };
-    }),
-    allow_free_text: true,
-  };
+        ? `"${name}" finns i ${n} sektioner. Vilken menar du? (du kan också skriva sektionen, t.ex. g-ha)`
+        : `"${name}" is in ${n} sections. Which one? (you can also type the section, e.g. g-ha)`;
+  return { kind: "disambiguation", question: head, options, allow_free_text: true };
 }
 
 async function buildPendingAction(
@@ -509,14 +580,54 @@ async function executeRead(call: LlmToolCall, input: DispatchInput): Promise<unk
   try {
     switch (call.name) {
       case "query_plant_details": {
+        // Resolve which plant. Prefer an explicit id (incl. a tapped button via
+        // scanned context); otherwise resolve the NAME and hand ambiguity to the
+        // post-loop as buttons (species choices, or sections).
+        let hid = Number(a.hankintaID) || input.scannedHankintaID || 0;
+        let resolvedTaxon: number | undefined;
+        const nq = a.name_query as string | undefined;
+        if (!hid && nq) {
+          const taxa = await dal.searchTaxa(nq, 8);
+          if (taxa.length === 0) {
+            return { error: "Plant not found.", suggestions: await dal.suggestSimilarPlants(nq) };
+          }
+          // An EXACT name match resolves immediately (so tapping "Coffea arabica"
+          // doesn't keep matching its own cultivars and loop forever).
+          const exact = taxa.find(
+            (t) => t.scientific_name.toLowerCase() === nq.trim().toLowerCase()
+          );
+          if (!exact && taxa.length > 1) {
+            // Name matched several distinct species -> "did you mean ...?" buttons.
+            return { species_choices: taxa.map((t) => t.scientific_name).slice(0, 6) };
+          }
+          const chosen = exact ?? taxa[0];
+          resolvedTaxon = chosen.taksonin_nro;
+          // Distinct PHYSICAL PLANTS (acquisitions) of this species. If there is
+          // more than one, ask which — each plant can have its own status and
+          // history. A single plant with several placements is NOT disambiguated
+          // (that's just its location history, handled as info, not a choice).
+          let instances = await dal.plantInstances(chosen.taksonin_nro);
+          const wantSec = a.section_code ? dal.normalizeSection(a.section_code as string) : "";
+          if (wantSec) instances = instances.filter((i) => dal.normalizeSection(i.section_code) === wantSec);
+          if (instances.length > 1) {
+            const vis = input.role === "visitor";
+            return {
+              count: instances.length,
+              matches: instances.map((i) =>
+                vis
+                  ? { hankintaID: i.hankintaID, scientific_name: i.scientific_name, section_code: i.section_code, location_label: i.location_label }
+                  : i
+              ),
+            };
+          }
+          if (instances.length >= 1) hid = instances[0].hankintaID;
+        }
         const details = await dal.plantDetails({
-          hankintaID: a.hankintaID as number | undefined,
-          taksonin_nro: a.taksonin_nro as number | undefined,
-          name_query: a.name_query as string | undefined,
+          hankintaID: hid || undefined,
+          taksonin_nro: hid ? undefined : (a.taksonin_nro as number | undefined) ?? resolvedTaxon,
+          name_query: hid || resolvedTaxon ? undefined : nq,
         });
         if (!details) {
-          // Typo tolerance on info lookups too — offer closest names.
-          const nq = a.name_query as string | undefined;
           const suggestions = nq ? await dal.suggestSimilarPlants(nq) : [];
           return { error: "Plant not found.", suggestions };
         }

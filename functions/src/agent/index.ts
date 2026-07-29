@@ -105,16 +105,37 @@ export const agent = onCall(
         history: payload.history,
       });
     } catch (e) {
-      // Never surface a raw INTERNAL to the phone — give a retryable message.
+      // Never surface a raw INTERNAL to the phone — give a SPECIFIC, retryable
+      // message so the user knows whether it's the AI or the garden database.
       logger.error("agent.dispatch_failed", { err: String(e) });
       const lang = payload.language ?? "en";
-      const sorry =
-        lang === "fi"
-          ? "Palvelussa oli hetkellinen häiriö. Yritä uudelleen."
-          : lang === "sv"
-            ? "Tjänsten hade ett tillfälligt fel. Försök igen."
-            : "The service had a temporary hiccup. Please try again.";
-      return { reply: sorry, pending_actions: [] };
+      const err = String(e);
+      const pick = (en: string, fi: string, sv: string) =>
+        lang === "fi" ? fi : lang === "sv" ? sv : en;
+
+      let msg: string;
+      if (/LLM|providers failed/i.test(err)) {
+        // Both AI models were unavailable (quota / formatting / outage).
+        msg = pick(
+          "The AI assistant is briefly unavailable (high demand). Please try again in a moment.",
+          "Tekoälyavustaja ei ole hetkellisesti käytettävissä (ruuhkaa). Yritä hetken kuluttua uudelleen.",
+          "AI-assistenten är tillfälligt otillgänglig (hög belastning). Försök igen om en stund."
+        );
+      } else if (/GardenApi|\/api\/|timed out|aborted|database/i.test(err)) {
+        // The garden's database API was slow or down.
+        msg = pick(
+          "The garden database is slow or unavailable right now. Please try again in a moment.",
+          "Puutarhan tietokanta on hidas tai ei käytettävissä juuri nyt. Yritä hetken kuluttua uudelleen.",
+          "Trädgårdens databas är långsam eller otillgänglig just nu. Försök igen om en stund."
+        );
+      } else {
+        msg = pick(
+          "Something went wrong handling that. Please try again.",
+          "Jokin meni vikaan. Yritä uudelleen.",
+          "Något gick fel. Försök igen."
+        );
+      }
+      return { reply: msg, pending_actions: [] };
     }
 
     await writeAuditEntry({

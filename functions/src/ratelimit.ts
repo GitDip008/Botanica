@@ -31,6 +31,7 @@ export const RATE_RULES: Record<string, RateRule> = {
   groqChat: { limit: 40, windowSec: 60 },      // chat completions
   geminiCall: { limit: 20, windowSec: 60 },    // vision / fallback (pricier)
   plantnetIdentify: { limit: 30, windowSec: 60 }, // plant photo ID bursts
+  plantsCatalogue: { limit: 40, windowSec: 60 },  // navigation catalogue search/browse
 };
 
 /**
