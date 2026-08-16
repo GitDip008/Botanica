@@ -16,11 +16,10 @@
 /// - destination (MapPoint?, Optional): Initial destination location CAD coordinate.
 
 import 'dart:async';
-import 'dart:math';
 
 import 'package:botanica_ar/models/a_star_algorithm.dart';
 import 'package:botanica_ar/models/graph_data.dart';
-import 'package:botanica_ar/models/mock_plant.dart';
+import 'package:botanica_ar/models/hankinta_plant.dart';
 import 'package:botanica_ar/models/finger_print_algorithm.dart';
 import 'package:botanica_ar/services/beacons_service.dart';
 import 'package:botanica_ar/services/plants.dart';
@@ -35,7 +34,6 @@ import 'components/graph_painter.dart';
 import 'components/plants_list_panel.dart';
 import 'components/input_panel.dart';
 import 'components/info_bar.dart';
-import 'components/confirm_edit_popup.dart';
 import 'components/tap_popup.dart';
 
 // ============================================================
@@ -101,12 +99,12 @@ class _IndoorMapScreenState extends State<IndoorMapScreen> with TickerProviderSt
   bool _showTapPopup = false; // Show/hide popup to choose start/end
 
   // ── Plant Discovery State ──────────────────────────────────
-  List<MockPlantInfo> _discoveredPlants = [];
+  List<HankintaPlant> _discoveredPlants = [];
   bool _isLoadingPlants = false;
-  MockPlantInfo? _selectedPlant;
-  MockPlantInfo? _editingPlant;
-  MapPoint? _tempEditPoint;
-  bool _showConfirmEditPopup = false;
+  HankintaPlant? _selectedPlant;
+  int _currentPage = 1;
+  int _totalPages = 1;
+  int _totalItems = 0;
 
   // ── BLE & Fingerprint Positioning State ──────────────────────
   static final List<SurveyPoint> _surveyDataPoints = [
@@ -189,7 +187,7 @@ class _IndoorMapScreenState extends State<IndoorMapScreen> with TickerProviderSt
         ..translateByVector3(Vector3(dx / scale, dy / scale, 0));
 
       _transformController.value = matrix;
-      
+
       _initBeaconScanning();
     });
   }
@@ -211,12 +209,6 @@ class _IndoorMapScreenState extends State<IndoorMapScreen> with TickerProviderSt
   /// BEHAVIORAL MECHANISM:
   /// Starts real Bluetooth Beacon scanning if simulated mode is not active. Updates beacon RSSI sliding window
   /// and triggers location update. Cleans up stale beacon readings that are older than 5 seconds.
-  ///
-  /// PARAMETERS:
-  /// None.
-  ///
-  /// RETURNS:
-  /// - Void.
   void _initBeaconScanning() {
     try {
       _beaconScanner.startScan(
@@ -276,12 +268,6 @@ class _IndoorMapScreenState extends State<IndoorMapScreen> with TickerProviderSt
   /// BEHAVIORAL MECHANISM:
   /// Passes the averaged beacon RSSI data to the FingerprintLocator. It uses weighted KNN to interpolate
   /// user's coordinate. If an active destination exists, it recalculates the A* navigation path.
-  ///
-  /// PARAMETERS:
-  /// None.
-  ///
-  /// RETURNS:
-  /// - Void.
   void _updateUserLocationFromRssi() {
     if (_liveRssi.isEmpty) return;
 
@@ -308,12 +294,6 @@ class _IndoorMapScreenState extends State<IndoorMapScreen> with TickerProviderSt
   /// BEHAVIORAL MECHANISM:
   /// Loops through the 28 survey points sequentially every second, feeding their hardcoded RSSI values into the locator,
   /// simulating user movements along nodes.
-  ///
-  /// PARAMETERS:
-  /// None.
-  ///
-  /// RETURNS:
-  /// - Void.
   void _runBleSimulation() {
     _simulationTimer?.cancel();
     _simulationIndex = 0;
@@ -349,14 +329,8 @@ class _IndoorMapScreenState extends State<IndoorMapScreen> with TickerProviderSt
   }
 
   /// BEHAVIORAL MECHANISM:
-  /// Queries mock plants service, simulating network request delay before returning plants lists.
-  ///
-  /// PARAMETERS:
-  /// None.
-  ///
-  /// RETURNS:
-  /// - Future<void>
-  Future<void> _fetchPlants() async {
+  /// Queries remote plants coordinates API with pagination parameters.
+  Future<void> _fetchPlants([int page = 1]) async {
     if (_isLoadingPlants) return;
     setState(() {
       _isLoadingPlants = true;
@@ -364,11 +338,17 @@ class _IndoorMapScreenState extends State<IndoorMapScreen> with TickerProviderSt
     });
 
     try {
-      final plants = await PlantService().fetchNearbyPlants();
+      final response = await PlantService().fetchPlantsWithCoordinates(
+        page: page,
+        pageSize: 10,
+      );
       setState(() {
-        _discoveredPlants = plants;
+        _discoveredPlants = response.items;
+        _currentPage = response.page;
+        _totalPages = response.pages;
+        _totalItems = response.total;
         _isLoadingPlants = false;
-        _statusMsg = 'Discovered ${plants.length} plants!';
+        _statusMsg = 'Page ${response.page}/${response.pages}: ${response.items.length} plants';
       });
     } catch (e) {
       setState(() {
@@ -380,13 +360,6 @@ class _IndoorMapScreenState extends State<IndoorMapScreen> with TickerProviderSt
 
   /// BEHAVIORAL MECHANISM:
   /// Iterates over all graph nodes to find the node closest in Euclidean distance to target coordinates.
-  ///
-  /// PARAMETERS:
-  /// - x (double): Target X coordinate.
-  /// - y (double): Target Y coordinate.
-  ///
-  /// RETURNS:
-  /// - PathNode: The nearest node object found.
   PathNode _nearestNode(double x, double y) {
     PathNode? best;
     double bestDist = double.infinity;
@@ -404,12 +377,6 @@ class _IndoorMapScreenState extends State<IndoorMapScreen> with TickerProviderSt
 
   /// BEHAVIORAL MECHANISM:
   /// Triggers A* pathfinding calculation from start coordinates to end coordinates.
-  ///
-  /// PARAMETERS:
-  /// None.
-  ///
-  /// RETURNS:
-  /// - Void.
   void _runAStar() {
     final startX = double.tryParse(_startXCtrl.text);
     final startY = double.tryParse(_startYCtrl.text);
@@ -436,13 +403,9 @@ class _IndoorMapScreenState extends State<IndoorMapScreen> with TickerProviderSt
     }
     debugPrint('=== A* DEBUG ===');
     debugPrint('Input Start: ($startX, $startY)');
-    debugPrint(
-      'Nearest Start Node: id=${startNode.id} (${startNode.x}, ${startNode.y})',
-    );
+    debugPrint('Nearest Start Node: id=${startNode.id} (${startNode.x}, ${startNode.y})');
     debugPrint('Input End: ($endX, $endY)');
-    debugPrint(
-      'Nearest End Node:   id=${endNode.id} (${endNode.x}, ${endNode.y})',
-    );
+    debugPrint('Nearest End Node:   id=${endNode.id} (${endNode.x}, ${endNode.y})');
     setState(() {
       _statusMsg = '${result.length} nodes';
       _startMarker = MapPoint(startNode.x, startNode.y);
@@ -461,13 +424,6 @@ class _IndoorMapScreenState extends State<IndoorMapScreen> with TickerProviderSt
 
   /// BEHAVIORAL MECHANISM:
   /// Transforms a CAD map coordinate to a local pixel coordinate inside the screen viewport.
-  ///
-  /// PARAMETERS:
-  /// - point (MapPoint): Mapped CAD coordinates.
-  /// - widgetSize (Size): Viewport dimensions.
-  ///
-  /// RETURNS:
-  /// - Offset: Mapped screen pixel offset.
   Offset cadToPixel({required MapPoint point, required Size widgetSize}) {
     final mapW = widget.mapSize.width;
     final mapH = widget.mapSize.height;
@@ -491,13 +447,6 @@ class _IndoorMapScreenState extends State<IndoorMapScreen> with TickerProviderSt
 
   /// BEHAVIORAL MECHANISM:
   /// Performs inverse transformation mapping local screen pixel offset back to CAD coordinates.
-  ///
-  /// PARAMETERS:
-  /// - pixel (Offset): Screen pixel offset.
-  /// - widgetSize (Size): Viewport dimensions.
-  ///
-  /// RETURNS:
-  /// - MapPoint: Mapped CAD coordinate.
   MapPoint pixelToCad(Offset pixel, Size widgetSize) {
     final mapW = widget.mapSize.width;
     final mapH = widget.mapSize.height;
@@ -522,14 +471,7 @@ class _IndoorMapScreenState extends State<IndoorMapScreen> with TickerProviderSt
   }
 
   /// BEHAVIORAL MECHANISM:
-  /// Handles map touch down events. Toggles position popup, coordinate updates, or location update confirm dialogs.
-  ///
-  /// PARAMETERS:
-  /// - details (TapDownDetails): Gesture details.
-  /// - widgetSize (Size): Screen viewport size.
-  ///
-  /// RETURNS:
-  /// - Void.
+  /// Handles map touch down events. Toggles position popup or coordinate selection.
   void _onMapTap(TapDownDetails details, Size widgetSize) {
     final RenderBox? box = _mapKey.currentContext?.findRenderObject() as RenderBox?;
     if (box == null) return;
@@ -541,16 +483,6 @@ class _IndoorMapScreenState extends State<IndoorMapScreen> with TickerProviderSt
 
     final cad = pixelToCad(transformed, widgetSize);
 
-    if (_editingPlant != null) {
-      setState(() {
-        _tempEditPoint = cad;
-        _tappedPixel = details.localPosition;
-        _showConfirmEditPopup = true;
-        _showTapPopup = false;
-      });
-      return;
-    }
-
     setState(() {
       _tappedPoint = cad;
       _tappedPixel = details.localPosition;
@@ -561,24 +493,12 @@ class _IndoorMapScreenState extends State<IndoorMapScreen> with TickerProviderSt
 
   /// BEHAVIORAL MECHANISM:
   /// Dismisses coordinate selection popup.
-  ///
-  /// PARAMETERS:
-  /// None.
-  ///
-  /// RETURNS:
-  /// - Void.
   void _dismissPopup() {
     setState(() => _showTapPopup = false);
   }
 
   /// BEHAVIORAL MECHANISM:
   /// Sets coordinate selected by user tap as start location.
-  ///
-  /// PARAMETERS:
-  /// None.
-  ///
-  /// RETURNS:
-  /// - Void.
   void _setAsStart() {
     if (_tappedPoint == null) return;
     setState(() {
@@ -591,12 +511,6 @@ class _IndoorMapScreenState extends State<IndoorMapScreen> with TickerProviderSt
 
   /// BEHAVIORAL MECHANISM:
   /// Sets coordinate selected by user tap as destination.
-  ///
-  /// PARAMETERS:
-  /// None.
-  ///
-  /// RETURNS:
-  /// - Void.
   void _setAsDestination() {
     if (_tappedPoint == null) return;
     setState(() {
@@ -609,14 +523,7 @@ class _IndoorMapScreenState extends State<IndoorMapScreen> with TickerProviderSt
 
   /// BEHAVIORAL MECHANISM:
   /// Centers the interactive map viewer viewport on target plant coordinates with smooth scaling animation.
-  ///
-  /// PARAMETERS:
-  /// - plant (MockPlantInfo): The target plant to focus on.
-  /// - widgetSize (Size): Viewport dimensions.
-  ///
-  /// RETURNS:
-  /// - Void.
-  void _centerOnPlant(MockPlantInfo plant, Size widgetSize) {
+  void _centerOnPlant(HankintaPlant plant, Size widgetSize) {
     final targetPixel = cadToPixel(
       point: MapPoint(plant.coordinateX, plant.coordinateY),
       widgetSize: widgetSize,
@@ -685,7 +592,7 @@ class _IndoorMapScreenState extends State<IndoorMapScreen> with TickerProviderSt
                   )
                 : const Icon(Icons.local_florist_outlined),
             tooltip: 'Discover Plants',
-            onPressed: _isLoadingPlants ? null : _fetchPlants,
+            onPressed: _isLoadingPlants ? null : () => _fetchPlants(1),
           ),
           IconButton(
             icon: Icon(
@@ -848,43 +755,6 @@ class _IndoorMapScreenState extends State<IndoorMapScreen> with TickerProviderSt
                             ),
                           ),
                         ),
-                      if (_editingPlant != null && _tempEditPoint != null)
-                        _buildMarker(
-                          point: _tempEditPoint!,
-                          widgetSize: widgetSize,
-                          width: 10.0,
-                          height: 10.0,
-                          anchorX: 0.5,
-                          anchorY: 0.5,
-                          child: TweenAnimationBuilder<double>(
-                            duration: const Duration(milliseconds: 300),
-                            tween: Tween<double>(begin: 0.0, end: 1.0),
-                            builder: (context, val, child) => Transform.scale(
-                              scale: val,
-                              child: child,
-                            ),
-                            child: Container(
-                              decoration: BoxDecoration(
-                                shape: BoxShape.circle,
-                                color: Colors.white,
-                                border: Border.all(color: const Color(0xFFEF5350), width: 0.7),
-                                boxShadow: const [
-                                  BoxShadow(
-                                    color: Colors.black26,
-                                    blurRadius: 2.0,
-                                    offset: Offset(0.0, 1.0),
-                                  ),
-                                ],
-                              ),
-                              padding: const EdgeInsets.all(1.0),
-                              child: const Icon(
-                                Icons.place,
-                                color: Color(0xFFEF5350),
-                                size: 5.0,
-                              ),
-                            ),
-                          ),
-                        ),
                     ],
                   ),
                 ),
@@ -899,56 +769,6 @@ class _IndoorMapScreenState extends State<IndoorMapScreen> with TickerProviderSt
                   onDismiss: _dismissPopup,
                   onSetAsStart: _setAsStart,
                   onSetAsDestination: _setAsDestination,
-                ),
-
-              // ── Confirm Edit Popup ────────────────────────
-              if (_showConfirmEditPopup && _tappedPixel != null && _tempEditPoint != null && _editingPlant != null)
-                ConfirmEditPopup(
-                  tempEditPoint: _tempEditPoint,
-                  editingPlant: _editingPlant,
-                  cadToPixel: (p) => cadToPixel(point: p, widgetSize: widgetSize),
-                  widgetSize: widgetSize,
-                  onConfirm: () {
-                    PlantService().editPlantInformationById(
-                      _editingPlant!.plantId,
-                      _tempEditPoint!.x,
-                      _tempEditPoint!.y,
-                    );
-
-                    setState(() {
-                      final updatedList = _discoveredPlants.map((p) {
-                        if (p.plantId == _editingPlant!.plantId) {
-                          return MockPlantInfo(
-                            plantId: p.plantId,
-                            plantName: p.plantName,
-                            coordinateX: _tempEditPoint!.x,
-                            coordinateY: _tempEditPoint!.y,
-                          );
-                        }
-                        return p;
-                      }).toList();
-                      _discoveredPlants = updatedList;
-
-                      if (_selectedPlant?.plantId == _editingPlant!.plantId) {
-                        _selectedPlant = updatedList.firstWhere((p) => p.plantId == _editingPlant!.plantId);
-                        _endXCtrl.text = _selectedPlant!.coordinateX.toStringAsFixed(2);
-                        _endYCtrl.text = _selectedPlant!.coordinateY.toStringAsFixed(2);
-                        _runAStar();
-                      }
-
-                      _statusMsg = 'Updated ${_editingPlant!.plantName} location';
-                      _editingPlant = null;
-                      _tempEditPoint = null;
-                      _showConfirmEditPopup = false;
-                    });
-                  },
-                  onCancel: () {
-                    setState(() {
-                      _editingPlant = null;
-                      _tempEditPoint = null;
-                      _showConfirmEditPopup = false;
-                    });
-                  },
                 ),
 
               // ── Input Panel ───────────────────────────────
@@ -986,10 +806,11 @@ class _IndoorMapScreenState extends State<IndoorMapScreen> with TickerProviderSt
                     child: PlantsListPanel(
                       discoveredPlants: _discoveredPlants,
                       selectedPlant: _selectedPlant,
-                      editingPlant: _editingPlant,
+                      currentPage: _currentPage,
+                      totalPages: _totalPages,
+                      totalItems: _totalItems,
                       widgetSize: widgetSize,
                       onPlantTap: (plant) {
-                        if (_editingPlant != null) return;
                         setState(() {
                           _selectedPlant = plant;
                           _endXCtrl.text = plant.coordinateX.toStringAsFixed(2);
@@ -998,27 +819,13 @@ class _IndoorMapScreenState extends State<IndoorMapScreen> with TickerProviderSt
                         });
                         _centerOnPlant(plant, widgetSize);
                       },
-                      onEditToggle: (plant) {
-                        setState(() {
-                          if (_editingPlant?.plantId == plant.plantId) {
-                            _editingPlant = null;
-                            _tempEditPoint = null;
-                            _showConfirmEditPopup = false;
-                          } else {
-                            _editingPlant = plant;
-                            _tempEditPoint = null;
-                            _showConfirmEditPopup = false;
-                            _statusMsg = 'Click on map to select position';
-                          }
-                        });
+                      onPageSelected: (page) {
+                        _fetchPlants(page);
                       },
                       onClose: () {
                         setState(() {
                           _discoveredPlants = [];
                           _selectedPlant = null;
-                          _editingPlant = null;
-                          _tempEditPoint = null;
-                          _showConfirmEditPopup = false;
                         });
                       },
                     ),

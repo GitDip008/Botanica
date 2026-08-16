@@ -1,55 +1,39 @@
-import 'package:botanica_ar/models/mock_plant.dart';
+import 'dart:convert';
+import 'package:http/http.dart' as http;
+import 'package:botanica_ar/models/hankinta_plant.dart';
 
-/// Service to handle plant metadata and discovery queries.
+/// Service to handle plant metadata and discovery queries from the remote API.
 class PlantService {
-  /// Simulates a network call to fetch nearby plant locations within the greenhouse.
-  Future<List<MockPlantInfo>> fetchNearbyPlants() async {
-    // Simulate a 1.2-second network latency delay.
-    await Future.delayed(const Duration(milliseconds: 1200));
+  static const String _baseUrl =
+      'https://web-database-six.vercel.app/api/hankintatiedot/coordinates';
 
-    return const [
-      MockPlantInfo(
-        plantId: '101',
-        plantName: 'Monstera Deliciosa',
-        coordinateX: -135.2031,
-        coordinateY: 8.9552,
-      ),
-      MockPlantInfo(
-        plantId: '102',
-        plantName: 'Fiddle Leaf Fig',
-        coordinateX: -131.8921,
-        coordinateY: 15.0008,
-      ),
-      MockPlantInfo(
-        plantId: '103',
-        plantName: 'Snake Plant',
-        coordinateX: -138.7172,
-        coordinateY: 9.9832,
-      ),
-      MockPlantInfo(
-        plantId: '104',
-        plantName: 'Golden Pothos',
-        coordinateX: -128.8454,
-        coordinateY: 9.6185,
-      ),
-      MockPlantInfo(
-        plantId: '105',
-        plantName: 'ZZ Plant',
-        coordinateX: -125.0599,
-        coordinateY: 8.1888,
-      ),
-    ];
+  /// Fetches paginated plant items with valid parsed coordinates from the remote API.
+  Future<HankintaPaginatedResponse> fetchPlantsWithCoordinates({
+    int page = 1,
+    int pageSize = 10,
+  }) async {
+    final uri = Uri.parse('$_baseUrl?page=$page&page_size=$pageSize');
+    final response = await http.get(uri);
+
+    if (response.statusCode == 200) {
+      final Map<String, dynamic> data = json.decode(response.body);
+      return HankintaPaginatedResponse.fromJson(data);
+    } else {
+      throw Exception(
+        'Failed to fetch plants coordinates. Status code: ${response.statusCode}',
+      );
+    }
   }
 
-  /// Simulates a network call to update a plant's location in the database.
-  Future<bool> editPlantInformationById(
-    String plantId,
-    double newX,
-    double newY,
-  ) async {
-    // Simulate a network delay of 800 milliseconds.
-    await Future.delayed(const Duration(milliseconds: 800));
-    print('Mock API Call: Plant $plantId location updated to ($newX, $newY)');
-    return true;
+  /// Convenience method to fetch plants for backward compatibility or simple queries.
+  Future<List<HankintaPlant>> fetchNearbyPlants({
+    int page = 1,
+    int pageSize = 10,
+  }) async {
+    final paginatedResult = await fetchPlantsWithCoordinates(
+      page: page,
+      pageSize: pageSize,
+    );
+    return paginatedResult.items;
   }
 }
