@@ -93,8 +93,27 @@ export async function loadState(uid: string): Promise<UpdateState | null> {
   return s;
 }
 
+/**
+ * Firestore rejects `undefined` outright ("Cannot use undefined as a Firestore
+ * value"), and half the point of this state is that fields are absent until the
+ * gardener supplies them — `kind` in particular is undefined until we know
+ * whether it is an action or an observation. So strip undefined before writing
+ * rather than relying on ignoreUndefinedProperties, which would apply to every
+ * write in the codebase.
+ */
+function stripUndefined<T extends object>(o: T): T {
+  const out: Record<string, unknown> = {};
+  for (const [k, v] of Object.entries(o)) {
+    if (v !== undefined) out[k] = v;
+  }
+  return out as T;
+}
+
 async function saveState(uid: string, s: UpdateState): Promise<void> {
-  await ref(uid).set({ ...s, ts: Date.now() }, { merge: false });
+  await ref(uid).set(
+    stripUndefined({ ...s, slots: stripUndefined(s.slots ?? {}), ts: Date.now() }),
+    { merge: false }
+  );
 }
 
 export async function exitUpdateMode(uid: string): Promise<void> {
@@ -252,7 +271,9 @@ async function jsonCompletion(
   system: string,
   user: string
 ): Promise<Record<string, any> | null> {
-  for (const model of ["llama-3.3-70b-versatile", "llama-3.1-8b-instant"]) {
+  // Keep in step with the model list in llm.ts — Groq dropped all Llama models
+  // on 2026-08-18 and a stale id here fails silently into the Gemini fallback.
+  for (const model of ["openai/gpt-oss-120b", "openai/gpt-oss-20b"]) {
     try {
       const r = await fetch("https://api.groq.com/openai/v1/chat/completions", {
         method: "POST",

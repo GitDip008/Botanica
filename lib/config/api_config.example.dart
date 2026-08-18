@@ -12,7 +12,11 @@ class ApiConfig {
   /// Get a free key at: https://console.groq.com/keys
   static const cloudLlmBaseUrl = 'https://api.groq.com/openai/v1';
   static const cloudLlmApiKey = 'YOUR_CLOUD_LLM_API_KEY_HERE';
-  static const cloudLlmModel = 'gemma2-9b-it';
+  // Check what the account actually has before changing this — Groq retires
+  // models without notice (it dropped all Llama models on 2026-08-18):
+  //   curl -H "Authorization: Bearer $GROQ_API_KEY" \
+  //        https://api.groq.com/openai/v1/models
+  static const cloudLlmModel = 'openai/gpt-oss-20b';
 
   /// OpenRouteService — free walking-directions API (2,000 req/day).
   /// Get a key at https://openrouteservice.org/dev/#/signup

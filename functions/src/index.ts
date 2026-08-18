@@ -221,6 +221,21 @@ export const groqChat = onCall(
     if (!Array.isArray(messages) || messages.length === 0) {
       throw new HttpsError("invalid-argument", "messages required.");
     }
+    // Never pass the client's model id straight through. Installed APKs carry
+    // whatever model was current when they were built, and on 2026-08-18 Groq
+    // removed every Llama model — so every phone in the field was asking for a
+    // model that 404s. Honour the client's choice only if it is one we know
+    // still exists; otherwise silently use the current default. This fixes
+    // already-installed apps without shipping an update.
+    const ALLOWED_MODELS = new Set([
+      "openai/gpt-oss-120b",
+      "openai/gpt-oss-20b",
+      "qwen/qwen3.6-27b",
+    ]);
+    const chosen = model && ALLOWED_MODELS.has(model) ? model : "openai/gpt-oss-20b";
+    if (model && !ALLOWED_MODELS.has(model)) {
+      logger.warn("groqChat.stale_client_model", { requested: model, used: chosen });
+    }
     const resp = await fetch("https://api.groq.com/openai/v1/chat/completions", {
       method: "POST",
       headers: {
@@ -228,7 +243,7 @@ export const groqChat = onCall(
         Authorization: `Bearer ${GROQ_API_KEY.value()}`,
       },
       body: JSON.stringify({
-        model: model ?? "llama-3.1-8b-instant",
+        model: chosen,
         messages,
         temperature: temperature ?? 0.7,
         max_tokens: maxTokens ?? 600,

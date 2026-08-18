@@ -407,10 +407,18 @@ export async function dispatch(input: DispatchInput): Promise<DispatchResult> {
         ? "Trädgårdens databas är långsam just nu. Försök igen om en stund."
         : "The garden database is slow right now. Please try again in a moment.";
 
+  // No-LLM safety net. On the routed path turn.text is always "" (no model was
+  // asked for prose), so if composeAnswer comes back empty — a provider outage,
+  // a quota, or a retired model id — there is nothing left to say and the user
+  // gets "I didn't catch that" even though the query succeeded. Build a plain
+  // sentence from rows we already hold instead.
+  const basic = composed ? "" : basicLineFrom(readResults);
+
   const reply =
     (clarification ? clarification.question : "") ||
     composed ||
     turn.text.trim() ||
+    basic ||
     (pending.length
       ? pending.map((p) => p.preview).join("\n")
       : dbSlow
@@ -446,6 +454,46 @@ export async function dispatch(input: DispatchInput): Promise<DispatchResult> {
 // ─── Contextual follow-up suggestions (tap-to-send quick replies) ───────────
 
 /** Pulls the plant in focus from the reads, if any, so suggestions can name it. */
+/**
+ * A readable answer assembled from fetched rows with no model involved.
+ * Deliberately plain: this only ever runs when the LLM could not be reached, so
+ * being correct and boring beats being fluent. Returns "" when the results hold
+ * nothing worth saying, which lets the caller fall through as before.
+ */
+function basicLineFrom(readResults: { tool: string; result: unknown }[]): string {
+  for (const r of readResults) {
+    const res = r.result as any;
+    if (!res || res.error) continue;
+
+    if (res.scientific_name) {
+      const secs = [
+        ...new Set((res.placements ?? []).map((p: any) => p.section_code).filter(Boolean)),
+      ];
+      return (
+        `${res.scientific_name}` +
+        (res.family?.latin ? `, family ${res.family.latin}` : "") +
+        (secs.length ? `. Found in section${secs.length > 1 ? "s" : ""}: ${secs.join(", ")}` : "") +
+        (res.general_notes ? `. ${res.general_notes}` : ".")
+      );
+    }
+
+    if (Array.isArray(res.entries) && res.entries.length) {
+      const lines = res.entries
+        .slice(0, 5)
+        .map((e: any) => `• ${e.date ?? e.uus_pvm ?? ""} ${e.text ?? e.toimenpide ?? ""}`.trim());
+      return `Most recent records:\n${lines.join("\n")}`;
+    }
+
+    if (Array.isArray(res.matches) && res.matches.length) {
+      const names = res.matches
+        .slice(0, 6)
+        .map((m: any) => `${m.scientific_name}${m.section_code ? ` (${m.section_code})` : ""}`);
+      return `Found: ${names.join(", ")}.`;
+    }
+  }
+  return "";
+}
+
 /**
  * Turn a pattern-matched intent into the tool calls the read pipeline already
  * understands. Returns null to mean "not confident — let the LLM decide", which

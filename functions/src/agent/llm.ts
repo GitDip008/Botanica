@@ -243,10 +243,17 @@ export async function llmTurn(opts: {
   // Each Groq model has its OWN separate daily token quota, so listing several
   // multiplies the free headroom: when one is exhausted (or emits a malformed
   // tool call), we fall through to the next. Ordered best -> lightest.
+  // 2026-08-18: Groq removed every Llama model from this account overnight —
+  // llama-3.3-70b-versatile and llama-3.1-8b-instant both return 404
+  // "model_not_found". These are the tool-calling models the account actually
+  // has. Verify with:
+  //   curl -H "Authorization: Bearer $GROQ_API_KEY" \
+  //        https://api.groq.com/openai/v1/models
+  // before assuming a 404 here is a bug in our code.
   const groqModels = [
-    "llama-3.3-70b-versatile",
-    "llama-3.1-8b-instant",
+    "openai/gpt-oss-120b",
     "openai/gpt-oss-20b",
+    "qwen/qwen3.6-27b",
   ];
   for (const model of groqModels) {
     try {
@@ -367,7 +374,7 @@ export async function composeAnswer(opts: {
       body: JSON.stringify({
         // Fast model: this pass only summarises data we already fetched and
         // validated server-side, so the cheaper/quicker model is safe here.
-        model: "llama-3.1-8b-instant",
+        model: "openai/gpt-oss-20b",
         messages: [
           { role: "system", content: sys },
           { role: "user", content: user },
