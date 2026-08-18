@@ -29,13 +29,40 @@ const INTENTS = "agent_intents";
 // When a write names a plant with several instances, we stash the action here.
 // When the user taps a plant chip, we complete THAT exact action deterministically
 // — no LLM, no lost context.
+/**
+ * Firestore rejects `undefined` anywhere in a document, including nested. Tool
+ * arguments legitimately omit optional slots (no location_code on a KYLVÖ, no
+ * count when the gardener didn't say one), and an omitted slot arrives here as
+ * an explicit `undefined` key rather than an absent one. Dropping them at this
+ * boundary is what stops a perfectly valid update from throwing.
+ *
+ * Deliberately not `ignoreUndefinedProperties` on the Firestore instance: that
+ * would silently swallow undefined in every write in the codebase, including
+ * ones where it really would be a bug.
+ */
+export function pruneUndefined<T>(v: T): T {
+  if (Array.isArray(v)) return v.map(pruneUndefined) as unknown as T;
+  // Recurse ONLY into plain objects. Firestore sentinels (FieldValue.
+  // serverTimestamp(), Timestamp, GeoPoint, DocumentReference) are class
+  // instances — rebuilding one as a plain object silently destroys it, which
+  // would turn every confirmed write's timestamp into an empty map.
+  if (v && typeof v === "object" && Object.getPrototypeOf(v) === Object.prototype) {
+    const out: Record<string, unknown> = {};
+    for (const [k, val] of Object.entries(v as Record<string, unknown>)) {
+      if (val !== undefined) out[k] = pruneUndefined(val);
+    }
+    return out as T;
+  }
+  return v;
+}
+
 export async function storeIntent(
   uid: string,
   intent: { tool: string; args: Record<string, unknown> }
 ): Promise<void> {
   await admin.firestore().collection(INTENTS).doc(uid).set({
     tool: intent.tool,
-    args: intent.args,
+    args: pruneUndefined(intent.args),
     ts: Date.now(),
   });
 }
@@ -84,7 +111,7 @@ export async function storePending(uid: string, p: PendingAction): Promise<void>
   await admin.firestore().collection(PENDING).doc(p.pending_id).set({
     uid,
     tool: p.tool,
-    params: p.params, // includes the pre-built _plan
+    params: pruneUndefined(p.params), // includes the pre-built _plan
     preview: p.preview,
     status: "pending",
     created_at: admin.firestore.FieldValue.serverTimestamp(),
@@ -122,8 +149,10 @@ export async function confirmPending(
   }
   if (!exec.ok) return { ok: false, message: exec.message };
 
-  // Record in the ledger for audit + undo.
-  await admin.firestore().collection(LEDGER).add({
+  // Record in the ledger for audit + undo. Pruned: the write already hit the
+  // live database at this point, so losing the ledger row would leave a change
+  // that undo cannot reverse.
+  await admin.firestore().collection(LEDGER).add(pruneUndefined({
     uid,
     pending_id: pendingId,
     tool: data.tool,
@@ -138,7 +167,7 @@ export async function confirmPending(
     inserted_pk: exec.insertedId ?? null,
     applied_to_live_db: true,
     confirmed_at: admin.firestore.FieldValue.serverTimestamp(),
-  });
+  }));
   await ref.update({ status: "confirmed" });
   logger.info("agent.write_applied", { pendingId, tool: data.tool, table: plan.table });
   return { ok: true, message: "Saved to the database." };

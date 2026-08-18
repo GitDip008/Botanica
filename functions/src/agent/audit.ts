@@ -14,6 +14,7 @@ import * as admin from "firebase-admin";
 import { logger } from "firebase-functions/v2";
 import type { Role } from "./roles";
 import type { ToolCallRecord } from "./dispatcher";
+import { pruneUndefined } from "./writes";
 
 export interface AuditEntry {
   uid: string;
@@ -32,7 +33,10 @@ export async function writeAuditEntry(entry: AuditEntry): Promise<void> {
       .firestore()
       .collection("agent_audit_log")
       .add({
-        ...entry,
+        // Tool params legitimately omit optional arguments, which reach here as
+        // undefined keys — and Firestore rejects those. The catch below means
+        // that would lose the audit row silently, so prune before writing.
+        ...pruneUndefined(entry),
         created_at: admin.firestore.FieldValue.serverTimestamp(),
       });
   } catch (err) {

@@ -514,30 +514,33 @@ export async function handleUpdateTurn(opts: {
   // 6. Every required slot is present. Hand the structured command to the
   //    existing guarded write path — which is what actually builds the SQL.
   await saveState(opts.uid, { active: true, kind, slots, ts: Date.now() });
+  // stripUndefined here too: an omitted optional slot must be an ABSENT key,
+  // not a key whose value is undefined. Firestore rejects the latter, and these
+  // args are persisted as a stashed intent when the plant needs disambiguating.
   return kind === "observation"
     ? {
         kind: "ready",
         tool: "record_observation",
-        args: {
+        args: stripUndefined({
           hankintaID: slots.hankintaID,
           condition_stars: slots.condition_stars,
           living_count: slots.living_count,
           size: slots.size,
           status: slots.status,
           notes: slots.notes ?? slots.details,
-        },
+        }),
       }
     : {
         kind: "ready",
         tool: "record_action",
-        args: {
+        args: stripUndefined({
           hankintaID: slots.hankintaID,
           action_family: slots.action_family,
           location_code: slots.location_code,
           from_location: slots.from_location,
           count: slots.count,
           details: slots.details ?? slots.notes,
-        },
+        }),
       };
 }
 
