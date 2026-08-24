@@ -20,6 +20,7 @@ import 'dart:math';
 
 import 'package:botanica_ar/models/a_star_algorithm.dart';
 import 'package:botanica_ar/models/graph_data.dart';
+import 'package:botanica_ar/widgets/cell_picker_sheet.dart';
 import 'package:botanica_ar/models/mock_plant.dart';
 import 'package:botanica_ar/models/finger_print_algorithm.dart';
 import 'package:botanica_ar/services/beacons_service.dart';
@@ -403,6 +404,43 @@ class _IndoorMapScreenState extends State<IndoorMapScreen> with TickerProviderSt
   }
 
   /// BEHAVIORAL MECHANISM:
+  /// Tap-to-locate. Lets the visitor pick one of the 37 surveyed greenhouse
+  /// cells as their position or their destination, instead of typing raw CAD
+  /// coordinates. The cells share this screen's coordinate frame (both came out
+  /// of the same drawing), so the picked point feeds _runAStar unchanged.
+  ///
+  /// PARAMETERS:
+  /// - mode (CellPickMode): whether the pick sets the start or the destination.
+  ///
+  /// RETURNS:
+  /// - Future<void>.
+  Future<void> _pickCell(CellPickMode mode) async {
+    final cell = await pickGreenhouseCell(context, mode: mode);
+    if (cell == null || !mounted) return;
+
+    setState(() {
+      if (mode == CellPickMode.start) {
+        _startXCtrl.text = cell.x.toStringAsFixed(2);
+        _startYCtrl.text = cell.y.toStringAsFixed(2);
+        _startMarker = MapPoint(cell.x, cell.y);
+      } else {
+        _endXCtrl.text = cell.x.toStringAsFixed(2);
+        _endYCtrl.text = cell.y.toStringAsFixed(2);
+        _endMarker = MapPoint(cell.x, cell.y);
+      }
+      _statusMsg = mode == CellPickMode.start
+          ? 'You are at ${cell.name} (${cell.house.label})'
+          : 'Going to ${cell.name} (${cell.house.label})';
+    });
+
+    // Route as soon as both ends are known, so picking the second cell is the
+    // whole interaction — no separate "find route" step to discover.
+    if (_startXCtrl.text.isNotEmpty && _endXCtrl.text.isNotEmpty) {
+      _runAStar();
+    }
+  }
+
+  /// BEHAVIORAL MECHANISM:
   /// Triggers A* pathfinding calculation from start coordinates to end coordinates.
   ///
   /// PARAMETERS:
@@ -708,6 +746,23 @@ class _IndoorMapScreenState extends State<IndoorMapScreen> with TickerProviderSt
                 }
               });
             },
+          ),
+          // Tap-to-locate: pick a surveyed cell instead of typing coordinates.
+          PopupMenuButton<CellPickMode>(
+            icon: const Icon(Icons.pin_drop_outlined, color: Colors.white),
+            tooltip: 'Pick a greenhouse cell',
+            color: const Color(0xFF0D1F14),
+            onSelected: _pickCell,
+            itemBuilder: (_) => const [
+              PopupMenuItem(
+                value: CellPickMode.start,
+                child: Text("I'm here", style: TextStyle(color: Color(0xFFE8F5E9))),
+              ),
+              PopupMenuItem(
+                value: CellPickMode.destination,
+                child: Text('Take me to…', style: TextStyle(color: Color(0xFFE8F5E9))),
+              ),
+            ],
           ),
           IconButton(
             icon: Icon(
