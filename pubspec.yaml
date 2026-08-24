@@ -125,10 +125,13 @@ flutter:
     - logo.png
     - greenhouse.png
     - agent_assets/navigation_graph.json
-    # Floor-plan PNGs loaded by navigation_view.dart.
-    # ponytail: this also bundles the CAD source (MapDWG.dwg, *.pdf) into the
-    # APK for nothing — move those to /resources when APK size starts to matter.
+    # Floor-plan PNGs loaded by navigation_view.dart. The CAD and PDF sources
+    # that used to sit here moved to /resources/cad on 2026-08-24 — ~12 MB of
+    # APK for files no code ever opened. See assets/maps/README.md before
+    # putting anything back in this directory.
     - assets/maps/
+    # Agent vocabularies + the greenhouse cell labels extracted from the CAD.
+    - agent_assets/greenhouse_cells.geojson
 
   # An image asset can refer to one or more resolution-specific "variants", see
   # https://flutter.dev/to/resolution-aware-images
