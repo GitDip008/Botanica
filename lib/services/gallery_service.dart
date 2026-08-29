@@ -208,4 +208,86 @@ class GalleryService {
       'resolved': false,
     });
   }
+
+  // ── Moderation (admin only; rules enforce it server-side too) ────────────
+
+  /// Open reports, oldest first — the queue is worked front to back.
+  Stream<List<GalleryReport>> watchOpenReports() => _db
+      .collection(_reports)
+      .where('resolved', isEqualTo: false)
+      .snapshots()
+      .map((s) {
+        final list = s.docs.map(GalleryReport.fromDoc).toList()
+          ..sort((a, b) => a.createdAt.compareTo(b.createdAt));
+        return list;
+      });
+
+  /// Count of open reports, for the badge on the admin panel.
+  Stream<int> watchOpenReportCount() => _db
+      .collection(_reports)
+      .where('resolved', isEqualTo: false)
+      .snapshots()
+      .map((s) => s.docs.length);
+
+  Future<GalleryPost?> fetchPost(String postId) async {
+    final d = await _db.collection(_posts).doc(postId).get();
+    return d.exists ? GalleryPost.fromDoc(d) : null;
+  }
+
+  /// Hides or restores a post. Hiding drops it from the feed but destroys
+  /// nothing, so a moderation call can be reversed — the same reasoning that
+  /// keeps the garden's own records append-only.
+  Future<void> setHidden(String postId, bool hidden) =>
+      _db.collection(_posts).doc(postId).update({'hidden': hidden});
+
+  /// Removes a post outright. Reserved for content that must not sit in the
+  /// database at all; hiding is the usual answer.
+  Future<void> adminDeletePost(GalleryPost post) async {
+    await _db.collection(_posts).doc(post.id).delete();
+    if (post.photoPath != null) {
+      try {
+        await FirebaseStorage.instance.ref(post.photoPath!).delete();
+      } catch (_) {
+        // The document is gone, so nothing is reachable either way.
+      }
+    }
+  }
+
+  Future<void> resolveReport(String reportId, String outcome) =>
+      _db.collection(_reports).doc(reportId).update({
+        'resolved': true,
+        'outcome': outcome,
+        'resolvedAt': Timestamp.now(),
+      });
+}
+
+/// A visitor's report of a public post, awaiting an admin decision.
+class GalleryReport {
+  const GalleryReport({
+    required this.id,
+    required this.postId,
+    required this.postUid,
+    required this.reportedBy,
+    required this.reason,
+    required this.createdAt,
+  });
+
+  final String id;
+  final String postId;
+  final String postUid;
+  final String reportedBy;
+  final String reason;
+  final DateTime createdAt;
+
+  factory GalleryReport.fromDoc(DocumentSnapshot<Map<String, dynamic>> d) {
+    final m = d.data() ?? {};
+    return GalleryReport(
+      id: d.id,
+      postId: (m['postId'] ?? '') as String,
+      postUid: (m['postUid'] ?? '') as String,
+      reportedBy: (m['reportedBy'] ?? '') as String,
+      reason: (m['reason'] ?? '') as String,
+      createdAt: (m['createdAt'] as Timestamp?)?.toDate() ?? DateTime.now(),
+    );
+  }
 }

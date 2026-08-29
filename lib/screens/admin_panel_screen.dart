@@ -8,6 +8,8 @@ import '../services/language_service.dart';
 import '../services/holiday_hours_service.dart';
 import '../services/report_service.dart';
 import '../widgets/feature_usage_chart.dart';
+import '../services/gallery_service.dart';
+import 'admin/reported_posts_screen.dart';
 import 'admin_user_list_screen.dart';
 import 'edit_holidays_screen.dart';
 
@@ -89,6 +91,10 @@ class AdminPanelScreen extends StatelessWidget {
             _sectionLabel(s.visitorReports),
             const SizedBox(height: 10),
             const _ReportsList(),
+            const SizedBox(height: 24),
+            // Reported gallery posts — count badge so an admin can see there is
+            // something waiting without opening the queue.
+            const _ReportedPostsTile(),
             const SizedBox(height: 24),
             // Edit holiday hours tile
             Material(
@@ -556,6 +562,94 @@ class _ReportTile extends StatelessWidget {
           ),
         ],
       ),
+    );
+  }
+}
+
+/// Entry point to the gallery moderation queue, with a live count of what is
+/// waiting. Rendered even at zero so the panel does not appear to lose a
+/// section — an empty queue is information too.
+class _ReportedPostsTile extends StatelessWidget {
+  const _ReportedPostsTile();
+
+  @override
+  Widget build(BuildContext context) {
+    return StreamBuilder<int>(
+      stream: GalleryService.instance.watchOpenReportCount(),
+      builder: (context, snap) {
+        final n = snap.data ?? 0;
+        final pending = n > 0;
+        return Material(
+          color: Colors.transparent,
+          child: InkWell(
+            borderRadius: BorderRadius.circular(14),
+            onTap: () => Navigator.push(
+              context,
+              MaterialPageRoute(builder: (_) => const ReportedPostsScreen()),
+            ),
+            child: Container(
+              padding: const EdgeInsets.all(14),
+              decoration: BoxDecoration(
+                color: pending ? const Color(0xFF2A1414) : const Color(0xFF111F16),
+                borderRadius: BorderRadius.circular(14),
+                border: Border.all(
+                  color: pending
+                      ? const Color(0xFFEF5350)
+                      : const Color(0xFF2A4A2F),
+                ),
+              ),
+              child: Row(
+                children: [
+                  Icon(Icons.flag_rounded,
+                      color: pending
+                          ? const Color(0xFFEF5350)
+                          : const Color(0xFF4A7A50)),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        const Text('Reported photos',
+                            style: TextStyle(
+                                color: Color(0xFFE8F5E9),
+                                fontSize: 14.5,
+                                fontWeight: FontWeight.w600)),
+                        Text(
+                          pending
+                              ? '$n waiting for review'
+                              : 'Nothing to review',
+                          style: TextStyle(
+                            color: pending
+                                ? const Color(0xFFFFCDD2)
+                                : const Color(0xFF6E8A72),
+                            fontSize: 12.5,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  if (pending)
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 9, vertical: 3),
+                      decoration: BoxDecoration(
+                        color: const Color(0xFFC62828),
+                        borderRadius: BorderRadius.circular(20),
+                      ),
+                      child: Text('$n',
+                          style: const TextStyle(
+                              color: Colors.white,
+                              fontSize: 12,
+                              fontWeight: FontWeight.w700)),
+                    ),
+                  const SizedBox(width: 4),
+                  const Icon(Icons.chevron_right, color: Color(0xFF4A7A50)),
+                ],
+              ),
+            ),
+          ),
+        );
+      },
     );
   }
 }

@@ -166,6 +166,11 @@ service cloud.firestore {
         ||
         request.resource.data.diff(resource.data).affectedKeys()
           .hasOnly(['reactedUids', 'reactionCount'])
+        ||
+        // Moderation: only an admin may flip `hidden`, and that is the only
+        // field they may touch — a moderator hides a post, never edits it.
+        (isAdmin() && request.resource.data.diff(resource.data)
+          .affectedKeys().hasOnly(['hidden']))
       );
 
       // The owner may withdraw their own post; an admin may remove any.
