@@ -140,6 +140,16 @@ class AppStrings {
         AppLanguage.fi: 'Puutarhakartta',
         AppLanguage.sv: 'Trädgårdskarta',
       });
+  String get gardenDiary => _pick({
+        AppLanguage.en: 'Garden Diary',
+        AppLanguage.fi: 'Puutarhapäiväkirja',
+        AppLanguage.sv: 'Trädgårdsdagbok',
+      });
+  String get gardenDiarySub => _pick({
+        AppLanguage.en: 'Your photos — keep them private or share',
+        AppLanguage.fi: 'Omat kuvasi — pidä yksityisinä tai jaa',
+        AppLanguage.sv: 'Dina foton — behåll privat eller dela',
+      });
   String get knowPlants => _pick({
         AppLanguage.en: 'Know Our Plants',
         AppLanguage.fi: 'Tunne kasvit',

@@ -10,6 +10,7 @@ import 'bloom_screen.dart';
 import 'navigation_screen/navigation_screen.dart';
 import 'plant_hunt_screen.dart';
 import 'plants_screen.dart';
+import 'gallery/gallery_screen.dart';
 import 'report_screen.dart';
 import 'events_screen.dart';
 import 'trail_screen.dart';
@@ -139,6 +140,23 @@ class HomeScreen extends StatelessWidget {
                       onTap: () =>
                           Navigator.push(context, _route(const PlantsScreen())),
                     ).animate().slideY(begin: 0.15, duration: 400.ms, delay: 260.ms, curve: Curves.easeOut),
+
+                    const SizedBox(height: 10),
+
+                    // ── Garden Diary (personal photos, optionally shared) ────
+                    _PrimaryCard(
+                      icon: Icons.photo_library_rounded,
+                      iconColor: const Color(0xFFF06292),
+                      title: s.gardenDiary,
+                      subtitle: s.gardenDiarySub,
+                      gradient: const LinearGradient(
+                        colors: [Color(0xFF3A0E28), Color(0xFF9C27B0)],
+                        begin: Alignment.topLeft,
+                        end: Alignment.bottomRight,
+                      ),
+                      onTap: () =>
+                          Navigator.push(context, _route(const GalleryScreen())),
+                    ).animate().slideY(begin: 0.15, duration: 400.ms, delay: 300.ms, curve: Curves.easeOut),
 
                     const SizedBox(height: 24),
 
