@@ -369,56 +369,58 @@ class _PlantRow extends StatelessWidget {
           borderRadius: BorderRadius.circular(10),
           border: Border.all(color: const Color(0xFF2A4A2F)),
         ),
-        child: Row(
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    facts.scientificName,
-                    style: const TextStyle(
-                      color: Color(0xFFE8F5E9),
-                      fontSize: 14.5,
-                      fontWeight: FontWeight.w600,
-                      fontStyle: FontStyle.italic,
-                    ),
-                  ),
-                  if (common != null && common.isNotEmpty)
-                    Text(common,
+            Row(
+              children: [
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        facts.scientificName,
                         style: const TextStyle(
-                            color: Color(0xFF9CCC9F), fontSize: 12.5)),
-                  if (section.isNotEmpty)
-                    Padding(
-                      padding: const EdgeInsets.only(top: 3),
-                      child: Text(section,
-                          style: const TextStyle(
-                              color: Color(0xFF4A7A50), fontSize: 11.5)),
-                    ),
-                ],
-              ),
-            ),
-            if (facts.isDangerous)
-              const Padding(
-                padding: EdgeInsets.only(right: 6),
-                child: Icon(Icons.warning_amber_rounded,
-                    size: 18, color: Color(0xFFEF5350)),
-              ),
-            if (facts.tags.isNotEmpty)
-              Container(
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 7, vertical: 3),
-                decoration: BoxDecoration(
-                  color: const Color(0xFF1B4020),
-                  borderRadius: BorderRadius.circular(20),
+                          color: Color(0xFFE8F5E9),
+                          fontSize: 14.5,
+                          fontWeight: FontWeight.w600,
+                          fontStyle: FontStyle.italic,
+                        ),
+                      ),
+                      if (common != null && common.isNotEmpty)
+                        Text(common,
+                            style: const TextStyle(
+                                color: Color(0xFF9CCC9F), fontSize: 12.5)),
+                      if (section.isNotEmpty)
+                        Padding(
+                          padding: const EdgeInsets.only(top: 3),
+                          child: Text(section,
+                              style: const TextStyle(
+                                  color: Color(0xFF4A7A50), fontSize: 11.5)),
+                        ),
+                    ],
+                  ),
                 ),
-                child: Text('${facts.tags.length}',
-                    style: const TextStyle(
-                        color: Color(0xFF81C784),
-                        fontSize: 11,
-                        fontWeight: FontWeight.w700)),
-              ),
-            const Icon(Icons.chevron_right, color: Color(0xFF4A7A50)),
+                if (facts.isDangerous)
+                  const Padding(
+                    padding: EdgeInsets.only(right: 6),
+                    child: Icon(Icons.warning_amber_rounded,
+                        size: 18, color: Color(0xFFEF5350)),
+                  ),
+                const Icon(Icons.chevron_right, color: Color(0xFF4A7A50)),
+              ],
+            ),
+            // Tags inline on the card. Each chip handles its own tap, so a tap
+            // on a chip opens that tag's description while a tap anywhere else
+            // on the card still opens the plant.
+            //
+            // Gated on tags being present rather than letting the bar collapse
+            // itself, so untagged rows keep their tight height instead of
+            // carrying the gap of an invisible child.
+            if (facts.tags.isNotEmpty) ...[
+              const SizedBox(height: 8),
+              PlantTagsBar(scientificName: facts.scientificName),
+            ],
           ],
         ),
       ),
