@@ -140,6 +140,16 @@ class AppStrings {
         AppLanguage.fi: 'Puutarhakartta',
         AppLanguage.sv: 'Trädgårdskarta',
       });
+  String get planTour => _pick({
+        AppLanguage.en: 'Plan a Tour',
+        AppLanguage.fi: 'Suunnittele kierros',
+        AppLanguage.sv: 'Planera en rundtur',
+      });
+  String get planTourSub => _pick({
+        AppLanguage.en: 'Pick your time and interests',
+        AppLanguage.fi: 'Valitse aika ja kiinnostukset',
+        AppLanguage.sv: 'Välj tid och intressen',
+      });
   String get navigatingMap => _pick({
         AppLanguage.en: 'Navigating Map',
         AppLanguage.fi: 'Reittikartta',

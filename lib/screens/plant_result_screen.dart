@@ -7,6 +7,7 @@ import '../models/plant_info.dart';
 import '../services/chat_service.dart';
 import '../services/gemini_service.dart';
 import '../services/language_service.dart';
+import '../widgets/plant_tags_bar.dart';
 
 class PlantResultScreen extends StatefulWidget {
   final String imagePath;
@@ -248,6 +249,10 @@ class _PlantResultScreenState extends State<PlantResultScreen>
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
+                // Curated tags for this species, if the garden's own list
+                // covers it. Local data — renders with no network call, and
+                // shows nothing at all for the ~11k plants with no tags.
+                PlantTagsBar(scientificName: info.scientificName),
                 _InfoCard(
                   label: s.scientificNameLabel,
                   value: info.scientificName,

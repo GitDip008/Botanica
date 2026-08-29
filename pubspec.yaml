@@ -132,6 +132,9 @@ flutter:
     - assets/maps/
     # Agent vocabularies + the greenhouse cell labels extracted from the CAD.
     - agent_assets/greenhouse_cells.geojson
+    # Curated plant tags (380 rows) + the full plant->section index (11.5k rows).
+    # Read by lib/data/plant_index.dart; powers tag chips and tour planning.
+    - assets/data/
 
   # An image asset can refer to one or more resolution-specific "variants", see
   # https://flutter.dev/to/resolution-aware-images

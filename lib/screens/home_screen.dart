@@ -9,6 +9,7 @@ import 'camera_screen.dart';
 import 'bloom_screen.dart';
 import 'navigation_screen/navigation_screen.dart';
 import 'plant_hunt_screen.dart';
+import 'tour_screen.dart';
 import 'report_screen.dart';
 import 'events_screen.dart';
 import 'trail_screen.dart';
@@ -117,6 +118,23 @@ class HomeScreen extends StatelessWidget {
                       onTap: () => Navigator.push(context,
                           _route(const IndoorMapScreen(mapSize: Size(1050, 500)))),
                     ).animate().slideY(begin: 0.15, duration: 400.ms, delay: 220.ms, curve: Curves.easeOut),
+
+                    const SizedBox(height: 10),
+
+                    // ── Plan a tour (curated highlights by theme) ────
+                    _PrimaryCard(
+                      icon: Icons.explore_rounded,
+                      iconColor: const Color(0xFFFFB74D),
+                      title: s.planTour,
+                      subtitle: s.planTourSub,
+                      gradient: const LinearGradient(
+                        colors: [Color(0xFF3A2A06), Color(0xFF8D6E00)],
+                        begin: Alignment.topLeft,
+                        end: Alignment.bottomRight,
+                      ),
+                      onTap: () =>
+                          Navigator.push(context, _route(const TourScreen())),
+                    ).animate().slideY(begin: 0.15, duration: 400.ms, delay: 260.ms, curve: Curves.easeOut),
 
                     const SizedBox(height: 24),
 
