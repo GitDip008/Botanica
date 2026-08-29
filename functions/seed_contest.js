@@ -19,9 +19,13 @@ const db = admin.firestore();
 
 const END_ONLY = process.argv.includes("--end");
 
-// Europe/Helsinki is UTC+3 in September, so 09:00 local is 06:00Z.
-const STARTS = new Date("2026-09-03T06:00:00Z");
-const ENDS = new Date("2026-09-03T18:00:00Z");
+// Live from the moment this is run, with a minute of slack so a phone whose
+// clock runs slightly behind the server still sees the contest as started.
+const STARTS = new Date(Date.now() - 60 * 1000);
+
+// Through the end of 5 September, Helsinki time. Helsinki is UTC+3 in
+// September (EEST), so local midnight on the 6th is 21:00Z on the 5th.
+const ENDS = new Date("2026-09-05T21:00:00Z");
 
 const contest = {
   title: "ITEE Plant Discovery",
@@ -61,10 +65,15 @@ async function main() {
   }
 
   await ref.set(contest);
+  const fi = (d) =>
+    d.toLocaleString("en-GB", { timeZone: "Europe/Helsinki" });
   console.log("Seeded config/contest:");
   console.log(`  ${contest.title}`);
-  console.log(`  live ${STARTS.toISOString()} -> ${ENDS.toISOString()}`);
+  console.log(`  LIVE NOW  ->  ${fi(ENDS)} (Helsinki)`);
   console.log(`  ${contest.axes.length} scales, ${contest.steps.length} steps`);
+  console.log("");
+  console.log("It is visible in the app immediately. To end it early:");
+  console.log("  node seed_contest.js --end");
 }
 
 main().then(() => process.exit(0), (e) => {
