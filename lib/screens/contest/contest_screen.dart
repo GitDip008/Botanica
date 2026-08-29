@@ -322,8 +322,16 @@ class _Leaderboard extends StatelessWidget {
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(18)),
       ),
+      // Scrollable and height-capped: five scales plus the header overflow a
+      // shrink-wrapped sheet on shorter screens, and a fixed-height sheet would
+      // clip instead. This adapts to however many axes the contest defines.
+      isScrollControlled: true,
       builder: (_) => SafeArea(
-        child: Padding(
+        child: ConstrainedBox(
+          constraints: BoxConstraints(
+            maxHeight: MediaQuery.of(context).size.height * 0.8,
+          ),
+          child: SingleChildScrollView(
           padding: const EdgeInsets.fromLTRB(20, 16, 20, 28),
           child: Column(
             mainAxisSize: MainAxisSize.min,
@@ -355,6 +363,7 @@ class _Leaderboard extends StatelessWidget {
                   ),
                 ),
             ],
+          ),
           ),
         ),
       ),
