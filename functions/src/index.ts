@@ -246,7 +246,12 @@ export const groqChat = onCall(
         model: chosen,
         messages,
         temperature: temperature ?? 0.7,
-        max_tokens: maxTokens ?? 600,
+        // gpt-oss models emit `reasoning` before `content` and both draw on
+        // max_tokens, so a caller's modest budget produced an EMPTY reply with
+        // finish_reason "length" — blank plant summaries, blank search results.
+        // Floor the budget and keep reasoning short.
+        max_tokens: Math.max(maxTokens ?? 600, 1200),
+        ...(chosen.startsWith("openai/gpt-oss") ? { reasoning_effort: "low" } : {}),
       }),
     });
     if (resp.status === 429) {

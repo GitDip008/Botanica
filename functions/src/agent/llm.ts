@@ -255,6 +255,14 @@ export async function llmTurn(opts: {
     "openai/gpt-oss-20b",
     "qwen/qwen3.6-27b",
   ];
+
+  // gpt-oss models emit a `reasoning` field BEFORE `content`, and those tokens
+  // count against max_tokens. At our old budgets the 20b model spent the whole
+  // allowance thinking and returned content:"" with finish_reason:"length" —
+  // which surfaced as blank replies and empty summaries. "low" keeps reasoning
+  // to a couple of sentences. Only gpt-oss accepts the parameter.
+  const reasoning = (m: string) =>
+    m.startsWith("openai/gpt-oss") ? { reasoning_effort: "low" } : {};
   for (const model of groqModels) {
     try {
       const r = await fetch("https://api.groq.com/openai/v1/chat/completions", {
@@ -269,7 +277,9 @@ export async function llmTurn(opts: {
           tools,
           tool_choice: "auto",
           temperature: 0.2,
-          max_tokens: 700,
+          // Headroom for the reasoning tokens described above.
+          max_tokens: 1500,
+          ...reasoning(model),
         }),
       });
       if (r.ok) {
@@ -380,7 +390,9 @@ export async function composeAnswer(opts: {
           { role: "user", content: user },
         ],
         temperature: 0.3,
-        max_tokens: 500,
+        // Reasoning tokens share this budget — see the note in llmTurn.
+        max_tokens: 1200,
+        reasoning_effort: "low",
       }),
     });
     if (r.ok) {

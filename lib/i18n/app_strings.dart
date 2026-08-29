@@ -140,15 +140,15 @@ class AppStrings {
         AppLanguage.fi: 'Puutarhakartta',
         AppLanguage.sv: 'Trädgårdskarta',
       });
-  String get planTour => _pick({
-        AppLanguage.en: 'Plan a Tour',
-        AppLanguage.fi: 'Suunnittele kierros',
-        AppLanguage.sv: 'Planera en rundtur',
+  String get knowPlants => _pick({
+        AppLanguage.en: 'Know Your Plants',
+        AppLanguage.fi: 'Tunne kasvit',
+        AppLanguage.sv: 'Lär känna växterna',
       });
-  String get planTourSub => _pick({
-        AppLanguage.en: 'Pick your time and interests',
-        AppLanguage.fi: 'Valitse aika ja kiinnostukset',
-        AppLanguage.sv: 'Välj tid och intressen',
+  String get knowPlantsSub => _pick({
+        AppLanguage.en: "Browse the garden's own plant records",
+        AppLanguage.fi: 'Selaa puutarhan omia kasvitietoja',
+        AppLanguage.sv: 'Bläddra i trädgårdens växtregister',
       });
   String get navigatingMap => _pick({
         AppLanguage.en: 'Navigating Map',

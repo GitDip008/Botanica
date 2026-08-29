@@ -286,7 +286,11 @@ async function jsonCompletion(
           ],
           response_format: { type: "json_object" },
           temperature: 0, // slot extraction is transcription, not creativity
-          max_tokens: 400,
+          // gpt-oss reasoning tokens count against this; too small a budget
+          // returns an empty body and the whole update silently produces no
+          // slots. See the note in llm.ts.
+          max_tokens: 1200,
+          ...(model.startsWith("openai/gpt-oss") ? { reasoning_effort: "low" } : {}),
         }),
       });
       if (r.ok) {
