@@ -219,7 +219,9 @@ class _Leaderboard extends StatelessWidget {
         if (!snap.hasData) {
           return const Center(child: CircularProgressIndicator());
         }
-        final rows = ContestService.rank(snap.data!);
+        // Top ten only. A public leaderboard is a motivator, not an archive —
+        // and nobody at an event scrolls past the tenth plant.
+        final rows = ContestService.rank(snap.data!).take(10).toList();
         if (rows.isEmpty) {
           return const Center(
             child: Padding(
@@ -244,7 +246,9 @@ class _Leaderboard extends StatelessWidget {
                     : i == 2
                         ? const Color(0xFFBCAAA4)
                         : const Color(0xFF2A4A2F);
-            return Container(
+            return GestureDetector(
+              onTap: () => _showAverages(context, r),
+              child: Container(
               margin: const EdgeInsets.only(bottom: 8),
               padding: const EdgeInsets.all(12),
               decoration: BoxDecoration(
@@ -293,12 +297,67 @@ class _Leaderboard extends StatelessWidget {
                               color: Color(0xFF4A7A50), fontSize: 10.5)),
                     ],
                   ),
+                  const Padding(
+                    padding: EdgeInsets.only(left: 4),
+                    child: Icon(Icons.expand_more_rounded,
+                        size: 18, color: Color(0xFF4A7A50)),
+                  ),
                 ],
               ),
+            ),
             );
           },
         );
       },
+    );
+  }
+
+  /// How everyone who picked this plant saw it — the mean position on each
+  /// scale. Shown on tap rather than inline: it is the interesting detail, but
+  /// five bars per row would bury the ranking itself.
+  void _showAverages(BuildContext context, LeaderboardRow r) {
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: const Color(0xFF0D1F14),
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(18)),
+      ),
+      builder: (_) => SafeArea(
+        child: Padding(
+          padding: const EdgeInsets.fromLTRB(20, 16, 20, 28),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(r.plantName,
+                  style: const TextStyle(
+                      color: Color(0xFFE8F5E9),
+                      fontSize: 17,
+                      fontWeight: FontWeight.w700)),
+              if (r.plantSection.isNotEmpty)
+                Text(r.plantSection,
+                    style: const TextStyle(
+                        color: Color(0xFF4A7A50), fontSize: 12)),
+              const SizedBox(height: 4),
+              Text(
+                '${r.votes} ${r.votes == 1 ? "person" : "people"} picked it · average of their scales',
+                style: const TextStyle(color: Color(0xFF9CCC9F), fontSize: 12.5),
+              ),
+              const SizedBox(height: 18),
+              for (final a in contest.axes)
+                Padding(
+                  padding: const EdgeInsets.only(bottom: 14),
+                  child: _MiniScale(
+                    left: a.left,
+                    right: a.right,
+                    value: r.averageFor(a.key) ?? 0,
+                    showValue: true,
+                  ),
+                ),
+            ],
+          ),
+        ),
+      ),
     );
   }
 }
@@ -417,7 +476,7 @@ class _MyPickCard extends StatelessWidget {
                 child: _MiniScale(
                   left: a.left,
                   right: a.right,
-                  value: entry.ratings[a.key]!,
+                  value: entry.ratings[a.key]!.toDouble(),
                 ),
               ),
         ],
@@ -426,58 +485,85 @@ class _MyPickCard extends StatelessWidget {
   }
 }
 
-/// Read-only rendering of where this person put the slider.
+/// Read-only rendering of a position on one scale.
+///
+/// Takes a double so it renders both a single person's choice (a whole number)
+/// and the crowd's mean (rarely one). [showValue] adds a centre tick and a
+/// numeric label — useful for an average, noise for one person's own pick.
 class _MiniScale extends StatelessWidget {
-  const _MiniScale(
-      {required this.left, required this.right, required this.value});
+  const _MiniScale({
+    required this.left,
+    required this.right,
+    required this.value,
+    this.showValue = false,
+  });
+
   final String left;
   final String right;
-  final int value;
+  final double value;
+  final bool showValue;
 
   @override
   Widget build(BuildContext context) {
     // -5..5 -> 0..1
     final t = ((value + 5) / 10).clamp(0.0, 1.0);
+    final labelStyle = TextStyle(
+      color: showValue ? const Color(0xFFCFE8D2) : const Color(0xFF6E8A72),
+      fontSize: showValue ? 12.5 : 10.5,
+      fontWeight: showValue ? FontWeight.w600 : FontWeight.normal,
+    );
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Row(
           children: [
-            Expanded(
-              child: Text(left,
-                  style: const TextStyle(
-                      color: Color(0xFF6E8A72), fontSize: 10.5)),
-            ),
-            Text(right,
-                style: const TextStyle(
-                    color: Color(0xFF6E8A72), fontSize: 10.5)),
+            Expanded(child: Text(left, style: labelStyle)),
+            Text(right, style: labelStyle),
           ],
         ),
-        const SizedBox(height: 3),
+        const SizedBox(height: 4),
         LayoutBuilder(
           builder: (_, box) => Stack(
+            alignment: Alignment.centerLeft,
             children: [
               Container(
-                height: 6,
+                height: showValue ? 8 : 6,
                 decoration: BoxDecoration(
                   color: const Color(0xFF13301A),
-                  borderRadius: BorderRadius.circular(3),
+                  borderRadius: BorderRadius.circular(4),
                 ),
               ),
+              // Centre tick: without it, "slightly cute" and "slightly creepy"
+              // look identical at a glance.
+              if (showValue)
+                Positioned(
+                  left: box.maxWidth / 2 - 0.5,
+                  child: Container(
+                      width: 1, height: 8, color: const Color(0xFF2A4A2F)),
+                ),
               Positioned(
-                left: (box.maxWidth - 10) * t,
+                left: (box.maxWidth - 12) * t,
                 child: Container(
-                  width: 10,
-                  height: 6,
+                  width: 12,
+                  height: showValue ? 8 : 6,
                   decoration: BoxDecoration(
                     color: const Color(0xFFFFD54F),
-                    borderRadius: BorderRadius.circular(3),
+                    borderRadius: BorderRadius.circular(4),
                   ),
                 ),
               ),
             ],
           ),
         ),
+        if (showValue)
+          Padding(
+            padding: const EdgeInsets.only(top: 3),
+            child: Text(
+              value.toStringAsFixed(1),
+              style: const TextStyle(color: Color(0xFF6E8A72), fontSize: 10.5),
+            ),
+          ),
       ],
     );
   }

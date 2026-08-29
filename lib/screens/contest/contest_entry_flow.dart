@@ -169,7 +169,44 @@ class _ContestEntryFlowState extends State<ContestEntryFlow> {
                       color: Color(0xFFFFB74D), fontSize: 12.5)),
             ),
 
-          _label('1  ·  WHICH PLANT?'),
+          _label('1  ·  PHOTO'),
+          const SizedBox(height: 8),
+          GestureDetector(
+            onTap: _takePhoto,
+            child: Container(
+              height: _photo == null ? 96 : 200,
+              decoration: BoxDecoration(
+                color: const Color(0xFF13301A),
+                borderRadius: BorderRadius.circular(10),
+                border: Border.all(color: const Color(0xFF2E7D32)),
+                image: _photo == null
+                    ? null
+                    : DecorationImage(
+                        image: FileImage(_photo!), fit: BoxFit.cover),
+              ),
+              child: _photo != null
+                  ? null
+                  : const Center(
+                      child: Column(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Icon(Icons.add_a_photo_rounded,
+                              color: Color(0xFF81C784)),
+                          SizedBox(height: 6),
+                          Text('Tap to photograph it',
+                              style: TextStyle(
+                                  color: Color(0xFF81C784), fontSize: 13)),
+                          Text('Only you will see this photo',
+                              style: TextStyle(
+                                  color: Color(0xFF4A7A50), fontSize: 11)),
+                        ],
+                      ),
+                    ),
+            ),
+          ),
+
+          const SizedBox(height: 22),
+          _label('2  ·  WHICH PLANT?'),
           const SizedBox(height: 8),
           TextField(
             controller: _searchCtrl,
@@ -235,43 +272,6 @@ class _ContestEntryFlowState extends State<ContestEntryFlow> {
                 style: const TextStyle(color: Color(0xFF6E8A72), fontSize: 12),
               ),
             ),
-
-          const SizedBox(height: 22),
-          _label('2  ·  PHOTO'),
-          const SizedBox(height: 8),
-          GestureDetector(
-            onTap: _takePhoto,
-            child: Container(
-              height: _photo == null ? 96 : 200,
-              decoration: BoxDecoration(
-                color: const Color(0xFF13301A),
-                borderRadius: BorderRadius.circular(10),
-                border: Border.all(color: const Color(0xFF2E7D32)),
-                image: _photo == null
-                    ? null
-                    : DecorationImage(
-                        image: FileImage(_photo!), fit: BoxFit.cover),
-              ),
-              child: _photo != null
-                  ? null
-                  : const Center(
-                      child: Column(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          Icon(Icons.add_a_photo_rounded,
-                              color: Color(0xFF81C784)),
-                          SizedBox(height: 6),
-                          Text('Tap to photograph it',
-                              style: TextStyle(
-                                  color: Color(0xFF81C784), fontSize: 13)),
-                          Text('Only you will see this photo',
-                              style: TextStyle(
-                                  color: Color(0xFF4A7A50), fontSize: 11)),
-                        ],
-                      ),
-                    ),
-            ),
-          ),
 
           const SizedBox(height: 22),
           _label('3  ·  WHAT KIND OF VIBE?'),
