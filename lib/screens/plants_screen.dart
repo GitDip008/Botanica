@@ -85,7 +85,7 @@ class _PlantsScreenState extends State<PlantsScreen> {
       appBar: AppBar(
         backgroundColor: const Color(0xFF0D1F14),
         elevation: 0,
-        title: Text(_isFinnish ? 'Tunne kasvit' : 'Know your plants'),
+        title: Text(_isFinnish ? 'Tunne kasvit' : 'Know Our Plants'),
       ),
       body: !_ready
           ? const Center(child: CircularProgressIndicator())

@@ -1,11 +1,37 @@
 rules_version = '2';
 
 // Botanica Storage rules.
-// The only object in Storage is the agent's live SQLite DB (agent_live/live.sqlite),
-// which is read/written exclusively by Cloud Functions via the Admin SDK (rules
-// are bypassed there). No client uploads or downloads exist, so deny everything.
+//
+// Two things live in Storage:
+//   • agent_live/live.sqlite — read/written only by Cloud Functions via the
+//     Admin SDK, which bypasses these rules. No client may touch it.
+//   • contests/{contestId}/{uid}/… — visitor contest photos.
+//
+// Contest photos are readable ONLY by the person who took them. The leaderboard
+// ranks plants, not pictures, so nothing in the app ever needs to show one
+// visitor's photo to another. That keeps a public event with an open sign-up
+// from producing a publicly readable photo bucket, and removes the moderation
+// burden that would come with one. Admins can still inspect entries through the
+// Admin SDK if a prize needs verifying.
 service firebase.storage {
   match /b/{bucket}/o {
+
+    match /contests/{contestId}/{uid}/{fileName} {
+      allow read: if request.auth != null && request.auth.uid == uid;
+
+      // Write is capped and typed at the rule level, not just in the app: an
+      // uncapped bucket on a free tier is how an event becomes a bill.
+      allow write: if request.auth != null
+                   && request.auth.uid == uid
+                   && request.resource.size < 2 * 1024 * 1024
+                   && request.resource.contentType.matches('image/.*');
+
+      // Photos are never deleted from the client — same append-only principle
+      // the garden records follow.
+      allow delete: if false;
+    }
+
+    // Everything else stays closed.
     match /{allPaths=**} {
       allow read, write: if false;
     }

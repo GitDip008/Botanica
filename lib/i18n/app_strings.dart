@@ -141,7 +141,7 @@ class AppStrings {
         AppLanguage.sv: 'Trädgårdskarta',
       });
   String get knowPlants => _pick({
-        AppLanguage.en: 'Know Your Plants',
+        AppLanguage.en: 'Know Our Plants',
         AppLanguage.fi: 'Tunne kasvit',
         AppLanguage.sv: 'Lär känna växterna',
       });

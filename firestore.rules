@@ -99,6 +99,48 @@ service cloud.firestore {
       allow write: if isAdmin();
     }
 
+    // ── Visitor contests ────────────────────────────────────────────────
+    //
+    // The contest itself lives in /config/contest (covered above: world-read,
+    // admin-write), so an event is ended by flipping a field, not a release.
+    //
+    // Entries are world-readable because the leaderboard is built from them on
+    // the device. They carry a plant name, a display name and slider values —
+    // no photo bytes. The photo is a Storage object readable only by its owner.
+    match /contest_entries/{doc} {
+      allow read: if isSignedIn();
+
+      // A visitor may only write an entry that is their own, and only at the
+      // deterministic id contest__uid__plant. That id is what enforces "one
+      // entry per plant per person": a second submission overwrites the first
+      // instead of adding a vote, so the leaderboard cannot be farmed.
+      allow create, update: if isSignedIn()
+        && request.resource.data.uid == request.auth.uid
+        && doc == request.resource.data.contestId + '__' + request.auth.uid
+                  + '__' + request.resource.data.plantKey;
+
+      // Entries stand once cast — same append-only principle as the garden's
+      // records. An admin can remove an inappropriate one server-side.
+      allow delete: if false;
+    }
+
+    match /contest_teams/{doc} {
+      allow read: if isSignedIn();
+      allow create: if isSignedIn()
+        && request.resource.data.createdBy == request.auth.uid
+        && request.auth.uid in request.resource.data.memberUids;
+
+      // Joining and leaving are the only permitted edits, and only ever to
+      // one's own membership — nobody can rename a team or evict a member.
+      allow update: if isSignedIn()
+        && request.resource.data.name == resource.data.name
+        && request.resource.data.createdBy == resource.data.createdBy
+        && request.resource.data.diff(resource.data).affectedKeys()
+             .hasOnly(['memberUids', 'memberNames']);
+
+      allow delete: if isAdmin();
+    }
+
     // ── Server-only collections (Cloud Functions / admin SDK bypass rules).
     //    No client may ever touch these. ──────────────────────────────────
     match /rate_limits/{doc}      { allow read, write: if false; }

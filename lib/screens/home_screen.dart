@@ -15,6 +15,7 @@ import 'events_screen.dart';
 import 'trail_screen.dart';
 import 'soundscape_screen.dart';
 import '../widgets/did_you_know_card.dart';
+import '../widgets/ongoing_contest_card.dart';
 import 'about_us_screen.dart';
 import 'event_request_screen.dart';
 import 'main_nav_screen.dart';
@@ -60,6 +61,9 @@ class HomeScreen extends StatelessWidget {
                     _HeroBanner(greeting: greeting, s: s)
                         .animate().fadeIn(duration: 500.ms),
                     const SizedBox(height: 20),
+
+                    // Renders nothing unless a contest is live.
+                    const OngoingContestCard(),
 
                     _sectionLabel(s.sectionDidYouKnow),
                     const SizedBox(height: 10),
