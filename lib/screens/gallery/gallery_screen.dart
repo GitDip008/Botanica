@@ -407,7 +407,9 @@ class _MineCardState extends State<_MineCard> {
   @override
   Widget build(BuildContext context) {
     final p = widget.post;
-    final file = p.localPath == null ? null : File(p.localPath!);
+    final file = (p.localPath == null || GalleryService.isRemoteHandle(p.localPath))
+        ? null
+        : File(p.localPath!);
 
     return Container(
       margin: const EdgeInsets.only(bottom: 14),
@@ -426,7 +428,22 @@ class _MineCardState extends State<_MineCard> {
                 const BorderRadius.vertical(top: Radius.circular(11)),
             child: AspectRatio(
               aspectRatio: 4 / 3,
-              child: file != null && file.existsSync()
+              child: GalleryService.isRemoteHandle(p.localPath)
+                  // Web: the private photo lives in Storage, owner-read only.
+                  ? FutureBuilder<String?>(
+                      future: GalleryService.instance
+                          .privatePhotoUrl(p.localPath),
+                      builder: (_, s) => s.data == null
+                          ? Container(
+                              color: const Color(0xFF13301A),
+                              child: const Center(
+                                child: Icon(Icons.image_outlined,
+                                    color: Color(0xFF4A7A50)),
+                              ),
+                            )
+                          : Image.network(s.data!, fit: BoxFit.cover),
+                    )
+                  : file != null && file.existsSync()
                   ? Image.file(file, fit: BoxFit.cover)
                   : Container(
                       color: const Color(0xFF13301A),

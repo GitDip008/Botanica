@@ -31,6 +31,18 @@ service firebase.storage {
       allow delete: if false;
     }
 
+    // Private gallery photos from the WEB build only. The browser has no app
+    // directory to keep them in and localStorage cannot hold photographs, so on
+    // web a "private" photo has to live server-side — readable by nobody but
+    // its owner. On Android these never exist; the file stays on the phone.
+    match /gallery_private/{uid}/{fileName} {
+      allow read, delete: if request.auth != null && request.auth.uid == uid;
+      allow write: if request.auth != null
+                   && request.auth.uid == uid
+                   && request.resource.size < 2 * 1024 * 1024
+                   && request.resource.contentType.matches('image/.*');
+    }
+
     // Visitor gallery. Anything in this path is by definition already public:
     // a private post is never uploaded at all, so there is nothing here to
     // leak. Readable by any signed-in visitor, which is what the feed needs.

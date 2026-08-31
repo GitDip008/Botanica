@@ -25,6 +25,7 @@ import 'package:botanica_ar/models/mock_plant.dart';
 import 'package:botanica_ar/models/finger_print_algorithm.dart';
 import 'package:botanica_ar/services/beacons_service.dart';
 import 'package:botanica_ar/services/plants.dart';
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 import 'package:vector_math/vector_math_64.dart' show Vector3;
 

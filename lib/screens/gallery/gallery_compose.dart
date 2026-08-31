@@ -97,7 +97,7 @@ class _GalleryComposeState extends State<GalleryCompose> {
       // Copy out of the camera's temp directory before anything else — that
       // cache is fair game for the OS to clear.
       final localPath =
-          await GalleryService.instance.persistPhoto(_photo!, id);
+          await GalleryService.instance.persistPhoto(_photo!, id, uid: user.id);
 
       var post = GalleryPost(
         id: id,
