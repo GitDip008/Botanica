@@ -1,4 +1,50 @@
 <!DOCTYPE html><html><head>
+  <script>
+    // Startup safety net. Errors thrown during Flutter's bootstrap and plugin
+    // registration happen before main(), so Dart's zone guard cannot catch
+    // them — the result was a splash screen that never went away, with no clue
+    // why. Surface it instead: a visitor who sees a reason can report it, a
+    // visitor staring at a logo cannot.
+    window.__bootErrors = [];
+    function __botanicaShowFailure() {
+      if (document.querySelector('flt-glass-pane')?.children.length) return;
+      if (document.getElementById('botanica-boot-error')) return;
+      var e = window.__bootErrors[0];
+      if (!e) return;
+      var d = document.createElement('div');
+      d.id = 'botanica-boot-error';
+      d.style.cssText = 'position:fixed;inset:0;z-index:99999;background:#0A1A0F;' +
+        'color:#E8F5E9;font:14px/1.5 system-ui,sans-serif;padding:32px;' +
+        'display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center';
+      d.innerHTML = '<div style="font-size:17px;font-weight:700;margin-bottom:10px">' +
+        'Botanica could not start</div>' +
+        '<div style="color:#9CCC9F;max-width:560px;font-size:12.5px;word-break:break-word">' +
+        (e.dart || e.msg || 'Unknown error') + '</div>' +
+        '<div style="color:#4A7A50;margin-top:18px;font-size:12px">' +
+        'Please report this to the garden team.</div>';
+      document.body.appendChild(d);
+    }
+    window.addEventListener('error', function (ev) {
+      window.__bootErrors.push({
+        msg: String(ev.message || ''),
+        dart: String((ev.error && ev.error.dartException) || '')
+      });
+      setTimeout(__botanicaShowFailure, 4000);
+    });
+    window.addEventListener('unhandledrejection', function (ev) {
+      window.__bootErrors.push({ msg: 'rejection: ' + String(ev.reason), dart: '' });
+      setTimeout(__botanicaShowFailure, 4000);
+    });
+  </script>
+
+
+  <!-- Google Sign-In on the web needs the OAuth *web* client id (client_type 3
+       in android/app/google-services.json). Without it the Google Identity
+       Services plugin reads a null meta tag at startup and throws before the
+       app renders — a blank page, not a failed sign-in. -->
+  <meta name="google-signin-client_id"
+        content="356065259812-l7qkqktprtvpad0c56lhjjjiujktnl81.apps.googleusercontent.com">
+
   <!--
     If you are serving your web app in a path other than the root, change the
     href value below to reflect the base path you are serving from.

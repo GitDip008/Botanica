@@ -46,6 +46,16 @@ class ConnectivityService extends ChangeNotifier {
     }
 
     // No interface reported → double-check with a fast DNS probe.
+    //
+    // Not on web: dart:io compiles there but InternetAddress is a stub that
+    // fails at runtime, and in a release build that surfaces as an opaque
+    // subtype error which kills startup — a permanently blank page rather than
+    // a wrong connectivity reading. The browser's own reachability signal is
+    // what checkConnectivity already reports, so there is nothing to add.
+    if (kIsWeb) {
+      _set(false);
+      return;
+    }
     try {
       final lookup = await InternetAddress.lookup('one.one.one.one')
           .timeout(const Duration(seconds: 2));

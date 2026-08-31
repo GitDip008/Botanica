@@ -23,6 +23,14 @@ class NotificationService {
     if (_initialized) return;
     _initialized = true;
 
+    // Web push needs a service worker and a VAPID key that are not configured,
+    // and requesting permission without them throws. The web build simply has
+    // no notifications rather than no app — see the guard in main().
+    if (kIsWeb) {
+      debugPrint('[Notifications] Skipped on web (no service worker/VAPID key)');
+      return;
+    }
+
     final messaging = FirebaseMessaging.instance;
 
     // 1. Permission (Android 13+ shows the prompt; iOS always prompts)
