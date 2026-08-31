@@ -132,6 +132,9 @@ export const scrapeHolidayHours = onSchedule(
       const html = await res.text();
       const entries = parseHolidayHours(html);
       if (entries.length < 3) {
+        // Fewer than three usable rows means the page layout changed. Keep
+        // whatever is already published — stale-but-correct hours beat
+        // garbage — and raise the admin banner instead.
         throw new Error(`Only parsed ${entries.length} entries`);
       }
       await doc.set(
@@ -210,10 +213,30 @@ function parseHolidayHours(html: string): { label: string; hours: string }[] {
       const end = `${m[3]}${m[4] ? ":" + m[4] : ""}`;
       const hours = `${start} – ${end}`;
       const label = line.substring(0, m.index!).trim().replace(/\s+/g, " ");
-      if (label) out.push({ label, hours });
+      if (isSaneLabel(label)) out.push({ label, hours });
     }
   }
   return out;
+}
+
+/**
+ * Rejects labels that are clearly page scaffolding rather than a holiday name.
+ *
+ * The 2026 scrape published a block of the page's inline JavaScript as a label,
+ * and bare month names for the rest — visible to every visitor until someone
+ * noticed. Splitting on tags will always be fragile against a CMS redesign, so
+ * the guard is on the OUTPUT: a holiday label is short, has letters, and does
+ * not look like code.
+ */
+function isSaneLabel(label: string): boolean {
+  if (label.length < 3 || label.length > 60) return false;
+  if (/[{}<>[\]"\\]|https?:|function|var |=>/.test(label)) return false;
+  if (!/[a-z]{3}/i.test(label)) return false;
+  // A bare month with no day or holiday name means the line was split badly.
+  if (/^(january|february|march|april|may|june|july|august|september|october|november|december)$/i.test(label)) {
+    return false;
+  }
+  return true;
 }
 
 // ─── 3. Groq chat proxy ──────────────────────────────────────────────────────
