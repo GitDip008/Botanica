@@ -190,7 +190,21 @@ function parseHolidayHours(html: string): { label: string; hours: string }[] {
       if (label) out.push({ label, hours: "Closed" });
       continue;
     }
-    const m = line.match(rangeRe);
+    // Take the LAST range on the line, not the first. A row like
+    // "Whitsun 5-7 June 10-16" leads with a DATE range, and matching first
+    // produced hours of "5 – 7" — which is what surfaced as a bad first row
+    // in the app's holiday list. Opening hours come after the date.
+    const all = [...line.matchAll(new RegExp(rangeRe, "g"))];
+    const usable = all.filter((mm) => {
+      // Drop a range immediately followed by a month: that is a date span.
+      const after = line.slice(mm.index! + mm[0].length, mm.index! + mm[0].length + 12);
+      if (monthRe.test(after)) return false;
+      // Opening hours are real clock times.
+      const sh = Number(mm[1]);
+      const eh = Number(mm[3]);
+      return sh >= 0 && sh <= 23 && eh >= 1 && eh <= 24 && eh > sh;
+    });
+    const m = usable.length ? usable[usable.length - 1] : null;
     if (m) {
       const start = `${m[1]}${m[2] ? ":" + m[2] : ""}`;
       const end = `${m[3]}${m[4] ? ":" + m[4] : ""}`;

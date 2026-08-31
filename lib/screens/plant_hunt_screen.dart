@@ -1,5 +1,6 @@
 import 'dart:io';
 import 'package:camera/camera.dart';
+import '../services/camera_utils.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:permission_handler/permission_handler.dart';
@@ -118,7 +119,7 @@ class _PlantHuntScreenState extends State<PlantHuntScreen> {
     if (!status.isGranted) return;
     final cameras = await availableCameras();
     if (cameras.isEmpty) return;
-    _cam = CameraController(cameras.first, ResolutionPreset.medium,
+    _cam = CameraController(preferredCamera(cameras), ResolutionPreset.medium,
         enableAudio: false);
     await _cam!.initialize();
     if (mounted) setState(() => _camReady = true);

@@ -1,5 +1,6 @@
 import 'dart:io';
 import 'package:camera/camera.dart';
+import '../services/camera_utils.dart';
 import 'package:flutter/material.dart';
 import 'package:permission_handler/permission_handler.dart';
 import '../services/chat_service.dart';
@@ -28,20 +29,35 @@ class _CameraScreenState extends State<CameraScreen> {
     _initCamera();
   }
 
+  List<CameraDescription> _cameras = const [];
+  CameraDescription? _active;
+
   Future<void> _initCamera() async {
     final status = await Permission.camera.request();
     if (!status.isGranted) return;
 
-    final cameras = await availableCameras();
-    if (cameras.isEmpty) return;
+    _cameras = await availableCameras();
+    if (_cameras.isEmpty) return;
 
-    _controller = CameraController(
-      cameras.first,
-      ResolutionPreset.high,
-      enableAudio: false,
-    );
+    // Rear-facing by default — availableCameras().first is the FRONT camera on
+    // many devices, which pointed the app at the visitor instead of the plant.
+    await _open(preferredCamera(_cameras));
+  }
+
+  Future<void> _open(CameraDescription cam) async {
+    await _controller?.dispose();
+    if (mounted) setState(() => _isInitialized = false);
+    _active = cam;
+    _controller = CameraController(cam, ResolutionPreset.high, enableAudio: false);
     await _controller!.initialize();
     if (mounted) setState(() => _isInitialized = true);
+  }
+
+  Future<void> _switchCamera() async {
+    final cur = _active;
+    if (cur == null) return;
+    final next = nextCamera(_cameras, cur);
+    if (next != null) await _open(next);
   }
 
   Future<void> _captureAndIdentify() async {
@@ -133,6 +149,28 @@ class _CameraScreenState extends State<CameraScreen> {
           else
             const Center(
               child: CircularProgressIndicator(color: Color(0xFF66BB6A)),
+            ),
+
+          // Camera switch — only shown when the device actually has another
+          // one, so the control never appears as a button that does nothing.
+          if (_isInitialized && hasMultipleCameras(_cameras))
+            Positioned(
+              right: 16,
+              bottom: 130,
+              child: Material(
+                color: Colors.black54,
+                shape: const CircleBorder(),
+                child: IconButton(
+                  tooltip: 'Switch camera',
+                  icon: Icon(
+                    Icons.flip_camera_android_rounded,
+                    color: _active != null && isFront(_active!)
+                        ? const Color(0xFFFFD54F)
+                        : Colors.white,
+                  ),
+                  onPressed: _switchCamera,
+                ),
+              ),
             ),
 
           // Top title bar

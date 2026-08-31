@@ -17,6 +17,7 @@ import 'package:camera/camera.dart';
 import 'package:flutter/material.dart';
 
 import '../../data/plant_index.dart';
+import '../../services/camera_utils.dart';
 import '../../models/contest.dart';
 import '../../services/auth_service.dart';
 import '../../services/contest_service.dart';
@@ -86,7 +87,12 @@ class _ContestEntryFlowState extends State<ContestEntryFlow> {
       if (cameras.isEmpty || !mounted) return;
       final file = await Navigator.push<XFile?>(
         context,
-        MaterialPageRoute(builder: (_) => _ContestCamera(camera: cameras.first)),
+        MaterialPageRoute(
+          builder: (_) => _ContestCamera(
+            camera: preferredCamera(cameras),
+            all: cameras,
+          ),
+        ),
       );
       if (file != null && mounted) setState(() => _photo = File(file.path));
     } catch (e) {
@@ -365,8 +371,9 @@ class _ContestEntryFlowState extends State<ContestEntryFlow> {
 /// Minimal capture screen. Medium resolution keeps the upload small enough that
 /// a whole event's photos cost almost nothing to store.
 class _ContestCamera extends StatefulWidget {
-  const _ContestCamera({required this.camera});
+  const _ContestCamera({required this.camera, required this.all});
   final CameraDescription camera;
+  final List<CameraDescription> all;
 
   @override
   State<_ContestCamera> createState() => _ContestCameraState();
@@ -374,6 +381,18 @@ class _ContestCamera extends StatefulWidget {
 
 class _ContestCameraState extends State<_ContestCamera> {
   CameraController? _controller;
+  late CameraDescription _active = widget.camera;
+
+  Future<void> _switch() async {
+    final next = nextCamera(widget.all, _active);
+    if (next == null) return;
+    await _controller?.dispose();
+    if (mounted) setState(() => _controller = null);
+    _active = next;
+    final c = CameraController(next, ResolutionPreset.medium, enableAudio: false);
+    await c.initialize();
+    if (mounted) setState(() => _controller = c);
+  }
 
   @override
   void initState() {
@@ -403,6 +422,23 @@ class _ContestCameraState extends State<_ContestCamera> {
               alignment: Alignment.bottomCenter,
               children: [
                 Center(child: CameraPreview(c)),
+                if (hasMultipleCameras(widget.all))
+                  Positioned(
+                    right: 24,
+                    bottom: 52,
+                    child: Material(
+                      color: Colors.black54,
+                      shape: const CircleBorder(),
+                      child: IconButton(
+                        tooltip: 'Switch camera',
+                        icon: Icon(Icons.flip_camera_android_rounded,
+                            color: isFront(_active)
+                                ? const Color(0xFFFFD54F)
+                                : Colors.white),
+                        onPressed: _switch,
+                      ),
+                    ),
+                  ),
                 Padding(
                   padding: const EdgeInsets.only(bottom: 36),
                   child: GestureDetector(

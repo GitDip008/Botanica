@@ -98,8 +98,27 @@ class HolidayHoursService {
         out.add(HolidayEntry(label: _normLabel(label), hours: 'Closed'));
         continue;
       }
-      // Heuristic 2 — time range
-      final m = rangeRe.firstMatch(line);
+      // Heuristic 2 — time range.
+      //
+      // Take the LAST plausible range, not the first. A row like
+      // "Whitsun 5-7 June 10-16" opens with a DATE range, and matching first
+      // produced opening hours of "5 – 7". Real hours follow the date.
+      final monthRe = RegExp(
+        r'(jan|feb|mar|apr|may|jun|jul|aug|sep|oct|nov|dec)',
+        caseSensitive: false,
+      );
+      final candidates = rangeRe.allMatches(line).where((mm) {
+        final after = line.substring(
+          mm.end,
+          (mm.end + 12).clamp(0, line.length),
+        );
+        if (monthRe.hasMatch(after)) return false; // a date span, not hours
+        final sh = int.tryParse(mm.group(1) ?? '') ?? -1;
+        final eh = int.tryParse(mm.group(3) ?? '') ?? -1;
+        return sh >= 0 && sh <= 23 && eh >= 1 && eh <= 24 && eh > sh;
+      }).toList();
+
+      final m = candidates.isEmpty ? null : candidates.last;
       if (m != null) {
         final start = '${m.group(1)}${m.group(2) != null ? ':${m.group(2)}' : ''}';
         final end = '${m.group(3)}${m.group(4) != null ? ':${m.group(4)}' : ''}';

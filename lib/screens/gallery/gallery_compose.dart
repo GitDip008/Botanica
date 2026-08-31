@@ -13,6 +13,7 @@ import 'package:camera/camera.dart';
 import 'package:flutter/material.dart';
 
 import '../../data/plant_index.dart';
+import '../../services/camera_utils.dart';
 import '../../models/gallery_post.dart';
 import '../../services/auth_service.dart';
 import '../../services/gallery_service.dart';
@@ -68,7 +69,12 @@ class _GalleryComposeState extends State<GalleryCompose> {
       if (cams.isEmpty || !mounted) return;
       final shot = await Navigator.push<XFile?>(
         context,
-        MaterialPageRoute(builder: (_) => _GalleryCamera(camera: cams.first)),
+        MaterialPageRoute(
+          builder: (_) => _GalleryCamera(
+            camera: preferredCamera(cams),
+            all: cams,
+          ),
+        ),
       );
       if (shot != null && mounted) setState(() => _photo = File(shot.path));
     } catch (e) {
@@ -302,8 +308,9 @@ class _GalleryComposeState extends State<GalleryCompose> {
 /// Medium resolution: ~150 KB a shot. Small enough that a shared photo costs
 /// almost nothing to serve, and large enough to look right on a phone.
 class _GalleryCamera extends StatefulWidget {
-  const _GalleryCamera({required this.camera});
+  const _GalleryCamera({required this.camera, required this.all});
   final CameraDescription camera;
+  final List<CameraDescription> all;
 
   @override
   State<_GalleryCamera> createState() => _GalleryCameraState();
@@ -311,6 +318,18 @@ class _GalleryCamera extends StatefulWidget {
 
 class _GalleryCameraState extends State<_GalleryCamera> {
   CameraController? _controller;
+  late CameraDescription _active = widget.camera;
+
+  Future<void> _switch() async {
+    final next = nextCamera(widget.all, _active);
+    if (next == null) return;
+    await _controller?.dispose();
+    if (mounted) setState(() => _controller = null);
+    _active = next;
+    final c = CameraController(next, ResolutionPreset.medium, enableAudio: false);
+    await c.initialize();
+    if (mounted) setState(() => _controller = c);
+  }
 
   @override
   void initState() {
@@ -337,6 +356,23 @@ class _GalleryCameraState extends State<_GalleryCamera> {
               alignment: Alignment.bottomCenter,
               children: [
                 Center(child: CameraPreview(c)),
+                if (hasMultipleCameras(widget.all))
+                  Positioned(
+                    right: 24,
+                    bottom: 52,
+                    child: Material(
+                      color: Colors.black54,
+                      shape: const CircleBorder(),
+                      child: IconButton(
+                        tooltip: 'Switch camera',
+                        icon: Icon(Icons.flip_camera_android_rounded,
+                            color: isFront(_active)
+                                ? const Color(0xFFFFD54F)
+                                : Colors.white),
+                        onPressed: _switch,
+                      ),
+                    ),
+                  ),
                 Padding(
                   padding: const EdgeInsets.only(bottom: 36),
                   child: GestureDetector(
