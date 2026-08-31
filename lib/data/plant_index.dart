@@ -81,7 +81,49 @@ class PlantIndex {
 
   Future<void> ready() => _loading ??= _load();
 
-  PlantFacts? factsFor(String scientificName) => _byName[norm(scientificName)];
+  /// Facts for a scientific name.
+  ///
+  /// Falls back to a cultivar when the exact species is absent. The garden's
+  /// spreadsheet records cultivars — "Coffea arabica 'Nana'" — while PlantNet
+  /// and the live database return the species, "Coffea arabica". Without this,
+  /// identifying a coffee plant finds no tags at all despite the garden holding
+  /// three tagged coffee cultivars.
+  ///
+  /// Deliberately one-directional and prefix-anchored: a query for the species
+  /// may match a cultivar of it, never the reverse, and never a merely similar
+  /// name. "Rubus" must not resolve to "Rubus chamaemorus".
+  PlantFacts? factsFor(String scientificName) {
+    final q = norm(scientificName);
+    if (q.isEmpty) return null;
+    final exact = _byName[q];
+    if (exact != null) return exact;
+
+    // The remainder must be an infraspecific marker, not another word. A
+    // cultivar reads "<species> 'Name'" or "<species> subsp. x"; a plain extra
+    // word means a DIFFERENT taxon — "Rubus" must not resolve to "Rubus
+    // chamaemorus", or cloudberry facts get attached to every bramble.
+    final prefix = '$q ';
+    PlantFacts? best;
+    for (final entry in _byName.entries) {
+      if (!entry.key.startsWith(prefix)) continue;
+      final rest = entry.key.substring(prefix.length);
+      if (!_infraspecific.hasMatch(rest)) continue;
+      // Prefer whichever cultivar actually carries curated tags.
+      if (best == null || (best.tags.isEmpty && entry.value.tags.isNotEmpty)) {
+        best = entry.value;
+      }
+    }
+    return best;
+  }
+
+  /// Markers that make the remainder a variant of the queried taxon rather than
+  /// a different one: a cultivar in quotes, or an infraspecific rank.
+  ///
+  /// Hybrid markers (× / "x ") are deliberately absent. "Rubus x castoreus" is
+  /// its own taxon, not a variant of Rubus, so treating it as a fallback for a
+  /// genus query would attach one hybrid's facts to the whole genus.
+  static final RegExp _infraspecific =
+      RegExp(r"""^(['‘’“"]|subsp\.|ssp\.|var\.|cv\.|f\.|forma\b)""");
 
   /// Every plant in the index (call after [ready]).
   Iterable<PlantFacts> get all => _byName.values;
