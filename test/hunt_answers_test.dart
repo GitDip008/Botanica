@@ -7,6 +7,7 @@
 // someone who typed a different plant. Every case below is one or the other.
 
 import 'package:botanica_ar/data/hunt_answers.dart';
+import 'package:botanica_ar/screens/plant_hunt_screen.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 void main() {
@@ -148,11 +149,113 @@ void main() {
     });
   });
 
+  _pointsTests();
+
   group('edit distance', () {
     test('behaves like Levenshtein on known pairs', () {
       expect(editDistance('kitten', 'sitting'), 3);
       expect(editDistance('', 'abc'), 3);
       expect(editDistance('abc', 'abc'), 0);
+    });
+  });
+}
+
+// ─── Points ───────────────────────────────────────────────────────────────────
+
+void _pointsTests() {
+  group('quest points', () {
+    test('a clean answer with no hints banks the full score', () {
+      expect(
+        questPoints(
+            answerScore: 100,
+            usedLocationHint: false,
+            usedPhotoHint: false,
+            answerRevealed: false),
+        100,
+      );
+    });
+
+    test('each hint costs what the rules say it costs', () {
+      expect(
+        questPoints(
+            answerScore: 100,
+            usedLocationHint: true,
+            usedPhotoHint: false,
+            answerRevealed: false),
+        100 - kLocationHintCost,
+      );
+      expect(
+        questPoints(
+            answerScore: 100,
+            usedLocationHint: false,
+            usedPhotoHint: true,
+            answerRevealed: false),
+        100 - kPhotoHintCost,
+      );
+      expect(
+        questPoints(
+            answerScore: 100,
+            usedLocationHint: true,
+            usedPhotoHint: true,
+            answerRevealed: false),
+        100 - kLocationHintCost - kPhotoHintCost,
+      );
+    });
+
+    test('the photo hint costs more than the location hint', () {
+      // Seeing the plant is most of the puzzle; knowing the greenhouse is not.
+      expect(kPhotoHintCost, greaterThan(kLocationHintCost));
+    });
+
+    test('finding the plant is never worth nothing', () {
+      // Worst case a visitor can actually reach: the lowest score that still
+      // counts as correct (68), with both hints bought. No floor is needed for
+      // this to stay positive, and the panel says so rather than promising a
+      // minimum that never applies.
+      final worst = questPoints(
+          answerScore: 68,
+          usedLocationHint: true,
+          usedPhotoHint: true,
+          answerRevealed: false);
+      expect(worst, 23);
+      expect(worst, greaterThan(0));
+    });
+
+    test('points can never go negative, whatever the costs become', () {
+      // firestore.rules rejects a negative total outright.
+      expect(
+        questPoints(
+            answerScore: 0,
+            usedLocationHint: true,
+            usedPhotoHint: true,
+            answerRevealed: false),
+        0,
+      );
+    });
+
+    test('being told the answer banks nothing, hints or not', () {
+      expect(
+        questPoints(
+            answerScore: 100,
+            usedLocationHint: false,
+            usedPhotoHint: false,
+            answerRevealed: true),
+        0,
+      );
+      expect(
+        questPoints(
+            answerScore: 100,
+            usedLocationHint: true,
+            usedPhotoHint: true,
+            answerRevealed: true),
+        0,
+      );
+    });
+
+    test('a perfect run stays inside the cap the rules enforce', () {
+      // firestore.rules rejects a total above 500.
+      const quests = 5;
+      expect(kMaxQuestPoints * quests, lessThanOrEqualTo(500));
     });
   });
 }

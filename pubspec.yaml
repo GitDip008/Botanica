@@ -16,7 +16,7 @@ publish_to: 'none' # Remove this line if you wish to publish to pub.dev
 # https://developer.apple.com/library/archive/documentation/General/Reference/InfoPlistKeyReference/Articles/CoreFoundationKeys.html
 # In Windows, build-name is used as the major, minor, and patch parts
 # of the product and file versions while build-number is used as the build suffix.
-version: 1.0.5+5
+version: 1.0.6+6
 
 environment:
   sdk: ^3.11.5
@@ -140,10 +140,10 @@ flutter:
     # Curated plant tags (380 rows) + the full plant->section index (11.5k rows).
     # Read by lib/data/plant_index.dart; powers tag chips and tour planning.
     - assets/data/
-    # Reference photos shown with each Plant Hunt clue. Taken in the garden, so
-    # a visitor is matching against the actual specimen rather than a stock
-    # photo of a different cultivar. See assets/plant_hunt/README.md.
-    - assets/plant_hunt/
+    # NOTE: assets/plant_hunt/ is deliberately NOT bundled. Those garden photos
+    # were the location hint; the hint is now a Wikipedia photo fetched on
+    # demand, so shipping ~870 KB of images nothing loads would be dead weight.
+    # The files stay in the repo in case the hint changes back.
 
   # An image asset can refer to one or more resolution-specific "variants", see
   # https://flutter.dev/to/resolution-aware-images
