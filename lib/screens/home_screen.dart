@@ -7,7 +7,6 @@ import '../services/garden_schedule.dart';
 import '../services/language_service.dart';
 import 'camera_screen.dart';
 import 'bloom_screen.dart';
-import 'plant_hunt_screen.dart';
 import 'plants_screen.dart';
 import 'gallery/gallery_screen.dart';
 import 'report_screen.dart';
@@ -62,7 +61,7 @@ class HomeScreen extends StatelessWidget {
                         .animate().fadeIn(duration: 500.ms),
                     const SizedBox(height: 20),
 
-                    // Renders nothing unless a contest is live.
+                    // Plant Hunt plus whatever timed event is running.
                     const OngoingContestCard(),
 
                     _sectionLabel(s.sectionDidYouKnow),
@@ -92,21 +91,10 @@ class HomeScreen extends StatelessWidget {
 
                     const SizedBox(height: 10),
 
-                    _PrimaryCard(
-                      icon: Icons.emoji_events_rounded,
-                      iconColor: const Color(0xFFFFD54F),
-                      title: s.plantHunt,
-                      subtitle: s.plantHuntSubtitle,
-                      gradient: const LinearGradient(
-                        colors: [Color(0xFF2D1550), Color(0xFF4A1A7A)],
-                        begin: Alignment.topLeft,
-                        end: Alignment.bottomRight,
-                      ),
-                      onTap: () => Navigator.push(context,
-                          _route(const PlantHuntScreen())),
-                    ).animate().slideY(begin: 0.15, duration: 400.ms, delay: 140.ms, curve: Curves.easeOut),
+                    // Plant Hunt now lives in the Ongoing Contests section
+                    // at the top of this screen, next to whatever event is
+                    // running — it is a competition, not a way to explore.
 
-                    const SizedBox(height: 10),
 
                     // Greenhouse navigation is hidden for now: indoor positioning
                     // depends on BLE beacons that are not installed yet, and it has

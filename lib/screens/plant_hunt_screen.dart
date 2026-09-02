@@ -14,15 +14,20 @@
 // scientific, or everyday. Near misses still count and score fewer points, so
 // the leaderboard separates a confident answer from a half-remembered one.
 
+import 'package:camera/camera.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
+import 'package:permission_handler/permission_handler.dart';
 
 import '../data/hunt_answers.dart';
 import '../services/auth_service.dart';
 import '../services/badge_service.dart';
+import '../services/camera_utils.dart';
 import '../services/hunt_score_service.dart';
 import '../services/language_service.dart';
+import '../services/plant_identification_service.dart';
 import '../services/usage_tracking_service.dart';
+import '../widgets/zoomable_camera_preview.dart';
 
 // ─── Data ─────────────────────────────────────────────────────────────────────
 
@@ -172,6 +177,15 @@ class _PlantHuntScreenState extends State<PlantHuntScreen> {
   final _textCtrl = TextEditingController();
   bool _showHint = false;
 
+  // ── Photo assist ───────────────────────────────────────────────────────────
+  // A photograph produces a SUGGESTION, never an answer. The identifier reads
+  // leaves and flowers; it cannot read the metal tag, and the tag is what the
+  // hunt asks for. So the suggested name is shown as text the visitor can read
+  // and check against the tag, and the field is never filled for them.
+  String? _suggestion;
+  String? _suggestionError;
+  bool _identifying = false;
+
   int get _total => _points.fold(0, (a, b) => a + b);
   int get _solved => _states.where((s) => s == _StopState.correct).length;
 
@@ -219,6 +233,61 @@ class _PlantHuntScreenState extends State<PlantHuntScreen> {
     });
   }
 
+  /// Photograph the plant and offer what the identifier thinks it is.
+  ///
+  /// Deliberately does NOT fill the answer box or submit anything: the hunt
+  /// asks for the name on the tag, and an identifier working from leaves can
+  /// be confidently wrong. The visitor reads the suggestion, checks it against
+  /// the tag, and types what the tag says.
+  Future<void> _photoSuggestion() async {
+    setState(() {
+      _suggestionError = null;
+      _suggestion = null;
+    });
+    try {
+      if (!await Permission.camera.request().isGranted) {
+        if (mounted) {
+          setState(() => _suggestionError = 'Camera permission is needed.');
+        }
+        return;
+      }
+      final cams = await availableCameras();
+      if (cams.isEmpty || !mounted) return;
+      final shot = await Navigator.push<XFile?>(
+        context,
+        MaterialPageRoute(
+          builder: (_) => _SuggestionCamera(
+            camera: preferredCamera(cams),
+            all: cams,
+          ),
+        ),
+      );
+      if (shot == null || !mounted) return;
+
+      setState(() => _identifying = true);
+      // readAsBytes, not File(path): the same call works on web.
+      final bytes = await shot.readAsBytes();
+      final info = await PlantIdentificationService.instance.identify(bytes);
+      if (!mounted) return;
+      setState(() {
+        _identifying = false;
+        if (!info.isPlant || info.scientificName == 'Unknown') {
+          _suggestionError =
+              'Could not read that one. Get closer to a leaf or flower.';
+        } else {
+          _suggestion = info.scientificName;
+        }
+      });
+    } catch (e) {
+      if (mounted) {
+        setState(() {
+          _identifying = false;
+          _suggestionError = 'Could not identify: $e';
+        });
+      }
+    }
+  }
+
   void _nextChallenge() {
     if (_current < _kChallenges.length - 1) {
       setState(() {
@@ -226,6 +295,10 @@ class _PlantHuntScreenState extends State<PlantHuntScreen> {
         _textCtrl.clear();
         _showHint = false;
         _feedback = null;
+        // A suggestion belongs to the plant it was taken of; carrying it to
+        // the next quest would be an actively wrong hint.
+        _suggestion = null;
+        _suggestionError = null;
       });
     } else {
       BadgeService.instance.award('plant_hunt_completed');
@@ -466,6 +539,82 @@ class _PlantHuntScreenState extends State<PlantHuntScreen> {
             ),
             textInputAction: TextInputAction.done,
           ),
+          const SizedBox(height: 10),
+
+          // ── Photo assist ────────────────────────────────────────────────
+          if (state != _StopState.correct)
+            OutlinedButton.icon(
+              style: OutlinedButton.styleFrom(
+                foregroundColor: const Color(0xFF81C784),
+                side: const BorderSide(color: Color(0xFF2E7D32)),
+                padding: const EdgeInsets.symmetric(vertical: 11),
+                shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12)),
+              ),
+              icon: _identifying
+                  ? const SizedBox(
+                      width: 15,
+                      height: 15,
+                      child: CircularProgressIndicator(
+                          strokeWidth: 2, color: Color(0xFF81C784)))
+                  : const Icon(Icons.photo_camera_outlined, size: 17),
+              label: Text(_identifying
+                  ? 'Identifying…'
+                  : 'Not sure? Photograph it for a suggestion'),
+              onPressed: _identifying ? null : _photoSuggestion,
+            ),
+
+          if (_suggestion != null)
+            Container(
+              margin: const EdgeInsets.only(top: 10),
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: const Color(0xFF13301A),
+                borderRadius: BorderRadius.circular(10),
+                border: Border.all(color: const Color(0xFF2E7D32)),
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Row(children: [
+                    Icon(Icons.auto_awesome_rounded,
+                        size: 14, color: Color(0xFF81C784)),
+                    SizedBox(width: 6),
+                    Text('PROBABLY',
+                        style: TextStyle(
+                            color: Color(0xFF81C784),
+                            fontSize: 10.5,
+                            fontWeight: FontWeight.w700,
+                            letterSpacing: 1.1)),
+                  ]),
+                  const SizedBox(height: 6),
+                  SelectableText(
+                    _suggestion!,
+                    style: const TextStyle(
+                        color: Color(0xFFE8F5E9),
+                        fontSize: 15,
+                        fontStyle: FontStyle.italic,
+                        fontWeight: FontWeight.w600),
+                  ),
+                  const SizedBox(height: 6),
+                  const Text(
+                    'A guess from the photo, not the answer. Check it against '
+                    'the plant’s tag, then type what the tag says.',
+                    style: TextStyle(
+                        color: Color(0xFF6E8A72), fontSize: 11.5, height: 1.4),
+                  ),
+                ],
+              ),
+            ),
+
+          if (_suggestionError != null)
+            Padding(
+              padding: const EdgeInsets.only(top: 10),
+              child: Text(_suggestionError!,
+                  style: const TextStyle(
+                      color: Color(0xFFEF9A9A), fontSize: 12)),
+            ),
+
           const SizedBox(height: 14),
 
           if (_feedback != null)
@@ -923,6 +1072,113 @@ class HuntLeaderboardScreen extends StatelessWidget {
           );
         },
       ),
+    );
+  }
+}
+
+/// Capture screen for the photo suggestion.
+///
+/// Medium resolution: the identifier works fine with it and the bytes never
+/// leave the device except as one API call, so there is nothing to gain from a
+/// larger frame.
+class _SuggestionCamera extends StatefulWidget {
+  const _SuggestionCamera({required this.camera, required this.all});
+  final CameraDescription camera;
+  final List<CameraDescription> all;
+
+  @override
+  State<_SuggestionCamera> createState() => _SuggestionCameraState();
+}
+
+class _SuggestionCameraState extends State<_SuggestionCamera> {
+  CameraController? _controller;
+  late CameraDescription _active = widget.camera;
+
+  @override
+  void initState() {
+    super.initState();
+    _open(widget.camera);
+  }
+
+  Future<void> _open(CameraDescription cam) async {
+    await _controller?.dispose();
+    if (mounted) setState(() => _controller = null);
+    _active = cam;
+    final c = CameraController(cam, ResolutionPreset.medium, enableAudio: false);
+    await c.initialize();
+    if (mounted) setState(() => _controller = c);
+  }
+
+  Future<void> _switch() async {
+    final next = nextCamera(widget.all, _active);
+    if (next != null) await _open(next);
+  }
+
+  @override
+  void dispose() {
+    _controller?.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final c = _controller;
+    return Scaffold(
+      backgroundColor: Colors.black,
+      appBar: AppBar(
+        backgroundColor: Colors.black,
+        iconTheme: const IconThemeData(color: Color(0xFF66BB6A)),
+        title: const Text('Photograph the plant',
+            style: TextStyle(color: Color(0xFFE8F5E9), fontSize: 16)),
+      ),
+      body: c == null || !c.value.isInitialized
+          ? const Center(child: CircularProgressIndicator())
+          : Stack(
+              alignment: Alignment.bottomCenter,
+              children: [
+                Center(child: ZoomableCameraPreview(controller: c)),
+                if (hasMultipleCameras(widget.all))
+                  Positioned(
+                    right: 24,
+                    bottom: 52,
+                    child: Material(
+                      color: Colors.black54,
+                      shape: const CircleBorder(),
+                      child: IconButton(
+                        tooltip: 'Switch camera',
+                        icon: Icon(Icons.flip_camera_android_rounded,
+                            color: isFront(_active)
+                                ? const Color(0xFFFFD54F)
+                                : Colors.white),
+                        onPressed: _switch,
+                      ),
+                    ),
+                  ),
+                Padding(
+                  padding: const EdgeInsets.only(bottom: 36),
+                  child: GestureDetector(
+                    onTap: () async {
+                      try {
+                        final f = await c.takePicture();
+                        if (mounted) Navigator.pop(context, f);
+                      } catch (_) {
+                        if (mounted) Navigator.pop(context);
+                      }
+                    },
+                    child: Container(
+                      width: 72,
+                      height: 72,
+                      decoration: BoxDecoration(
+                        shape: BoxShape.circle,
+                        color: Colors.white,
+                        border: Border.all(
+                            color: const Color(0xFF66BB6A), width: 4),
+                      ),
+                    ),
+                  ),
+                ),
+              ],
+            ),
     );
   }
 }
