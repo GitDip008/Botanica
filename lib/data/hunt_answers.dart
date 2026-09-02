@@ -170,6 +170,76 @@ const kHuntAccepted = <String, List<String>>{
   ],
 };
 
+/// Verdict on the photograph submitted with an answer.
+enum PhotoVerdict {
+  /// The right plant, or near enough — same genus or same family.
+  accepted,
+
+  /// A plant, but not this one.
+  wrongPlant,
+
+  /// Nothing identifiable in the frame.
+  notAPlant,
+
+  /// A plant, but the identifier could not place it well enough to judge.
+  inconclusive,
+}
+
+/// Whether a photograph shows the plant the quest is asking for.
+///
+/// Genus first, then family. Genus because PlantNet routinely returns a
+/// neighbouring species of the same plant — *Monstera adansonii* for a
+/// *deliciosa* — and that is unmistakably the right specimen in front of the
+/// visitor. Family because a garden bed holds relatives, and the brief is
+/// "the same plant or at least a very similar plant from the same family".
+///
+/// [targetFamilies] is a list rather than one name because the garden's metal
+/// tags predate the current classification: the cacao tag reads Sterculiaceae
+/// where PlantNet returns Malvaceae, and both have to pass.
+PhotoVerdict checkPhotoPlant({
+  required bool isPlant,
+  required String detectedScientific,
+  required String detectedFamily,
+  required String targetScientific,
+  required List<String> targetFamilies,
+}) {
+  final detected = normalizeAnswer(detectedScientific);
+  if (!isPlant || detected.isEmpty || detected == 'unknown') {
+    return PhotoVerdict.notAPlant;
+  }
+
+  String genusOf(String s) {
+    final parts = normalizeAnswer(s).split(' ');
+    return parts.isEmpty ? '' : parts.first;
+  }
+
+  if (genusOf(detectedScientific).isNotEmpty &&
+      genusOf(detectedScientific) == genusOf(targetScientific)) {
+    return PhotoVerdict.accepted;
+  }
+
+  final fam = normalizeAnswer(detectedFamily);
+  if (fam.isEmpty || fam == 'n a' || fam == 'unknown') {
+    return PhotoVerdict.inconclusive;
+  }
+  for (final t in targetFamilies) {
+    if (fam == normalizeAnswer(t)) return PhotoVerdict.accepted;
+  }
+  return PhotoVerdict.wrongPlant;
+}
+
+/// Families each hunt plant may legitimately be reported as, keyed to match
+/// [kHuntAccepted]. Where the garden's tag uses an older name than the
+/// identifier does, both appear.
+const kHuntFamilies = <String, List<String>>{
+  // Tag says Sterculiaceae; modern treatment folds it into Malvaceae.
+  'cacao': ['Sterculiaceae', 'Malvaceae'],
+  'monstera': ['Araceae'],
+  'kultapallo': ['Asteraceae', 'Compositae'],
+  'grape': ['Vitaceae'],
+  'mustard': ['Brassicaceae', 'Cruciferae'],
+};
+
 // ── Self-check ───────────────────────────────────────────────────────────────
 
 void main() {

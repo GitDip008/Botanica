@@ -79,6 +79,7 @@ class _Challenge {
     required this.whereToLook,
     required this.targetName,
     required this.targetScientific,
+    required this.families,
     required this.accepted,
   });
 
@@ -93,8 +94,12 @@ class _Challenge {
   /// Shown only after the quest is solved, or when a stuck visitor asks.
   final String targetName;
 
-  /// Also what the Wikipedia photo hint is looked up by.
+  /// Also what the Wikipedia photo hint is looked up by, and what the
+  /// submitted photograph is checked against.
   final String targetScientific;
+
+  /// Families the photo check will accept — see [kHuntFamilies].
+  final List<String> families;
 
   /// Every name this plant answers to: what is on the tag, and what a visitor
   /// would call it at home. Matching is fuzzy, so only distinct forms are
@@ -118,6 +123,7 @@ final _kChallenges = <_Challenge>[
     whereToLook: 'You can find me in greenhouse Romeo.',
     targetName: 'Cacao tree',
     targetScientific: 'Theobroma cacao',
+    families: kHuntFamilies['cacao']!,
     accepted: kHuntAccepted['cacao']!,
   ),
   _Challenge(
@@ -133,6 +139,7 @@ final _kChallenges = <_Challenge>[
     whereToLook: 'You can find me in greenhouse Romeo.',
     targetName: 'Swiss cheese plant',
     targetScientific: 'Monstera deliciosa',
+    families: kHuntFamilies['monstera']!,
     accepted: kHuntAccepted['monstera']!,
   ),
   _Challenge(
@@ -146,6 +153,7 @@ final _kChallenges = <_Challenge>[
     whereToLook: 'This is a decorative plant in the outdoor garden.',
     targetName: 'Cutleaf coneflower',
     targetScientific: 'Rudbeckia laciniata',
+    families: kHuntFamilies['kultapallo']!,
     accepted: kHuntAccepted['kultapallo']!,
   ),
   _Challenge(
@@ -160,6 +168,7 @@ final _kChallenges = <_Challenge>[
     whereToLook: 'You can find me in greenhouse Julia.',
     targetName: 'Grapevine',
     targetScientific: 'Vitis vinifera',
+    families: kHuntFamilies['grape']!,
     accepted: kHuntAccepted['grape']!,
   ),
   _Challenge(
@@ -175,6 +184,7 @@ final _kChallenges = <_Challenge>[
         'section (FI hyöty- ja lääkekasvit).',
     targetName: 'White mustard',
     targetScientific: 'Sinapis alba',
+    families: kHuntFamilies['mustard']!,
     accepted: kHuntAccepted['mustard']!,
   ),
 ];
@@ -215,6 +225,12 @@ class _PlantHuntScreenState extends State<PlantHuntScreen> {
   Uint8List? _photo;
   String? _suggestion;
   bool _identifying = false;
+
+  /// Whether the photograph passed the plant check. A photo of a shoe, or of
+  /// the wrong plant, cannot be submitted — the identifier has to place it as
+  /// the right species or at least the right family first.
+  bool _photoAccepted = false;
+  String? _photoRejection;
 
   String? _wikiUrl;
   bool _loadingWiki = false;
@@ -267,24 +283,60 @@ class _PlantHuntScreenState extends State<PlantHuntScreen> {
         _photo = bytes;
         _identifying = true;
         _suggestion = null;
+        _photoAccepted = false;
+        _photoRejection = null;
       });
 
-      // A suggestion, never an answer: the identifier reads leaves, and the
-      // hunt asks for what is written on the tag.
       final info = await PlantIdentificationService.instance.identify(bytes);
       if (!mounted) return;
+
+      final challenge = _kChallenges[_current];
+      final verdict = checkPhotoPlant(
+        isPlant: info.isPlant,
+        detectedScientific: info.scientificName,
+        detectedFamily: info.family,
+        targetScientific: challenge.targetScientific,
+        targetFamilies: challenge.families,
+      );
+
       setState(() {
         _identifying = false;
+        // The suggestion is a hint, never an answer: the identifier reads
+        // leaves, and the hunt asks for what is written on the tag.
         _suggestion = (info.isPlant && info.scientificName != 'Unknown')
             ? info.scientificName
             : null;
+        switch (verdict) {
+          case PhotoVerdict.accepted:
+            _photoAccepted = true;
+            _photoRejection = null;
+          case PhotoVerdict.notAPlant:
+            _photoRejection =
+                'No plant recognised in that photo. Get closer to a leaf, '
+                'flower or fruit and take it again.';
+          case PhotoVerdict.wrongPlant:
+            _photoRejection =
+                'That is a plant, but not the one this clue describes. Keep '
+                'looking, then photograph the right one.';
+          case PhotoVerdict.inconclusive:
+            _photoRejection =
+                'Could not place that one well enough to check it. Try a '
+                'closer, sharper photo of a leaf or flower.';
+        }
       });
     } catch (e) {
+      // A hard failure — no network in a greenhouse, camera plugin error — is
+      // not the visitor's fault. Accept the photo and say it was not checked,
+      // rather than making a connection problem look like a wrong answer.
       if (mounted) {
         setState(() {
           _identifying = false;
-          _feedback = 'Camera unavailable: $e';
-          _feedbackGood = false;
+          _photoAccepted = _photo != null;
+          _photoRejection = null;
+          _feedback = _photo == null
+              ? 'Camera unavailable: $e'
+              : 'Could not check your photo (offline?) — accepting it.';
+          _feedbackGood = _photo != null;
         });
       }
     }
@@ -357,7 +409,7 @@ class _PlantHuntScreenState extends State<PlantHuntScreen> {
 
   void _submit() {
     final typed = _textCtrl.text.trim();
-    if (typed.isEmpty || _photo == null) return;
+    if (typed.isEmpty || _photo == null || !_photoAccepted) return;
 
     final challenge = _kChallenges[_current];
     final score = scoreAnswer(typed, challenge.accepted);
@@ -380,6 +432,10 @@ class _PlantHuntScreenState extends State<PlantHuntScreen> {
                 ? 'Found it! ${score.points} − $spent for hints '
                     '= +${_points[_current]} points'
                 : 'Found it! +${_points[_current]} points';
+        // Fires after this frame so the popup opens over a card that already
+        // shows the result.
+        WidgetsBinding.instance.addPostFrameCallback(
+            (_) => _questPassed(_points[_current]));
       } else {
         _states[_current] = _StopState.wrong;
         _wrongCounts[_current]++;
@@ -392,10 +448,81 @@ class _PlantHuntScreenState extends State<PlantHuntScreen> {
     });
   }
 
+  /// Two seconds of "you passed", then the next quest.
+  ///
+  /// Auto-advancing rather than leaving a Next button: the visitor has both
+  /// hands full of phone and plant, and one fewer tap between quests is one
+  /// fewer reason to stop walking.
+  Future<void> _questPassed(int banked) async {
+    final last = _current == _kChallenges.length - 1;
+    final next = _current + 2; // 1-based number of the quest coming up
+
+    showDialog<void>(
+      context: context,
+      barrierDismissible: false,
+      barrierColor: Colors.black87,
+      builder: (_) => Center(
+        child: Container(
+          margin: const EdgeInsets.symmetric(horizontal: 40),
+          padding: const EdgeInsets.fromLTRB(22, 20, 22, 20),
+          decoration: BoxDecoration(
+            color: const Color(0xFF0D1F14),
+            borderRadius: BorderRadius.circular(16),
+            border: Border.all(color: Colors.greenAccent, width: 1.5),
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const Icon(Icons.verified_rounded,
+                      color: Colors.greenAccent, size: 40)
+                  .animate()
+                  .scale(duration: 400.ms, curve: Curves.elasticOut),
+              const SizedBox(height: 12),
+              const Text(
+                'SPECIMEN VERIFIED',
+                style: TextStyle(
+                  color: Colors.greenAccent,
+                  fontSize: 15,
+                  fontWeight: FontWeight.w800,
+                  letterSpacing: 2,
+                ),
+              ),
+              const SizedBox(height: 8),
+              Text(
+                '+$banked pts committed',
+                style: const TextStyle(
+                    color: Color(0xFFFFD54F),
+                    fontSize: 13.5,
+                    fontWeight: FontWeight.w700),
+              ),
+              const SizedBox(height: 6),
+              Text(
+                last
+                    ? 'All records logged · compiling your badge…'
+                    : 'Record logged · loading quest $next of ${_kChallenges.length}…',
+                textAlign: TextAlign.center,
+                style: const TextStyle(
+                    color: Color(0xFF9CCC9F), fontSize: 12, height: 1.4),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+
+    await Future<void>.delayed(const Duration(seconds: 2));
+    if (!mounted) return;
+    Navigator.of(context, rootNavigator: true).pop(); // close the popup
+    if (!mounted) return;
+    _nextChallenge();
+  }
+
   void _resetQuestState() {
     _textCtrl.clear();
     _photo = null;
     _suggestion = null;
+    _photoAccepted = false;
+    _photoRejection = null;
     _wikiUrl = null;
     _feedback = null;
   }
@@ -796,7 +923,10 @@ class _PlantHuntScreenState extends State<PlantHuntScreen> {
               border: Border.all(
                   color: _photo == null
                       ? const Color(0xFF2E7D32)
-                      : const Color(0xFF66BB6A)),
+                      : _photoRejection != null
+                          ? const Color(0xFFEF5350)
+                          : const Color(0xFF66BB6A),
+                  width: _photoRejection != null ? 1.5 : 1),
               image: _photo == null
                   ? null
                   : DecorationImage(
@@ -834,6 +964,43 @@ class _PlantHuntScreenState extends State<PlantHuntScreen> {
             ),
           ),
 
+        if (_photoRejection != null && !_identifying)
+          Container(
+            margin: const EdgeInsets.only(top: 8),
+            padding: const EdgeInsets.all(11),
+            decoration: BoxDecoration(
+              color: const Color(0xFF2A1414),
+              borderRadius: BorderRadius.circular(10),
+              border: Border.all(color: const Color(0xFFEF5350)),
+            ),
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Icon(Icons.report_gmailerrorred_rounded,
+                    size: 16, color: Color(0xFFEF5350)),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: Text(_photoRejection!,
+                      style: const TextStyle(
+                          color: Color(0xFFFFCDD2),
+                          fontSize: 12.5,
+                          height: 1.4)),
+                ),
+              ],
+            ),
+          ),
+
+        if (_photoAccepted && !_identifying)
+          const Padding(
+            padding: EdgeInsets.only(top: 8),
+            child: Row(children: [
+              Icon(Icons.verified_rounded, size: 15, color: Colors.greenAccent),
+              SizedBox(width: 6),
+              Text('Photo checked — this is the right plant.',
+                  style: TextStyle(color: Colors.greenAccent, fontSize: 12)),
+            ]),
+          ),
+
         if (_identifying)
           const Padding(
             padding: EdgeInsets.only(top: 8),
@@ -844,7 +1011,7 @@ class _PlantHuntScreenState extends State<PlantHuntScreen> {
                   child: CircularProgressIndicator(
                       strokeWidth: 2, color: Color(0xFF81C784))),
               SizedBox(width: 8),
-              Text('Looking at your photo…',
+              Text('Checking your photo…',
                   style: TextStyle(color: Color(0xFF6E8A72), fontSize: 12)),
             ]),
           ),
@@ -1163,7 +1330,7 @@ class _PlantHuntScreenState extends State<PlantHuntScreen> {
       );
     }
 
-    final hasPhoto = _photo != null;
+    final hasPhoto = _photo != null && _photoAccepted;
     final hasName = _textCtrl.text.trim().isNotEmpty;
     final canSubmit = hasPhoto && hasName;
     return Column(
@@ -1172,11 +1339,13 @@ class _PlantHuntScreenState extends State<PlantHuntScreen> {
           Padding(
             padding: const EdgeInsets.only(bottom: 8),
             child: Text(
-              !hasPhoto && !hasName
-                  ? 'Take a photo and type the name to submit.'
-                  : !hasPhoto
-                      ? 'Take a photo of the plant to submit.'
-                      : 'Type the name from the tag to submit.',
+              _photoRejection != null
+                  ? 'Retake the photo to submit.'
+                  : !hasPhoto && !hasName
+                      ? 'Take a photo and type the name to submit.'
+                      : !hasPhoto
+                          ? 'Take a photo of the plant to submit.'
+                          : 'Type the name from the tag to submit.',
               style: const TextStyle(color: Color(0xFF6E8A72), fontSize: 12),
             ),
           ),

@@ -149,6 +149,89 @@ void main() {
     });
   });
 
+
+  group('photo check', () {
+    PhotoVerdict check(String sci, String fam, String key,
+            {bool isPlant = true}) =>
+        checkPhotoPlant(
+          isPlant: isPlant,
+          detectedScientific: sci,
+          detectedFamily: fam,
+          targetScientific: {
+            'cacao': 'Theobroma cacao',
+            'monstera': 'Monstera deliciosa',
+            'kultapallo': 'Rudbeckia laciniata',
+            'grape': 'Vitis vinifera',
+            'mustard': 'Sinapis alba',
+          }[key]!,
+          targetFamilies: kHuntFamilies[key]!,
+        );
+
+    test('the exact species passes', () {
+      expect(check('Theobroma cacao', 'Malvaceae', 'cacao'),
+          PhotoVerdict.accepted);
+      expect(check('Sinapis alba', 'Brassicaceae', 'mustard'),
+          PhotoVerdict.accepted);
+    });
+
+    test('a neighbouring species of the same genus passes', () {
+      // PlantNet routinely returns a sibling species for the same specimen.
+      expect(check('Monstera adansonii', 'Araceae', 'monstera'),
+          PhotoVerdict.accepted);
+      expect(check('Rudbeckia hirta', 'Asteraceae', 'kultapallo'),
+          PhotoVerdict.accepted);
+    });
+
+    test('a different plant of the same family passes', () {
+      expect(check('Brassica napus', 'Brassicaceae', 'mustard'),
+          PhotoVerdict.accepted);
+    });
+
+    test('the old family name on the garden tag still passes', () {
+      // The cacao tag reads Sterculiaceae; identifiers say Malvaceae. Both
+      // have to work or every correct cacao photo would be rejected.
+      expect(check('Theobroma bicolor', 'Sterculiaceae', 'cacao'),
+          PhotoVerdict.accepted);
+      expect(check('Herrania nitida', 'Malvaceae', 'cacao'),
+          PhotoVerdict.accepted);
+      expect(check('Rudbeckia laciniata', 'Compositae', 'kultapallo'),
+          PhotoVerdict.accepted);
+    });
+
+    test('a plant from another family is rejected', () {
+      expect(check('Monstera deliciosa', 'Araceae', 'mustard'),
+          PhotoVerdict.wrongPlant);
+      expect(check('Vitis vinifera', 'Vitaceae', 'cacao'),
+          PhotoVerdict.wrongPlant);
+      expect(check('Quercus robur', 'Fagaceae', 'grape'),
+          PhotoVerdict.wrongPlant);
+    });
+
+    test('a photo of something that is not a plant is rejected', () {
+      expect(check('Unknown', 'N/A', 'grape', isPlant: false),
+          PhotoVerdict.notAPlant);
+      expect(check('', '', 'grape', isPlant: true), PhotoVerdict.notAPlant);
+      expect(check('Unknown', 'N/A', 'grape'), PhotoVerdict.notAPlant);
+    });
+
+    test('an unplaceable plant is inconclusive, not a wrong answer', () {
+      // Distinct from wrongPlant on purpose: the visitor may well be standing
+      // at the right plant, and the message tells them to retake rather than
+      // to go and look somewhere else.
+      expect(check('Something obscure', 'N/A', 'grape'),
+          PhotoVerdict.inconclusive);
+      expect(check('Something obscure', '', 'grape'),
+          PhotoVerdict.inconclusive);
+    });
+
+    test('family matching ignores case and stray punctuation', () {
+      expect(check('Vitis riparia', 'vitaceae', 'grape'),
+          PhotoVerdict.accepted);
+      expect(check('Vitis riparia', ' Vitaceae ', 'grape'),
+          PhotoVerdict.accepted);
+    });
+  });
+
   _pointsTests();
 
   group('edit distance', () {
