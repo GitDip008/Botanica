@@ -232,6 +232,14 @@ class _PlantHuntScreenState extends State<PlantHuntScreen> {
   bool _photoAccepted = false;
   String? _photoRejection;
 
+  /// Set when the visitor overrides a rejected photo check.
+  ///
+  /// The identifier is wrong often enough that it cannot be the last word on
+  /// whether someone found a plant. It is safe to let them past because the
+  /// typed name is the real gate: the override cannot get anyone through a
+  /// quest they have not actually solved, only past a photo the AI misread.
+  bool _photoOverridden = false;
+
   String? _wikiUrl;
   bool _loadingWiki = false;
 
@@ -285,6 +293,7 @@ class _PlantHuntScreenState extends State<PlantHuntScreen> {
         _suggestion = null;
         _photoAccepted = false;
         _photoRejection = null;
+        _photoOverridden = false;
       });
 
       final info = await PlantIdentificationService.instance.identify(bytes);
@@ -409,7 +418,8 @@ class _PlantHuntScreenState extends State<PlantHuntScreen> {
 
   void _submit() {
     final typed = _textCtrl.text.trim();
-    if (typed.isEmpty || _photo == null || !_photoAccepted) return;
+    if (typed.isEmpty || _photo == null) return;
+    if (!_photoAccepted && !_photoOverridden) return;
 
     final challenge = _kChallenges[_current];
     final score = scoreAnswer(typed, challenge.accepted);
@@ -523,6 +533,7 @@ class _PlantHuntScreenState extends State<PlantHuntScreen> {
     _suggestion = null;
     _photoAccepted = false;
     _photoRejection = null;
+    _photoOverridden = false;
     _wikiUrl = null;
     _feedback = null;
   }
@@ -980,14 +991,56 @@ class _PlantHuntScreenState extends State<PlantHuntScreen> {
                     size: 16, color: Color(0xFFEF5350)),
                 const SizedBox(width: 8),
                 Expanded(
-                  child: Text(_photoRejection!,
-                      style: const TextStyle(
-                          color: Color(0xFFFFCDD2),
-                          fontSize: 12.5,
-                          height: 1.4)),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(_photoRejection!,
+                          style: const TextStyle(
+                              color: Color(0xFFFFCDD2),
+                              fontSize: 12.5,
+                              height: 1.4)),
+                      const SizedBox(height: 6),
+                      // The identifier gets it wrong often enough that it
+                      // cannot be allowed to lock someone out of a plant they
+                      // are standing in front of. The typed name still has to
+                      // be right, so this opens no door to cheating.
+                      GestureDetector(
+                        onTap: () => setState(() {
+                          _photoOverridden = true;
+                          _photoRejection = null;
+                        }),
+                        child: const Text(
+                          'Sure this is the right plant? Use it anyway →',
+                          style: TextStyle(
+                            color: Color(0xFFFFD54F),
+                            fontSize: 12.5,
+                            fontWeight: FontWeight.w700,
+                            decoration: TextDecoration.underline,
+                            decorationColor: Color(0xFFFFD54F),
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
                 ),
               ],
             ),
+          ),
+
+        if (_photoOverridden && !_identifying)
+          const Padding(
+            padding: EdgeInsets.only(top: 8),
+            child: Row(children: [
+              Icon(Icons.info_outline_rounded,
+                  size: 15, color: Color(0xFFFFD54F)),
+              SizedBox(width: 6),
+              Expanded(
+                child: Text('Using your photo without the check. '
+                    'The name still has to match the tag.',
+                    style:
+                        TextStyle(color: Color(0xFFFFD54F), fontSize: 12)),
+              ),
+            ]),
           ),
 
         if (_photoAccepted && !_identifying)
@@ -1330,7 +1383,7 @@ class _PlantHuntScreenState extends State<PlantHuntScreen> {
       );
     }
 
-    final hasPhoto = _photo != null && _photoAccepted;
+    final hasPhoto = _photo != null && (_photoAccepted || _photoOverridden);
     final hasName = _textCtrl.text.trim().isNotEmpty;
     final canSubmit = hasPhoto && hasName;
     return Column(
@@ -1662,9 +1715,19 @@ class HuntLeaderboardScreen extends StatelessWidget {
             );
           }
           return ListView.builder(
-            padding: const EdgeInsets.fromLTRB(16, 16, 16, 32),
-            itemCount: rows.length,
-            itemBuilder: (_, i) {
+            padding: const EdgeInsets.fromLTRB(16, 8, 16, 32),
+            itemCount: rows.length + 1,
+            itemBuilder: (_, index) {
+              if (index == 0) {
+                return const Padding(
+                  padding: EdgeInsets.fromLTRB(2, 8, 2, 14),
+                  child: Text(
+                    'Ranked by plants found. Points break a tie.',
+                    style: TextStyle(color: Color(0xFF6E8A72), fontSize: 12),
+                  ),
+                );
+              }
+              final i = index - 1;
               final r = rows[i];
               final mine = r.uid == myUid;
               final medal = i == 0
@@ -1707,22 +1770,42 @@ class HuntLeaderboardScreen extends StatelessWidget {
                                   color: Color(0xFFE8F5E9),
                                   fontSize: 14.5,
                                   fontWeight: FontWeight.w600)),
-                          Text('${r.solved} of ${_kChallenges.length} found',
-                              style: const TextStyle(
-                                  color: Color(0xFF4A7A50), fontSize: 11.5)),
+                          const SizedBox(height: 3),
+                          // Five pips: how far round the garden they got, at a
+                          // glance and without reading a number.
+                          Row(
+                            children: List.generate(
+                              _kChallenges.length,
+                              (q) => Container(
+                                width: 13,
+                                height: 5,
+                                margin: const EdgeInsets.only(right: 3),
+                                decoration: BoxDecoration(
+                                  color: q < r.solved
+                                      ? Colors.greenAccent
+                                      : const Color(0xFF2A4A2F),
+                                  borderRadius: BorderRadius.circular(3),
+                                ),
+                              ),
+                            ),
+                          ),
                         ],
                       ),
                     ),
-                    Text('${r.total}',
-                        style: const TextStyle(
-                            color: Color(0xFFFFD54F),
-                            fontSize: 17,
-                            fontWeight: FontWeight.w800)),
-                    const Padding(
-                      padding: EdgeInsets.only(left: 4),
-                      child: Text('pts',
-                          style: TextStyle(
-                              color: Color(0xFF4A7A50), fontSize: 10.5)),
+                    // Quests found is what the board ranks on, so it is the
+                    // number people see; points only separate equal hunters.
+                    Column(
+                      crossAxisAlignment: CrossAxisAlignment.end,
+                      children: [
+                        Text('${r.solved}/${_kChallenges.length}',
+                            style: const TextStyle(
+                                color: Colors.greenAccent,
+                                fontSize: 17,
+                                fontWeight: FontWeight.w800)),
+                        Text('quests · ${r.total} pts',
+                            style: const TextStyle(
+                                color: Color(0xFF4A7A50), fontSize: 10.5)),
+                      ],
                     ),
                   ],
                 ),

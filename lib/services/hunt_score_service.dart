@@ -28,10 +28,20 @@ class HuntScore {
   /// when both found the plant.
   final int total;
 
-  /// How many of the quests were solved. Shown next to the total because 300
-  /// from three quests and 300 from five mean different things.
+  /// How many of the quests were solved. This is what the board ranks on:
+  /// finding four plants beats finding three, however many points the three
+  /// scored, because the hunt is about finding plants.
   final int solved;
   final DateTime updatedAt;
+
+  /// Quests first, points as the tiebreak, folded into one sortable number.
+  ///
+  /// Firestore cannot order by two fields without a composite index, and one
+  /// derived value needs no index at all. A total can never reach 1000, so
+  /// `solved * 1000 + total` orders exactly as (solved, total) would.
+  static int rankOf(int solved, int total) => solved * 1000 + total;
+
+  int get rank => rankOf(solved, total);
 
   factory HuntScore.fromDoc(DocumentSnapshot<Map<String, dynamic>> d) {
     final m = d.data() ?? {};
@@ -68,13 +78,17 @@ class HuntScoreService {
       final ref = _db.collection(_col).doc(uid);
       await _db.runTransaction((tx) async {
         final cur = await tx.get(ref);
-        final best = (cur.data()?['total'] as num?)?.toInt() ?? -1;
-        if (total <= best) return; // an earlier run stands
+        // Compared on rank, not points: a run that found more plants is the
+        // better run even if it scored fewer points buying hints along the way.
+        final best = (cur.data()?['rank'] as num?)?.toInt() ?? -1;
+        final rank = HuntScore.rankOf(solved, total);
+        if (rank <= best) return; // an earlier run stands
         tx.set(ref, {
           'uid': uid,
           'displayName': displayName.isEmpty ? 'Visitor' : displayName,
           'total': total,
           'solved': solved,
+          'rank': rank,
           'updatedAt': Timestamp.now(),
         });
       });
@@ -83,10 +97,10 @@ class HuntScoreService {
     }
   }
 
-  /// Top scores, best first. Ties break towards whoever got there first.
+  /// The board: most plants found first, points breaking ties.
   Stream<List<HuntScore>> watchTop({int limit = 20}) => _db
       .collection(_col)
-      .orderBy('total', descending: true)
+      .orderBy('rank', descending: true)
       .limit(limit)
       .snapshots()
       .map((s) => s.docs.map(HuntScore.fromDoc).toList());

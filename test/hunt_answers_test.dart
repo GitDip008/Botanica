@@ -8,6 +8,7 @@
 
 import 'package:botanica_ar/data/hunt_answers.dart';
 import 'package:botanica_ar/screens/plant_hunt_screen.dart';
+import 'package:botanica_ar/services/hunt_score_service.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 void main() {
@@ -229,6 +230,37 @@ void main() {
           PhotoVerdict.accepted);
       expect(check('Vitis riparia', ' Vitaceae ', 'grape'),
           PhotoVerdict.accepted);
+    });
+  });
+
+
+  group('leaderboard ranking', () {
+    int rank(int solved, int total) => HuntScore.rankOf(solved, total);
+
+    test('more plants found always outranks more points', () {
+      // The whole point of the change: someone who found four plants with
+      // hints beats someone who found three cleanly.
+      expect(rank(4, 100), greaterThan(rank(3, 300)));
+      expect(rank(1, 0), greaterThan(rank(0, 500)));
+    });
+
+    test('points break a tie between equal hunters', () {
+      expect(rank(3, 240), greaterThan(rank(3, 239)));
+      expect(rank(5, 500), greaterThan(rank(5, 499)));
+    });
+
+    test('a perfect run cannot collide with the tier above it', () {
+      // The multiplier only works while a total can never reach it.
+      expect(rank(4, 500), lessThan(rank(5, 0)));
+    });
+
+    test('ranks are ordered the same as (solved, points) would be', () {
+      final runs = [
+        [0, 0], [1, 23], [1, 100], [2, 50], [3, 300], [4, 100], [5, 500],
+      ];
+      final ranks = runs.map((r) => rank(r[0], r[1])).toList();
+      final sorted = [...ranks]..sort();
+      expect(ranks, sorted, reason: 'rank must rise with (solved, points)');
     });
   });
 
