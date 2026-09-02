@@ -5,18 +5,25 @@ import 'package:flutter_markdown/flutter_markdown.dart';
 import 'package:provider/provider.dart';
 import '../models/plant_info.dart';
 import '../services/chat_service.dart';
+import 'dart:typed_data';
+
 import '../services/gemini_service.dart';
 import '../services/language_service.dart';
 import '../widgets/plant_tags_bar.dart';
 
 class PlantResultScreen extends StatefulWidget {
   final String imagePath;
+
+  /// The captured bytes. Required on web, where imagePath is a blob URL and
+  /// File() throws "UnsupportedOperation: _Namespace".
+  final Uint8List? imageBytes;
   final PlantInfo plantInfo;
   final GeminiService geminiService;
 
   const PlantResultScreen({
     super.key,
     required this.imagePath,
+    this.imageBytes,
     required this.plantInfo,
     required this.geminiService,
   });
@@ -160,13 +167,18 @@ class _PlantResultScreenState extends State<PlantResultScreen>
                       opaque: false,
                       barrierColor: Colors.black,
                       pageBuilder: (_, __, ___) =>
-                          _ImageViewer(localPath: widget.imagePath),
+                          _ImageViewer(localPath: widget.imagePath, bytes: widget.imageBytes),
                     ),
                   ),
                   child: Hero(
                     tag: 'plant_image',
-                    child: Image.file(File(widget.imagePath),
-                        height: 260, width: double.infinity, fit: BoxFit.cover),
+                    // Bytes first: they work everywhere. File only as a
+                    // fallback for older call sites that pass a path alone.
+                    child: widget.imageBytes != null
+                        ? Image.memory(widget.imageBytes!,
+                            height: 260, width: double.infinity, fit: BoxFit.cover)
+                        : Image.file(File(widget.imagePath),
+                            height: 260, width: double.infinity, fit: BoxFit.cover),
                   ),
                 )
               else if (info.imageUrl != null)
@@ -565,9 +577,10 @@ class _ChatMessage {
 
 // ─── Full-screen image viewer with pinch-to-zoom ──────────────────────────────
 class _ImageViewer extends StatelessWidget {
+  final Uint8List? bytes;
   final String? localPath;
   final String? networkUrl;
-  const _ImageViewer({this.localPath, this.networkUrl});
+  const _ImageViewer({this.localPath, this.networkUrl, this.bytes});
 
   @override
   Widget build(BuildContext context) {
@@ -588,7 +601,9 @@ class _ImageViewer extends StatelessWidget {
                 minScale: 0.8,
                 maxScale: 5.0,
                 child: localPath != null
-                    ? Image.file(File(localPath!))
+                    ? (bytes != null
+                        ? Image.memory(bytes!)
+                        : Image.file(File(localPath!)))
                     : Image.network(
                         networkUrl!,
                         loadingBuilder: (_, child, prog) {

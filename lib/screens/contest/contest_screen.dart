@@ -11,6 +11,7 @@ import 'package:flutter/material.dart';
 import '../../models/contest.dart';
 import '../../services/auth_service.dart';
 import '../../services/contest_service.dart';
+import '../../services/wikipedia_image_service.dart';
 import 'contest_entry_flow.dart';
 import 'contest_teams_tab.dart';
 
@@ -207,9 +208,24 @@ class _HowToPlay extends StatelessWidget {
   }
 }
 
-class _Leaderboard extends StatelessWidget {
+class _Leaderboard extends StatefulWidget {
   const _Leaderboard({required this.contest});
   final Contest contest;
+
+  @override
+  State<_Leaderboard> createState() => _LeaderboardState();
+}
+
+class _LeaderboardState extends State<_Leaderboard> {
+  /// null = the overall board (most people). Otherwise the axis being ranked.
+  ContestAxis? _axis;
+
+  /// Which end of the selected scale leads. One axis therefore serves two
+  /// boards — "cutest" and "creepiest" — instead of needing ten tabs for five
+  /// scales.
+  bool _towardRight = true;
+
+  Contest get contest => widget.contest;
 
   @override
   Widget build(BuildContext context) {
@@ -221,21 +237,129 @@ class _Leaderboard extends StatelessWidget {
         }
         // Top ten only. A public leaderboard is a motivator, not an archive —
         // and nobody at an event scrolls past the tenth plant.
-        final rows = ContestService.rank(snap.data!).take(10).toList();
-        if (rows.isEmpty) {
-          return const Center(
-            child: Padding(
-              padding: EdgeInsets.all(32),
-              child: Text(
-                'No plants picked yet.\nBe the first.',
-                textAlign: TextAlign.center,
-                style: TextStyle(color: Color(0xFF9CCC9F), height: 1.5),
-              ),
+        final axis = _axis;
+        final rows = (axis == null
+                ? ContestService.rank(snap.data!)
+                : ContestService.rankByAxis(snap.data!, axis.key,
+                    towardRight: _towardRight))
+            .take(10)
+            .toList();
+
+        return Column(
+          children: [
+            _picker(),
+            Expanded(child: _list(rows)),
+          ],
+        );
+      },
+    );
+  }
+
+  /// Scale picker. Horizontal because five scales plus "Most picked" will not
+  /// fit across a phone, and wrapping them would push the board itself off the
+  /// first screen.
+  Widget _picker() {
+    return SizedBox(
+      height: 46,
+      child: ListView(
+        scrollDirection: Axis.horizontal,
+        padding: const EdgeInsets.fromLTRB(16, 8, 16, 0),
+        children: [
+          _chip(
+            label: 'Most picked',
+            selected: _axis == null,
+            onTap: () => setState(() => _axis = null),
+          ),
+          for (final a in contest.axes)
+            _chip(
+              // The end currently leading is the one worth naming: on the
+              // "Cute ↔ Creepy" scale the board is either most cute or most
+              // creepy, and the label has to say which.
+              label: identical(a, _axis)
+                  ? (_towardRight ? a.right : a.left)
+                  : '${a.left} / ${a.right}',
+              selected: identical(a, _axis),
+              trailing: identical(a, _axis) ? Icons.swap_horiz_rounded : null,
+              onTap: () => setState(() {
+                // Tapping the selected scale flips which end leads.
+                if (identical(a, _axis)) {
+                  _towardRight = !_towardRight;
+                } else {
+                  _axis = a;
+                  _towardRight = true;
+                }
+              }),
             ),
-          );
-        }
-        return ListView.builder(
-          padding: const EdgeInsets.fromLTRB(16, 16, 16, 96),
+        ],
+      ),
+    );
+  }
+
+  Widget _chip({
+    required String label,
+    required bool selected,
+    required VoidCallback onTap,
+    IconData? trailing,
+  }) {
+    return Padding(
+      padding: const EdgeInsets.only(right: 8),
+      child: Material(
+        color: selected ? const Color(0xFF3A2A06) : const Color(0xFF111F16),
+        borderRadius: BorderRadius.circular(20),
+        child: InkWell(
+          borderRadius: BorderRadius.circular(20),
+          onTap: onTap,
+          child: Container(
+            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(20),
+              border: Border.all(
+                  color: selected
+                      ? const Color(0xFFFFD54F)
+                      : const Color(0xFF2A4A2F)),
+            ),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text(label,
+                    style: TextStyle(
+                      color: selected
+                          ? const Color(0xFFFFD54F)
+                          : const Color(0xFF9CCC9F),
+                      fontSize: 12.5,
+                      fontWeight:
+                          selected ? FontWeight.w700 : FontWeight.normal,
+                    )),
+                if (trailing != null) ...[
+                  const SizedBox(width: 5),
+                  Icon(trailing, size: 14, color: const Color(0xFFFFD54F)),
+                ],
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _list(List<LeaderboardRow> rows) {
+    final axis = _axis;
+    if (rows.isEmpty) {
+      return Center(
+        child: Padding(
+          padding: const EdgeInsets.all(32),
+          child: Text(
+            axis == null
+                ? 'No plants picked yet.\nBe the first.'
+                : 'Nobody has rated a plant on this scale yet.',
+            textAlign: TextAlign.center,
+            style: const TextStyle(color: Color(0xFF9CCC9F), height: 1.5),
+          ),
+        ),
+      );
+    }
+    return ListView.builder(
+          padding: const EdgeInsets.fromLTRB(16, 12, 16, 96),
           itemCount: rows.length,
           itemBuilder: (_, i) {
             final r = rows[i];
@@ -268,6 +392,7 @@ class _Leaderboard extends StatelessWidget {
                             fontSize: 16,
                             fontWeight: FontWeight.w800)),
                   ),
+                  _WikiThumb(plantName: r.plantName),
                   Expanded(
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
@@ -284,17 +409,30 @@ class _Leaderboard extends StatelessWidget {
                       ],
                     ),
                   ),
+                  // On a scale board the ranking number IS the average, so
+                  // show that; the pick count stays underneath because an
+                  // average of one person's opinion deserves less weight.
                   Column(
                     crossAxisAlignment: CrossAxisAlignment.end,
                     children: [
-                      Text('${r.votes}',
-                          style: const TextStyle(
-                              color: Color(0xFF81C784),
-                              fontSize: 17,
-                              fontWeight: FontWeight.w800)),
-                      Text(r.votes == 1 ? 'pick' : 'picks',
-                          style: const TextStyle(
-                              color: Color(0xFF4A7A50), fontSize: 10.5)),
+                      Text(
+                        axis == null
+                            ? '${r.votes}'
+                            : r.averageFor(axis.key)!.toStringAsFixed(1),
+                        style: TextStyle(
+                            color: axis == null
+                                ? const Color(0xFF81C784)
+                                : const Color(0xFFFFD54F),
+                            fontSize: 17,
+                            fontWeight: FontWeight.w800),
+                      ),
+                      Text(
+                        axis == null
+                            ? (r.votes == 1 ? 'pick' : 'picks')
+                            : '${r.votes} ${r.votes == 1 ? "pick" : "picks"}',
+                        style: const TextStyle(
+                            color: Color(0xFF4A7A50), fontSize: 10.5),
+                      ),
                     ],
                   ),
                   const Padding(
@@ -308,8 +446,6 @@ class _Leaderboard extends StatelessWidget {
             );
           },
         );
-      },
-    );
   }
 
   /// How everyone who picked this plant saw it — the mean position on each
@@ -337,6 +473,9 @@ class _Leaderboard extends StatelessWidget {
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
+              // A picture of the plant itself, so the sheet is recognisable
+              // to someone who saw it in the garden but never caught the name.
+              _WikiPhoto(plantName: r.plantName),
               Text(r.plantName,
                   style: const TextStyle(
                       color: Color(0xFFE8F5E9),
@@ -362,10 +501,117 @@ class _Leaderboard extends StatelessWidget {
                     showValue: true,
                   ),
                 ),
+
+              // Who picked it — the prize goes to a person or a team, so the
+              // names have to be visible without opening the database.
+              const Divider(color: Color(0xFF2A4A2F), height: 26),
+              const Text('PICKED BY',
+                  style: TextStyle(
+                      color: Color(0xFF81C784),
+                      fontSize: 11,
+                      fontWeight: FontWeight.w700,
+                      letterSpacing: 1.2)),
+              const SizedBox(height: 8),
+              Wrap(
+                spacing: 6,
+                runSpacing: 6,
+                children: [
+                  for (final p in r.pickers)
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 10, vertical: 6),
+                      decoration: BoxDecoration(
+                        color: const Color(0xFF13301A),
+                        borderRadius: BorderRadius.circular(20),
+                        border: Border.all(
+                            color: p.teamName == null
+                                ? const Color(0xFF2A4A2F)
+                                : const Color(0xFF8D6E00)),
+                      ),
+                      child: Text(p.label,
+                          style: TextStyle(
+                              color: p.teamName == null
+                                  ? const Color(0xFFCFE8D2)
+                                  : const Color(0xFFFFD54F),
+                              fontSize: 12)),
+                    ),
+                ],
+              ),
             ],
           ),
           ),
         ),
+      ),
+    );
+  }
+}
+
+/// Wide Wikipedia photo for the leaderboard detail sheet.
+///
+/// Renders nothing at all when there is no image — an empty grey box above the
+/// plant name would be worse than starting straight at the name.
+class _WikiPhoto extends StatelessWidget {
+  const _WikiPhoto({required this.plantName});
+  final String plantName;
+
+  @override
+  Widget build(BuildContext context) {
+    return FutureBuilder<String?>(
+      future: WikipediaImageService.instance.findImage(
+        scientificName: plantName,
+      ),
+      builder: (_, snap) {
+        if (snap.data == null) return const SizedBox.shrink();
+        return Padding(
+          padding: const EdgeInsets.only(bottom: 14),
+          child: ClipRRect(
+            borderRadius: BorderRadius.circular(12),
+            child: AspectRatio(
+              aspectRatio: 16 / 9,
+              child: Image.network(
+                snap.data!,
+                fit: BoxFit.cover,
+                errorBuilder: (_, __, ___) => const SizedBox.shrink(),
+              ),
+            ),
+          ),
+        );
+      },
+    );
+  }
+}
+
+/// Wikipedia thumbnail for a leaderboard row.
+///
+/// Best-effort: visitors can type any name they like, so a miss is normal and
+/// falls back to a leaf icon rather than an error. The service caches per name,
+/// so a rebuilding list does not re-fetch.
+class _WikiThumb extends StatelessWidget {
+  const _WikiThumb({required this.plantName});
+  final String plantName;
+
+  @override
+  Widget build(BuildContext context) {
+    return FutureBuilder<String?>(
+      future: WikipediaImageService.instance.findImage(
+        scientificName: plantName,
+      ),
+      builder: (_, snap) => Container(
+        width: 42,
+        height: 42,
+        margin: const EdgeInsets.only(right: 10),
+        decoration: BoxDecoration(
+          color: const Color(0xFF13301A),
+          borderRadius: BorderRadius.circular(8),
+          image: snap.data == null
+              ? null
+              : DecorationImage(
+                  image: NetworkImage(snap.data!), fit: BoxFit.cover),
+        ),
+        child: snap.data == null
+            ? const Icon(Icons.local_florist_rounded,
+                size: 18, color: Color(0xFF4A7A50))
+            : null,
       ),
     );
   }
@@ -431,30 +677,37 @@ class _MyPickCard extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
+          // The photo the visitor actually took, full width — this tab is
+          // their own record of the walk, so their picture is the point of the
+          // card rather than a detail on it. Storage rules keep it readable by
+          // them and an admin only.
+          if (entry.photoPath != null)
+            FutureBuilder<String?>(
+              future: ContestService.instance.photoUrl(entry.photoPath),
+              builder: (_, s) => s.data == null
+                  ? const SizedBox.shrink()
+                  : Padding(
+                      padding: const EdgeInsets.only(bottom: 10),
+                      child: ClipRRect(
+                        borderRadius: BorderRadius.circular(8),
+                        child: AspectRatio(
+                          aspectRatio: 4 / 3,
+                          child: Image.network(
+                            s.data!,
+                            fit: BoxFit.cover,
+                            errorBuilder: (_, __, ___) =>
+                                const SizedBox.shrink(),
+                          ),
+                        ),
+                      ),
+                    ),
+            ),
           Row(
             children: [
-              // Only ever the viewer's own photo — Storage rules make sure of it.
-              if (entry.photoPath != null)
-                FutureBuilder<String?>(
-                  future: ContestService.instance.photoUrl(entry.photoPath),
-                  builder: (_, s) => Container(
-                    width: 54,
-                    height: 54,
-                    margin: const EdgeInsets.only(right: 12),
-                    decoration: BoxDecoration(
-                      color: const Color(0xFF13301A),
-                      borderRadius: BorderRadius.circular(8),
-                      image: s.data == null
-                          ? null
-                          : DecorationImage(
-                              image: NetworkImage(s.data!), fit: BoxFit.cover),
-                    ),
-                    child: s.data == null
-                        ? const Icon(Icons.local_florist_rounded,
-                            color: Color(0xFF4A7A50))
-                        : null,
-                  ),
-                ),
+              // No photo (or it would not load): a reference picture of the
+              // plant stands in rather than an empty square.
+              if (entry.photoPath == null)
+                _WikiThumb(plantName: entry.plantName),
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,

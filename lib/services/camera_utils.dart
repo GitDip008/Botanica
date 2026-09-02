@@ -38,3 +38,22 @@ bool hasMultipleCameras(List<CameraDescription> cameras) => cameras.length > 1;
 /// Icon hint for the camera currently in use.
 bool isFront(CameraDescription c) =>
     c.lensDirection == CameraLensDirection.front;
+
+/// The next whole-number zoom level one press away, clamped to what the device
+/// actually supports. [direction] is +1 to zoom in, -1 to zoom out.
+///
+/// Whole steps rather than a fraction of the reported range: phones report
+/// maximum zoom anywhere from 4× to 100×, so stepping by "one eighth of the
+/// range" moved barely at all on one device and jumped uselessly far on
+/// another. A press now means 1×, 2×, 3×, … everywhere.
+///
+/// The epsilon matters after a pinch: at 2.0 exactly, `ceil(2.0) - 1` is 1 as
+/// wanted, but at 2.0000001 it would be 2 — the level already showing, so the
+/// button would look broken.
+double nextZoom(double current, int direction, double min, double max) {
+  const e = 0.001;
+  final next = direction > 0
+      ? (current + e).floorToDouble() + 1
+      : (current - e).ceilToDouble() - 1;
+  return next.clamp(min, max);
+}

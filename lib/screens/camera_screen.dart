@@ -1,6 +1,6 @@
-import 'dart:io';
 import 'package:camera/camera.dart';
 import '../services/camera_utils.dart';
+import '../widgets/zoomable_camera_preview.dart';
 import 'package:flutter/material.dart';
 import 'package:permission_handler/permission_handler.dart';
 import '../services/chat_service.dart';
@@ -66,7 +66,8 @@ class _CameraScreenState extends State<CameraScreen> {
 
     try {
       final file = await _controller!.takePicture();
-      final bytes = await File(file.path).readAsBytes();
+      // XFile.readAsBytes works on web too; File(path) throws there.
+      final bytes = await file.readAsBytes();
       UsageTrackingService.instance
           .log(UsageTrackingService.featurePlantId);
 
@@ -113,6 +114,7 @@ class _CameraScreenState extends State<CameraScreen> {
         MaterialPageRoute(
           builder: (_) => PlantResultScreen(
             imagePath: file.path,
+            imageBytes: bytes,
             plantInfo: plantInfo,
             geminiService: _geminiService,
           ),
@@ -145,7 +147,7 @@ class _CameraScreenState extends State<CameraScreen> {
         fit: StackFit.expand,
         children: [
           if (_isInitialized && _controller != null)
-            CameraPreview(_controller!)
+            ZoomableCameraPreview(controller: _controller!)
           else
             const Center(
               child: CircularProgressIndicator(color: Color(0xFF66BB6A)),

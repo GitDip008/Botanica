@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_animate/flutter_animate.dart';
 import 'package:provider/provider.dart';
 import '../../services/auth_service.dart';
 import '../../services/language_service.dart';
@@ -152,24 +151,6 @@ class _SignupScreenState extends State<SignupScreen> {
                 ),
 
                 const SizedBox(height: 18),
-                Container(
-                  padding: const EdgeInsets.all(12),
-                  decoration: BoxDecoration(
-                    color: const Color(0xFF111F16),
-                    borderRadius: BorderRadius.circular(10),
-                    border: Border.all(color: const Color(0xFF2A4A2F)),
-                  ),
-                  child: const Row(children: [
-                    Icon(Icons.eco_rounded, color: Color(0xFF66BB6A), size: 16),
-                    SizedBox(width: 8),
-                    Expanded(
-                      child: Text(
-                        'Free account includes unlimited plant ID, basic Plant Hunt, and 10 AI chats per day.',
-                        style: TextStyle(color: Color(0xFF81C784), fontSize: 11),
-                      ),
-                    ),
-                  ]),
-                ).animate().fadeIn(duration: 500.ms, delay: 200.ms),
               ],
             ),
           ),

@@ -7,7 +7,7 @@
 // into the app's directory and nothing is uploaded unless the visitor asks for
 // it to be shared.
 
-import 'dart:io';
+import 'dart:typed_data';
 
 import 'package:camera/camera.dart';
 import 'package:flutter/material.dart';
@@ -29,10 +29,14 @@ class _GalleryComposeState extends State<GalleryCompose> {
   final _captionCtrl = TextEditingController();
   final _plantCtrl = TextEditingController();
 
-  File? _photo;
+  Uint8List? _photo;
   bool _makePublic = false;
   bool _saving = false;
   String? _error;
+
+  /// Set once the photo is safely in the diary. A retry after a failed share
+  /// then reuses that post rather than saving a second copy.
+  GalleryPost? _saved;
 
   @override
   void initState() {
@@ -76,7 +80,12 @@ class _GalleryComposeState extends State<GalleryCompose> {
           ),
         ),
       );
-      if (shot != null && mounted) setState(() => _photo = File(shot.path));
+      if (shot != null && mounted) {
+        // Bytes, not File: on web the XFile path is a blob URL and
+        // File() throws UnsupportedOperation: _Namespace.
+        final bytes = await shot.readAsBytes();
+        if (mounted) setState(() => _photo = bytes);
+      }
     } catch (e) {
       if (mounted) setState(() => _error = 'Camera unavailable: $e');
     }
@@ -98,35 +107,48 @@ class _GalleryComposeState extends State<GalleryCompose> {
       _error = null;
     });
 
-    final id = DateTime.now().microsecondsSinceEpoch.toString();
+    // Which step is running, so a failure says what actually went wrong rather
+    // than one "could not save" covering three quite different causes.
+    var step = 'save the photo';
     try {
-      // Copy out of the camera's temp directory before anything else — that
-      // cache is fair game for the OS to clear.
-      final localPath =
-          await GalleryService.instance.persistPhoto(_photo!, id, uid: user.id);
+      if (_saved == null) {
+        final id = DateTime.now().microsecondsSinceEpoch.toString();
+        // Copy out of the camera's temp directory before anything else — that
+        // cache is fair game for the OS to clear.
+        final localPath = await GalleryService.instance
+            .persistPhoto(_photo!, id, uid: user.id);
 
-      var post = GalleryPost(
-        id: id,
-        uid: user.id,
-        displayName: user.displayName.isEmpty ? 'Visitor' : user.displayName,
-        caption: _captionCtrl.text.trim(),
-        plantName: _plantCtrl.text.trim().isEmpty
-            ? null
-            : _plantCtrl.text.trim(),
-        visibility: PostVisibility.private,
-        createdAt: DateTime.now(),
-        localPath: localPath,
-      );
+        final post = GalleryPost(
+          id: id,
+          uid: user.id,
+          displayName: user.displayName.isEmpty ? 'Visitor' : user.displayName,
+          caption: _captionCtrl.text.trim(),
+          plantName:
+              _plantCtrl.text.trim().isEmpty ? null : _plantCtrl.text.trim(),
+          visibility: PostVisibility.private,
+          createdAt: DateTime.now(),
+          localPath: localPath,
+        );
+        await GalleryService.instance.upsertLocal(post);
+        _saved = post;
+      }
 
-      await GalleryService.instance.upsertLocal(post);
-      if (_makePublic) post = await GalleryService.instance.publish(post);
+      if (_makePublic) {
+        step = 'share it';
+        // Hand over the bytes we are still holding: sharing a photo just taken
+        // then needs one upload, not an upload followed by a download and
+        // another upload.
+        await GalleryService.instance.publish(_saved!, bytes: _photo);
+      }
 
       if (mounted) Navigator.pop(context, true);
     } catch (e) {
       if (mounted) {
         setState(() {
           _saving = false;
-          _error = 'Could not save: $e';
+          _error = _saved == null
+              ? 'Could not $step: $e'
+              : 'Saved to your diary, but could not $step: $e';
         });
       }
     }
@@ -157,7 +179,7 @@ class _GalleryComposeState extends State<GalleryCompose> {
                 image: _photo == null
                     ? null
                     : DecorationImage(
-                        image: FileImage(_photo!), fit: BoxFit.cover),
+                        image: MemoryImage(_photo!), fit: BoxFit.cover),
               ),
               child: _photo != null
                   ? null

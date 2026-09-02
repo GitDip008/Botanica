@@ -15,6 +15,10 @@ ContestEntry _entry({
   required String plant,
   String contest = 'c1',
   Map<String, int>? ratings,
+  String? team,
+  double? lat,
+  double? lng,
+  bool fromIndex = true,
 }) {
   final key = ContestEntry.keyFor(plant);
   return ContestEntry(
@@ -27,6 +31,11 @@ ContestEntry _entry({
     plantSection: 'Tropical house',
     ratings: ratings ?? const {'cute_creepy': 0},
     createdAt: DateTime(2026, 9, 1),
+    teamId: team,
+    teamName: team,
+    lat: lat,
+    lng: lng,
+    fromIndex: fromIndex,
   );
 }
 
@@ -120,6 +129,98 @@ void main() {
 
     test('empty input yields an empty board, not a crash', () {
       expect(ContestService.rank(const []), isEmpty);
+    });
+
+    test('names the pickers and their teams', () {
+      final rows = ContestService.rank([
+        _entry(uid: 'a', plant: 'Cacao', team: 'Ferns'),
+        _entry(uid: 'b', plant: 'Cacao'),
+      ]);
+      expect(rows.single.pickers.map((p) => p.label).toList(),
+          ['a · Ferns', 'b']);
+      expect(rows.single.teamNames, {'Ferns'});
+    });
+
+    test('a duplicate from one person does not duplicate them as a picker', () {
+      final rows = ContestService.rank([
+        _entry(uid: 'a', plant: 'Cacao'),
+        _entry(uid: 'a', plant: 'Cacao'),
+      ]);
+      expect(rows.single.pickers, hasLength(1));
+    });
+  });
+
+  group('leaderboard by scale', () {
+    List<String> names(List<LeaderboardRow> rows) =>
+        rows.map((r) => r.plantName).toList();
+
+    test('ranks toward either end of one scale', () {
+      final entries = [
+        _entry(uid: 'a', plant: 'Cute one', ratings: {'cute_creepy': -4}),
+        _entry(uid: 'b', plant: 'Creepy one', ratings: {'cute_creepy': 5}),
+        _entry(uid: 'c', plant: 'Middling', ratings: {'cute_creepy': 0}),
+      ];
+      expect(names(ContestService.rankByAxis(entries, 'cute_creepy')),
+          ['Creepy one', 'Middling', 'Cute one']);
+      expect(
+        names(ContestService.rankByAxis(entries, 'cute_creepy',
+            towardRight: false)),
+        ['Cute one', 'Middling', 'Creepy one'],
+      );
+    });
+
+    test('drops plants nobody rated on that scale', () {
+      // "Not rated" must not render as "dead centre" — they mean different
+      // things and would otherwise be indistinguishable at 0.0.
+      final rows = ContestService.rankByAxis([
+        _entry(uid: 'a', plant: 'Rated', ratings: {'cute_creepy': 2}),
+        _entry(uid: 'b', plant: 'Unrated', ratings: {'other_axis': 5}),
+      ], 'cute_creepy');
+      expect(names(rows), ['Rated']);
+    });
+
+    test('equal averages put the better-attested plant first', () {
+      final rows = ContestService.rankByAxis([
+        _entry(uid: 'a', plant: 'One voice', ratings: {'cute_creepy': 3}),
+        _entry(uid: 'b', plant: 'Many voices', ratings: {'cute_creepy': 3}),
+        _entry(uid: 'c', plant: 'Many voices', ratings: {'cute_creepy': 3}),
+      ], 'cute_creepy');
+      expect(names(rows), ['Many voices', 'One voice']);
+    });
+
+    test('averages, not extremes, decide the order', () {
+      // Two moderate ratings must beat one extreme one.
+      final rows = ContestService.rankByAxis([
+        _entry(uid: 'a', plant: 'Spiky', ratings: {'cute_creepy': 5}),
+        _entry(uid: 'b', plant: 'Steady', ratings: {'cute_creepy': 1}),
+        _entry(uid: 'c', plant: 'Steady', ratings: {'cute_creepy': 1}),
+      ], 'cute_creepy');
+      expect(names(rows), ['Spiky', 'Steady']);
+    });
+  });
+
+  group('submission record', () {
+    test('location is optional and round-trips through the map', () {
+      final withGps = _entry(uid: 'a', plant: 'Cacao', lat: 65.06, lng: 25.47);
+      expect(withGps.hasLocation, isTrue);
+      expect(withGps.toMap()['lat'], 65.06);
+      expect(withGps.mapsUrl, contains('65.06,25.47'));
+
+      final without = _entry(uid: 'a', plant: 'Cacao');
+      expect(without.hasLocation, isFalse);
+      expect(without.mapsUrl, isNull);
+      // Firestore rejects explicit nulls in a merge-free set, so an entry with
+      // no fix must simply omit the keys.
+      expect(without.toMap().containsKey('lat'), isFalse);
+    });
+
+    test('free-typed plants are flagged so the gaps can be counted', () {
+      final typed = _entry(uid: 'a', plant: 'Big spiky one', fromIndex: false);
+      final picked = _entry(uid: 'b', plant: 'Aloe vera');
+      final missing =
+          [typed, picked].where((e) => !e.fromIndex).map((e) => e.plantName);
+      expect(missing, ['Big spiky one']);
+      expect(typed.toMap()['fromIndex'], isFalse);
     });
   });
 

@@ -161,7 +161,7 @@ class _ReportScreenState extends State<ReportScreen> {
     setState(() => _capturing = true);
     try {
       final file = await _cam!.takePicture();
-      final bytes = await File(file.path).readAsBytes();
+      final bytes = await file.readAsBytes();
       setState(() {
         _imagePath = file.path;
         _capturing = false;

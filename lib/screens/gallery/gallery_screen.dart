@@ -8,6 +8,7 @@
 
 import 'dart:io';
 
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 
 import '../../models/gallery_post.dart';
@@ -407,7 +408,11 @@ class _MineCardState extends State<_MineCard> {
   @override
   Widget build(BuildContext context) {
     final p = widget.post;
-    final file = (p.localPath == null || GalleryService.isRemoteHandle(p.localPath))
+    // kIsWeb as well as the handle check: File() throws on web, so a stray
+    // non-remote handle must never reach it.
+    final file = (kIsWeb ||
+            p.localPath == null ||
+            GalleryService.isRemoteHandle(p.localPath))
         ? null
         : File(p.localPath!);
 

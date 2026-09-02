@@ -11,16 +11,19 @@
 // shot against ~1 MB at high. Several hundred entries then cost a few pence of
 // storage instead of a bill, and no image-compression dependency is needed.
 
-import 'dart:io';
+import 'dart:typed_data';
 
 import 'package:camera/camera.dart';
 import 'package:flutter/material.dart';
+import 'package:geolocator/geolocator.dart';
+import 'package:permission_handler/permission_handler.dart';
 
 import '../../data/plant_index.dart';
 import '../../services/camera_utils.dart';
 import '../../models/contest.dart';
 import '../../services/auth_service.dart';
 import '../../services/contest_service.dart';
+import '../../widgets/zoomable_camera_preview.dart';
 
 class ContestEntryFlow extends StatefulWidget {
   const ContestEntryFlow({super.key, required this.contest});
@@ -35,10 +38,17 @@ class _ContestEntryFlowState extends State<ContestEntryFlow> {
 
   String? _plantName;
   String _plantSection = '';
-  File? _photo;
+  Uint8List? _photo;
   final Map<String, int> _ratings = {};
   bool _saving = false;
   String? _error;
+
+  /// Set when the plant came from the garden's index rather than free text.
+  /// Drives the "plants missing from the records" count in the admin panel.
+  bool _fromIndex = false;
+
+  /// Where the photo was taken. Captured alongside the shot, never blocking it.
+  Position? _pos;
 
   ContestTeam? _team;
 
@@ -94,10 +104,27 @@ class _ContestEntryFlowState extends State<ContestEntryFlow> {
           ),
         ),
       );
-      if (file != null && mounted) setState(() => _photo = File(file.path));
+      if (file == null || !mounted) return;
+      // readAsBytes rather than File(path): the same call works on web.
+      final bytes = await file.readAsBytes();
+      if (mounted) setState(() => _photo = bytes);
+      _captureLocation();
     } catch (e) {
       if (mounted) setState(() => _error = 'Camera unavailable: $e');
     }
+  }
+
+  /// Records where the visitor was standing when they photographed the plant.
+  /// Deliberately fire-and-forget: a refused permission or a slow fix must not
+  /// hold up the entry, it just means the submission has no map pin.
+  Future<void> _captureLocation() async {
+    try {
+      if (!await Permission.location.request().isGranted) return;
+      final p = await Geolocator.getCurrentPosition(
+        desiredAccuracy: LocationAccuracy.high,
+      ).timeout(const Duration(seconds: 8));
+      if (mounted) setState(() => _pos = p);
+    } catch (_) {}
   }
 
   Future<void> _submit() async {
@@ -118,6 +145,29 @@ class _ContestEntryFlowState extends State<ContestEntryFlow> {
     });
 
     final key = ContestEntry.keyFor(name);
+
+    // One entry per plant per TEAM. The document id already stops one person
+    // entering the same plant twice; without this, a team of five could pick
+    // the same plant five times and manufacture a leaderboard win.
+    if (_team != null) {
+      final mate = await ContestService.instance.teamMateWhoPicked(
+        contestId: widget.contest.id,
+        teamId: _team!.id,
+        plantKey: key,
+        exceptUid: user.id,
+      );
+      if (mate != null) {
+        if (mounted) {
+          setState(() {
+            _saving = false;
+            _error = '$mate has already added $name for team ${_team!.name}. '
+                'Pick a different plant.';
+          });
+        }
+        return;
+      }
+    }
+
     final entry = ContestEntry(
       id: ContestEntry.docId(widget.contest.id, user.id, key),
       contestId: widget.contest.id,
@@ -130,17 +180,28 @@ class _ContestEntryFlowState extends State<ContestEntryFlow> {
       createdAt: DateTime.now(),
       teamId: _team?.id,
       teamName: _team?.name,
+      lat: _pos?.latitude,
+      lng: _pos?.longitude,
+      fromIndex: _fromIndex,
     );
 
     try {
-      await ContestService.instance.submitEntry(entry, photo: _photo);
+      final photoError =
+          await ContestService.instance.submitEntry(entry, photo: _photo);
       if (!mounted) return;
       Navigator.pop(context);
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          backgroundColor: const Color(0xFF1B4020),
-          content: Text('$name added to the leaderboard.',
-              style: const TextStyle(color: Color(0xFFE8F5E9))),
+          backgroundColor: photoError == null
+              ? const Color(0xFF1B4020)
+              : const Color(0xFF3A2A06),
+          duration: Duration(seconds: photoError == null ? 3 : 7),
+          content: Text(
+            photoError == null
+                ? '$name added to the leaderboard.'
+                : '$name added, but the photo could not be saved: $photoError',
+            style: const TextStyle(color: Color(0xFFE8F5E9)),
+          ),
         ),
       );
     } catch (e) {
@@ -188,7 +249,7 @@ class _ContestEntryFlowState extends State<ContestEntryFlow> {
                 image: _photo == null
                     ? null
                     : DecorationImage(
-                        image: FileImage(_photo!), fit: BoxFit.cover),
+                        image: MemoryImage(_photo!), fit: BoxFit.cover),
               ),
               child: _photo != null
                   ? null
@@ -210,6 +271,35 @@ class _ContestEntryFlowState extends State<ContestEntryFlow> {
                     ),
             ),
           ),
+          if (_photo != null)
+            Padding(
+              padding: const EdgeInsets.only(top: 6),
+              child: Row(
+                children: [
+                  Icon(
+                    _pos == null
+                        ? Icons.location_off_rounded
+                        : Icons.place_rounded,
+                    size: 13,
+                    color: _pos == null
+                        ? const Color(0xFF4A7A50)
+                        : const Color(0xFF81C784),
+                  ),
+                  const SizedBox(width: 5),
+                  Text(
+                    _pos == null
+                        ? 'No location — the entry still counts'
+                        : 'Spot saved: ${_pos!.latitude.toStringAsFixed(5)}, '
+                            '${_pos!.longitude.toStringAsFixed(5)}',
+                    style: TextStyle(
+                        color: _pos == null
+                            ? const Color(0xFF4A7A50)
+                            : const Color(0xFF81C784),
+                        fontSize: 11),
+                  ),
+                ],
+              ),
+            ),
 
           const SizedBox(height: 22),
           _label('2  ·  WHICH PLANT?'),
@@ -217,7 +307,10 @@ class _ContestEntryFlowState extends State<ContestEntryFlow> {
           TextField(
             controller: _searchCtrl,
             style: const TextStyle(color: Color(0xFFE8F5E9)),
-            onChanged: (v) => setState(() => _plantName = v.trim().isEmpty ? null : v.trim()),
+            onChanged: (v) => setState(() {
+              _plantName = v.trim().isEmpty ? null : v.trim();
+              _fromIndex = false; // typing over a picked name un-picks it
+            }),
             decoration: InputDecoration(
               hintText: 'Search, or just type what you see',
               hintStyle: const TextStyle(color: Color(0xFF6E8A72)),
@@ -263,6 +356,7 @@ class _ContestEntryFlowState extends State<ContestEntryFlow> {
                           _plantSection =
                               PlantIndex.instance.sectionLabel(p.sectionCode);
                           _searchCtrl.text = p.scientificName;
+                          _fromIndex = true;
                         });
                         FocusScope.of(context).unfocus();
                       },
@@ -421,7 +515,7 @@ class _ContestCameraState extends State<_ContestCamera> {
           : Stack(
               alignment: Alignment.bottomCenter,
               children: [
-                Center(child: CameraPreview(c)),
+                Center(child: ZoomableCameraPreview(controller: c)),
                 if (hasMultipleCameras(widget.all))
                   Positioned(
                     right: 24,

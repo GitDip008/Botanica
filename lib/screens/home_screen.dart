@@ -7,7 +7,6 @@ import '../services/garden_schedule.dart';
 import '../services/language_service.dart';
 import 'camera_screen.dart';
 import 'bloom_screen.dart';
-import 'navigation_screen/navigation_screen.dart';
 import 'plant_hunt_screen.dart';
 import 'plants_screen.dart';
 import 'gallery/gallery_screen.dart';
@@ -109,22 +108,11 @@ class HomeScreen extends StatelessWidget {
 
                     const SizedBox(height: 10),
 
-                    // ── Greenhouse navigation (A* over the CAD path graph) ────
-                    _PrimaryCard(
-                      icon: Icons.route_rounded,
-                      iconColor: const Color(0xFF4DD0E1),
-                      title: s.navigatingMap,
-                      subtitle: s.navigatingMapSub,
-                      gradient: const LinearGradient(
-                        colors: [Color(0xFF06303A), Color(0xFF00838F)],
-                        begin: Alignment.topLeft,
-                        end: Alignment.bottomRight,
-                      ),
-                      onTap: () => Navigator.push(context,
-                          _route(const IndoorMapScreen(mapSize: Size(1050, 500)))),
-                    ).animate().slideY(begin: 0.15, duration: 400.ms, delay: 220.ms, curve: Curves.easeOut),
-
-                    const SizedBox(height: 10),
+                    // Greenhouse navigation is hidden for now: indoor positioning
+                    // depends on BLE beacons that are not installed yet, and it has
+                    // no web implementation at all. The screen and its A* routing
+                    // remain in the tree (lib/screens/navigation_screen/) — restore
+                    // the card here once beacons exist.
 
                     // ── Know your plants (browse the garden's own records) ────
                     _PrimaryCard(

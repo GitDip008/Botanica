@@ -9,6 +9,9 @@ import '../services/holiday_hours_service.dart';
 import '../services/report_service.dart';
 import '../widgets/feature_usage_chart.dart';
 import '../services/gallery_service.dart';
+import '../models/contest.dart';
+import '../services/contest_service.dart';
+import 'admin/contest_submissions_screen.dart';
 import 'admin/reported_posts_screen.dart';
 import 'admin_user_list_screen.dart';
 import 'edit_holidays_screen.dart';
@@ -96,6 +99,8 @@ class AdminPanelScreen extends StatelessWidget {
             // something waiting without opening the queue.
             const _ReportedPostsTile(),
             const SizedBox(height: 24),
+            // Contest submissions — renders nothing when no contest is set up.
+            const _ContestSubmissionsTile(),
             // Edit holiday hours tile
             Material(
               color: Colors.transparent,
@@ -562,6 +567,72 @@ class _ReportTile extends StatelessWidget {
           ),
         ],
       ),
+    );
+  }
+}
+
+/// Entry point to the contest submission log. Unlike the moderation queue this
+/// hides itself entirely when no contest exists — an admin panel for a garden
+/// that is not running an event should not carry a dead tile all year.
+class _ContestSubmissionsTile extends StatelessWidget {
+  const _ContestSubmissionsTile();
+
+  @override
+  Widget build(BuildContext context) {
+    return StreamBuilder<Contest?>(
+      stream: ContestService.instance.watchContest(),
+      builder: (context, snap) {
+        final c = snap.data;
+        if (c == null) return const SizedBox.shrink();
+        return Padding(
+          padding: const EdgeInsets.only(bottom: 24),
+          child: Material(
+            color: Colors.transparent,
+            child: InkWell(
+              borderRadius: BorderRadius.circular(14),
+              onTap: () => Navigator.push(
+                context,
+                MaterialPageRoute(
+                    builder: (_) => ContestSubmissionsScreen(contest: c)),
+              ),
+              child: Container(
+                padding: const EdgeInsets.all(14),
+                decoration: BoxDecoration(
+                  color: const Color(0xFF111F16),
+                  borderRadius: BorderRadius.circular(14),
+                  border: Border.all(color: const Color(0xFF2A4A2F)),
+                ),
+                child: Row(
+                  children: [
+                    const Icon(Icons.emoji_events_rounded,
+                        color: Color(0xFFFFD54F)),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          const Text('Contest submissions',
+                              style: TextStyle(
+                                  color: Color(0xFFE8F5E9),
+                                  fontSize: 14.5,
+                                  fontWeight: FontWeight.w600)),
+                          Text(
+                            '${c.title} · locations, teams, missing plants',
+                            style: const TextStyle(
+                                color: Color(0xFF6E8A72), fontSize: 12.5),
+                          ),
+                        ],
+                      ),
+                    ),
+                    const Icon(Icons.chevron_right_rounded,
+                        color: Color(0xFF4A7A50)),
+                  ],
+                ),
+              ),
+            ),
+          ),
+        );
+      },
     );
   }
 }

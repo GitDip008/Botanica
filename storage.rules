@@ -7,17 +7,27 @@ rules_version = '2';
 //     Admin SDK, which bypasses these rules. No client may touch it.
 //   • contests/{contestId}/{uid}/… — visitor contest photos.
 //
-// Contest photos are readable ONLY by the person who took them. The leaderboard
-// ranks plants, not pictures, so nothing in the app ever needs to show one
-// visitor's photo to another. That keeps a public event with an open sign-up
-// from producing a publicly readable photo bucket, and removes the moderation
-// burden that would come with one. Admins can still inspect entries through the
-// Admin SDK if a prize needs verifying.
+// Contest photos are readable by the person who took them and by an admin, and
+// by nobody else. The leaderboard ranks plants, not pictures, so no visitor
+// ever needs to see another visitor's photo — which keeps a public event with
+// an open sign-up from producing a publicly readable photo bucket. The admin
+// exception exists because resolving a prize means checking that a submission
+// is really the plant it claims to be.
 service firebase.storage {
   match /b/{bucket}/o {
 
+    // Same allow-list as firestore.rules isAdmin() and AppUser.adminEmails.
+    // Keep the three in step.
+    function isAdmin() {
+      return request.auth != null && request.auth.token.email in [
+        'admin@botanica.fi',
+        'shourovdip147@gmail.com'
+      ];
+    }
+
     match /contests/{contestId}/{uid}/{fileName} {
-      allow read: if request.auth != null && request.auth.uid == uid;
+      allow read: if (request.auth != null && request.auth.uid == uid)
+                  || isAdmin();
 
       // Write is capped and typed at the rule level, not just in the app: an
       // uncapped bucket on a free tier is how an event becomes a bill.
@@ -34,7 +44,9 @@ service firebase.storage {
     // Private gallery photos from the WEB build only. The browser has no app
     // directory to keep them in and localStorage cannot hold photographs, so on
     // web a "private" photo has to live server-side — readable by nobody but
-    // its owner. On Android these never exist; the file stays on the phone.
+    // its owner. Deliberately NO admin exception: this is a visitor's private
+    // diary, not a competition entry, and nothing in the app needs to read it.
+    // On Android these never exist; the file stays on the phone.
     match /gallery_private/{uid}/{fileName} {
       allow read, delete: if request.auth != null && request.auth.uid == uid;
       allow write: if request.auth != null

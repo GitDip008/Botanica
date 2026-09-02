@@ -1,6 +1,7 @@
-import 'dart:io';
+import 'dart:typed_data';
 import 'package:camera/camera.dart';
 import '../services/camera_utils.dart';
+import '../widgets/zoomable_camera_preview.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:permission_handler/permission_handler.dart';
@@ -18,62 +19,113 @@ class _Challenge {
   final String emoji;
   final String familyName;
   final String familyCommon;
+  final String finnishName;
   final String clue;
   final String whereToLook;
   final String targetName; // used only for Gemini validation
   final String targetScientific;
+
+  /// Reference photo of this specimen, taken in this garden rather than pulled
+  /// from stock, so a visitor is matching the plant actually in front of them.
+  /// A missing file degrades to no photo — see assets/plant_hunt/README.md.
+  final String image;
 
   const _Challenge({
     required this.questNumber,
     required this.emoji,
     required this.familyName,
     required this.familyCommon,
+    required this.finnishName,
     required this.clue,
     required this.whereToLook,
     required this.targetName,
     required this.targetScientific,
+    required this.image,
   });
 }
 
 const _kChallenges = [
   _Challenge(
     questNumber: '1',
-    emoji: '🌼',
-    familyName: 'Asteraceae',
-    familyCommon: 'Daisy / Composite family',
-    clue: 'I have tiny white petals arranged around a bright yellow button in the centre. '
-        'When you gently crush one of my feathery leaves, you will smell something like apples. '
-        'People have been making tea from me for thousands of years to soothe upset tummies.',
-    whereToLook: '📍 Medicinal & Economic Plants section — the fenced area. '
-        'Open the wooden gate and look in the border beds.',
-    targetName: 'Chamomile',
-    targetScientific: 'Matricaria chamomilla',
+    emoji: '🍫',
+    familyName: 'Sterculiaceae',
+    familyCommon: 'Cacao family',
+    finnishName: 'Kaakaopuu',
+    clue: 'My fruit matures over a period comparable to a human pregnancy. '
+        'I am cauliflorous: I produce my flowers, and often my fruits, straight '
+        'from my trunk and older woody stems rather than from the tips of my '
+        'branches. For centuries my seeds have been used to prepare a '
+        'comforting hot drink.',
+    whereToLook: '📍 Greenhouse Romeo. Look at the trunk itself, not the branch '
+        'tips — the flowers and pods grow directly out of the bark.',
+    targetName: 'Cacao tree',
+    targetScientific: 'Theobroma cacao',
+    image: 'assets/plant_hunt/cacao_plant.jpg',
   ),
   _Challenge(
     questNumber: '2',
-    emoji: '🦜',
-    familyName: 'Strelitziaceae',
-    familyCommon: 'Bird of Paradise family',
-    clue: 'I live inside the warm tropical pyramid greenhouse where it is always 26 °C. '
-        'My flower looks exactly like a colourful bird in mid-flight — '
-        'bright orange "wings" and a vivid blue "beak". I am named after an exotic bird.',
-    whereToLook: '📍 Romeo Greenhouse — the larger glass pyramid near the entrance. '
-        'Look for the flower at about eye height in the central display bed.',
-    targetName: 'Bird of Paradise',
-    targetScientific: 'Strelitzia reginae',
+    emoji: '🌿',
+    familyName: 'Araceae',
+    familyCommon: 'Arum family',
+    finnishName: 'Jättipeikonlehti',
+    clue: 'My species name, deliciosa, means “delicious” — what might that tell '
+        'you about my fruit? You can grow me at home, but my fruit takes almost '
+        'nine months to ripen and is unsafe to eat before it is fully ripe. My '
+        'large leaves develop natural holes and splits, which makes me one of '
+        'the world’s most recognisable houseplants.',
+    whereToLook: '📍 Greenhouse Romeo. Look up — my holed leaves are large and '
+        'high, and the cone-shaped fruit sits among them.',
+    targetName: 'Swiss cheese plant',
+    targetScientific: 'Monstera deliciosa',
+    image: 'assets/plant_hunt/monstera.jpg',
   ),
   _Challenge(
     questNumber: '3',
-    emoji: '🌸',
-    familyName: 'Rosaceae',
-    familyCommon: 'Rose family',
-    clue: 'I am Finland\'s national flower! I grow on a rocky mountain mound in the garden. '
-        'I have exactly 8 bright white petals — unusual, since most rose family flowers have 5. '
-        'In autumn I turn into a fluffy silver ball of seeds that floats on the wind.',
-    whereToLook: '📍 Fennoscandian Mountain section — the rocky raised mound. '
-        'I form a low, creeping mat on the ground between the boulders.',
-    targetName: 'Mountain Avens',
-    targetScientific: 'Dryas octopetala',
+    emoji: '🌼',
+    familyName: 'Asteraceae',
+    familyCommon: 'Daisy / Composite family',
+    finnishName: 'Kultapallo',
+    clue: 'I bloom like a golden pom-pom high above the garden. You can easily '
+        'grow me at home, and I come back year after year. Gardeners have grown '
+        'me for centuries for my long-lasting golden flowers — look for the '
+        'plant that looks like a little sun on a tall stem.',
+    whereToLook: '📍 Outdoor garden, among the decorative plantings. I stand '
+        'tall, well above most of my neighbours.',
+    targetName: 'Cutleaf coneflower',
+    targetScientific: "Rudbeckia laciniata 'Goldquelle'",
+    image: 'assets/plant_hunt/kultapallo.jpg',
+  ),
+  _Challenge(
+    questNumber: '4',
+    emoji: '🍇',
+    familyName: 'Vitaceae',
+    familyCommon: 'Grape family',
+    finnishName: 'Tarhaviiniköynnös',
+    clue: 'For thousands of years people have cultivated me for the sweet '
+        'clusters hanging from my branches. My twisting tendrils help me climb '
+        'towards the sunlight. From ancient empires to modern gardens, I have '
+        'travelled with people across continents.',
+    whereToLook: '📍 Greenhouse Julia. Follow the climbing stems upwards — the '
+        'clusters hang down beneath the broad, toothed leaves.',
+    targetName: 'Grapevine',
+    targetScientific: 'Vitis vinifera subsp. vinifera',
+    image: 'assets/plant_hunt/grape.jpg',
+  ),
+  _Challenge(
+    questNumber: '5',
+    emoji: '🌻',
+    familyName: 'Brassicaceae',
+    familyCommon: 'Cabbage / Mustard family',
+    finnishName: 'Keltasinappi',
+    clue: 'My bright yellow flowers hide tiny seeds with a surprisingly strong '
+        'flavour. Many Finns enjoy a product made from my seeds alongside '
+        'grilled sausage. For centuries my seeds have been valued as both a '
+        'spice and a condiment.',
+    whereToLook: '📍 Economic & medicinal plants section '
+        '(FI hyöty- ja lääkekasvit).',
+    targetName: 'White mustard',
+    targetScientific: 'Sinapis alba',
+    image: 'assets/plant_hunt/mustard.jpg',
   ),
 ];
 
@@ -90,18 +142,20 @@ enum _StopState { pending, checking, correct, wrong }
 
 class _PlantHuntScreenState extends State<PlantHuntScreen> {
   int _current = 0; // which challenge we're on
-  final List<_StopState> _states = List.filled(3, _StopState.pending);
+  final List<_StopState> _states =
+      List.filled(_kChallenges.length, _StopState.pending);
   String? _feedback; // Gemini one-liner
   bool _allDone = false;
 
   // Wrong-attempt tracking — after 3 wrong, offer "reveal answer"
-  final List<int> _wrongCounts = List.filled(3, 0);
-  final List<bool> _answerRevealed = List.filled(3, false);
+  final List<int> _wrongCounts = List.filled(_kChallenges.length, 0);
+  final List<bool> _answerRevealed =
+      List.filled(_kChallenges.length, false);
 
   // Camera
   CameraController? _cam;
   bool _camReady = false;
-  String? _capturedPath;
+  Uint8List? _capturedPhoto;
 
   // Text input
   final _textCtrl = TextEditingController();
@@ -138,18 +192,20 @@ class _PlantHuntScreenState extends State<PlantHuntScreen> {
     if (_cam == null || !_camReady) return;
     try {
       final file = await _cam!.takePicture();
-      setState(() => _capturedPath = file.path);
+      // Bytes, not a path: Image.file / File() do not exist on web.
+      final bytes = await file.readAsBytes();
+      setState(() => _capturedPhoto = bytes);
     } catch (_) {}
   }
 
-  void _retakePhoto() => setState(() => _capturedPath = null);
+  void _retakePhoto() => setState(() => _capturedPhoto = null);
 
   // ── Validation ─────────────────────────────────────────────────────────────
 
   Future<void> _submit() async {
     final challenge = _kChallenges[_current];
     final typedAnswer = _textCtrl.text.trim();
-    if (typedAnswer.isEmpty && _capturedPath == null) return;
+    if (typedAnswer.isEmpty && _capturedPhoto == null) return;
 
     setState(() {
       _states[_current] = _StopState.checking;
@@ -160,9 +216,9 @@ class _PlantHuntScreenState extends State<PlantHuntScreen> {
       bool isCorrect;
       String msg;
 
-      if (_capturedPath != null) {
+      if (_capturedPhoto != null) {
         // ── Photo submission → PlantNet (free) with Gemini fallback ─────
-        final bytes = await File(_capturedPath!).readAsBytes();
+        final bytes = _capturedPhoto!;
         final result = await PlantIdentificationService.instance.validateHunt(
           imageBytes: bytes,
           targetCommonName: challenge.targetName,
@@ -229,10 +285,10 @@ class _PlantHuntScreenState extends State<PlantHuntScreen> {
   }
 
   void _nextChallenge() {
-    if (_current < 2) {
+    if (_current < _kChallenges.length - 1) {
       setState(() {
         _current++;
-        _capturedPath = null;
+        _capturedPhoto = null;
         _textCtrl.clear();
         _showHint = false;
         _feedback = null;
@@ -249,7 +305,7 @@ class _PlantHuntScreenState extends State<PlantHuntScreen> {
   void _retryChallenge() {
     setState(() {
       _states[_current] = _StopState.pending;
-      _capturedPath = null;
+      _capturedPhoto = null;
       _textCtrl.clear();
       _feedback = null;
     });
@@ -259,7 +315,6 @@ class _PlantHuntScreenState extends State<PlantHuntScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final s = LanguageService.instance.strings;
     return Scaffold(
       backgroundColor: const Color(0xFF0D1F14),
       appBar: AppBar(
@@ -291,7 +346,7 @@ class _PlantHuntScreenState extends State<PlantHuntScreen> {
           // Progress dots
           Row(
             mainAxisAlignment: MainAxisAlignment.center,
-            children: List.generate(3, (i) {
+            children: List.generate(_kChallenges.length, (i) {
               final s = _states[i];
               final isActive = i == _current;
               Color dotColor;
@@ -369,6 +424,13 @@ class _PlantHuntScreenState extends State<PlantHuntScreen> {
                           Text(challenge.familyCommon,
                               style: const TextStyle(
                                   color: Color(0xFF4CAF50), fontSize: 12)),
+                          // The Finnish name is on the garden's own labels, so
+                          // it is what a visitor will actually read on the tag.
+                          Text(challenge.finnishName,
+                              style: const TextStyle(
+                                  color: Color(0xFF2E7D32),
+                                  fontSize: 11.5,
+                                  fontStyle: FontStyle.italic)),
                         ],
                       ),
                     ),
@@ -416,11 +478,33 @@ class _PlantHuntScreenState extends State<PlantHuntScreen> {
                       color: const Color(0xFF0D1F14),
                       borderRadius: BorderRadius.circular(10),
                     ),
-                    child: Text(challenge.whereToLook,
-                        style: const TextStyle(
-                            color: Color(0xFF66BB6A),
-                            fontSize: 12,
-                            height: 1.5)),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(challenge.whereToLook,
+                            style: const TextStyle(
+                                color: Color(0xFF66BB6A),
+                                fontSize: 12,
+                                height: 1.5)),
+                        // Reference photo of this specimen. Sits behind the
+                        // hint rather than beside the clue on purpose: seeing
+                        // the plant first would give the answer away and there
+                        // would be nothing left to work out.
+                        const SizedBox(height: 10),
+                        ClipRRect(
+                          borderRadius: BorderRadius.circular(8),
+                          child: Image.asset(
+                            challenge.image,
+                            width: double.infinity,
+                            height: 180,
+                            fit: BoxFit.cover,
+                            // A missing file must not break the quest.
+                            errorBuilder: (_, __, ___) =>
+                                const SizedBox.shrink(),
+                          ),
+                        ),
+                      ],
+                    ),
                   ),
                 ],
               ],
@@ -435,7 +519,7 @@ class _PlantHuntScreenState extends State<PlantHuntScreen> {
           const SizedBox(height: 14),
 
           // OR text input
-          if (_capturedPath == null) ...[
+          if (_capturedPhoto == null) ...[
             const Row(children: [
               Expanded(child: Divider(color: Color(0xFF2E7D32))),
               Padding(
@@ -511,12 +595,12 @@ class _PlantHuntScreenState extends State<PlantHuntScreen> {
   // ── Camera widget ──────────────────────────────────────────────────────────
 
   Widget _buildCameraArea() {
-    if (_capturedPath != null) {
+    if (_capturedPhoto != null) {
       return Column(
         children: [
           ClipRRect(
             borderRadius: BorderRadius.circular(14),
-            child: Image.file(File(_capturedPath!),
+            child: Image.memory(_capturedPhoto!,
                 height: 200, width: double.infinity, fit: BoxFit.cover),
           ),
           const SizedBox(height: 8),
@@ -562,7 +646,7 @@ class _PlantHuntScreenState extends State<PlantHuntScreen> {
           borderRadius: BorderRadius.circular(14),
           child: AspectRatio(
             aspectRatio: _cam!.value.aspectRatio,
-            child: CameraPreview(_cam!),
+            child: ZoomableCameraPreview(controller: _cam!),
           ),
         ),
         const SizedBox(height: 8),
@@ -614,7 +698,7 @@ class _PlantHuntScreenState extends State<PlantHuntScreen> {
         ),
         icon: const Icon(Icons.arrow_forward),
         label: Text(
-          _current < 2
+          _current < _kChallenges.length - 1
               ? LanguageService.instance.strings.nextQuest
               : LanguageService.instance.strings.claimYourBadge,
           style: const TextStyle(fontSize: 15, fontWeight: FontWeight.bold),
@@ -710,7 +794,7 @@ class _PlantHuntScreenState extends State<PlantHuntScreen> {
 
     // Pending state
     final canSubmit =
-        _capturedPath != null || _textCtrl.text.trim().isNotEmpty;
+        _capturedPhoto != null || _textCtrl.text.trim().isNotEmpty;
     return ElevatedButton.icon(
       style: ElevatedButton.styleFrom(
         backgroundColor:
@@ -785,12 +869,15 @@ class _PlantHuntScreenState extends State<PlantHuntScreen> {
                   const SizedBox(height: 20),
                   const Divider(color: Color(0xFF2E7D32)),
                   const SizedBox(height: 14),
-                  const Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                  // Wraps rather than a Row: five names do not fit across a
+                  // phone, and the list is what decides how many there are.
+                  Wrap(
+                    alignment: WrapAlignment.center,
+                    spacing: 12,
+                    runSpacing: 12,
                     children: [
-                      _BadgeStar(emoji: '🌼', label: 'Chamomile'),
-                      _BadgeStar(emoji: '🦜', label: 'Bird of\nParadise'),
-                      _BadgeStar(emoji: '🌸', label: 'Mountain\nAvens'),
+                      for (final c in _kChallenges)
+                        _BadgeStar(emoji: c.emoji, label: c.targetName),
                     ],
                   ),
                   const SizedBox(height: 20),

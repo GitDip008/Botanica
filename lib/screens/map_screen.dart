@@ -9,7 +9,7 @@ import '../data/garden_sections.dart';
 import '../services/language_service.dart';
 import '../services/routing_service.dart';
 import '../services/usage_tracking_service.dart';
-import '../widgets/app_drawer.dart';
+import 'main_nav_screen.dart';
 
 class MapScreen extends StatefulWidget {
   const MapScreen({super.key});
@@ -24,7 +24,6 @@ class _MapScreenState extends State<MapScreen> {
   final MapController _mapController = MapController();
   bool _locating = false;
   final _searchCtrl = TextEditingController();
-  final _scaffoldKey = GlobalKey<ScaffoldState>();
   String _query = '';
   List<LatLng> _routePoints = const [];
   bool _routing = false;
@@ -154,12 +153,11 @@ class _MapScreenState extends State<MapScreen> {
   @override
   Widget build(BuildContext context) {
     final s = context.watch<LanguageService>().strings;
-    return Scaffold(
-      key: _scaffoldKey,
-      drawer: AppDrawer(onSelectTab: (i) {
-        Navigator.popUntil(context, (r) => r.isFirst);
-      }),
-      body: Stack(
+    // No Scaffold here: this screen lives inside MainNavScreen's IndexedStack,
+    // which already provides the scaffold, drawer and bottom navigation. A
+    // second Scaffold layered its own surface over the shell and swallowed
+    // taps meant for the nav bar.
+    return Stack(
         children: [
           FlutterMap(
             mapController: _mapController,
@@ -266,7 +264,8 @@ class _MapScreenState extends State<MapScreen> {
                           icon: const Icon(Icons.menu_rounded,
                               color: Color(0xFFE8F5E9)),
                           onPressed: () =>
-                              _scaffoldKey.currentState?.openDrawer(),
+                              MainNavScreen.scaffoldKey.currentState
+                                  ?.openDrawer(),
                         ),
                       ),
                       const SizedBox(width: 8),
@@ -484,8 +483,7 @@ class _MapScreenState extends State<MapScreen> {
                 ),
               ),
             ),
-        ],
-      ),
+      ],
     );
   }
 }

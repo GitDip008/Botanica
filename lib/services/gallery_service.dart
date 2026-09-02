@@ -21,10 +21,12 @@
 
 import 'dart:convert';
 import 'dart:io';
+import 'dart:typed_data';
 
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_storage/firebase_storage.dart';
 import 'package:flutter/foundation.dart' show kIsWeb;
+import 'package:http/http.dart' as http;
 import 'package:path_provider/path_provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -64,18 +66,19 @@ class GalleryService {
   ///
   /// Android: an absolute file path. Web: the Storage path it was uploaded to,
   /// prefixed so [isRemoteHandle] can tell the two apart.
-  Future<String> persistPhoto(File source, String postId, {String? uid}) async {
+  Future<String> persistPhoto(Uint8List bytes, String postId,
+      {String? uid}) async {
     if (kIsWeb) {
       final path = privateStoragePath(uid ?? 'anon', postId);
-      await FirebaseStorage.instance.ref(path).putFile(
-            source,
+      await FirebaseStorage.instance.ref(path).putData(
+            bytes,
             SettableMetadata(contentType: 'image/jpeg'),
           );
       return '$_remotePrefix$path';
     }
     final dir = await _photoDir();
     final dest = File('${dir.path}/$postId.jpg');
-    await source.copy(dest.path);
+    await dest.writeAsBytes(bytes);
     return dest.path;
   }
 
@@ -141,7 +144,7 @@ class GalleryService {
         } catch (_) {
           // Already gone; nothing is reachable without the local record anyway.
         }
-      } else {
+      } else if (!kIsWeb) {
         final f = File(handle);
         if (await f.exists()) await f.delete();
       }
@@ -153,35 +156,52 @@ class GalleryService {
 
   // ── Publishing ───────────────────────────────────────────────────────────
 
+  /// Reads a Storage object without going through `Reference.getData`.
+  ///
+  /// On web that call first fetches the object's metadata and converts it
+  /// through JS interop, which is where publishing was failing with an opaque
+  /// minified TypeError. The download URL is served with
+  /// `Access-Control-Allow-Origin: *`, so a plain GET does the same job with
+  /// one request and no interop.
+  Future<Uint8List> _bytesInStorage(String path) async {
+    final url = await FirebaseStorage.instance.ref(path).getDownloadURL();
+    final res = await http.get(Uri.parse(url));
+    if (res.statusCode != 200) throw StateError('photo-missing');
+    return res.bodyBytes;
+  }
+
   /// Uploads the image and writes the feed document. Returns the updated post.
   ///
-  /// Throws [StateError] when the local file is gone — a post captured on a
-  /// device whose app data was cleared cannot be published, and the caller
+  /// Pass [bytes] when the caller still holds the capture in memory — sharing
+  /// straight after taking a photo then costs one upload instead of an upload,
+  /// a download and a second upload.
+  ///
+  /// Throws [StateError] when the image can no longer be read — a post captured
+  /// on a device whose app data was cleared cannot be published, and the caller
   /// shows that plainly instead of failing without explanation.
-  Future<GalleryPost> publish(GalleryPost post) async {
-    final handle = post.localPath;
-    if (handle == null) throw StateError('photo-missing');
-
+  Future<GalleryPost> publish(GalleryPost post, {Uint8List? bytes}) async {
     final storagePath = 'gallery/${post.uid}/${post.id}.jpg';
 
-    if (isRemoteHandle(handle)) {
-      // Web: the image is already in Storage under the private path. Copy the
-      // bytes across rather than asking the browser to re-upload something it
-      // no longer holds in memory.
-      final bytes =
-          await FirebaseStorage.instance.ref(remotePathOf(handle)).getData();
-      if (bytes == null) throw StateError('photo-missing');
-      await FirebaseStorage.instance.ref(storagePath).putData(
-            bytes,
-            SettableMetadata(contentType: 'image/jpeg'),
-          );
-    } else {
-      if (!await File(handle).exists()) throw StateError('photo-missing');
-      await FirebaseStorage.instance.ref(storagePath).putFile(
-            File(handle),
-            SettableMetadata(contentType: 'image/jpeg'),
-          );
+    var data = bytes;
+    if (data == null) {
+      // Published later, from the diary: fetch the image back from wherever
+      // this platform put it.
+      final handle = post.localPath;
+      if (handle == null) throw StateError('photo-missing');
+      if (isRemoteHandle(handle)) {
+        data = await _bytesInStorage(remotePathOf(handle));
+      } else {
+        if (kIsWeb) throw StateError('photo-missing');
+        final f = File(handle);
+        if (!await f.exists()) throw StateError('photo-missing');
+        data = await f.readAsBytes();
+      }
     }
+
+    await FirebaseStorage.instance.ref(storagePath).putData(
+          data,
+          SettableMetadata(contentType: 'image/jpeg'),
+        );
 
     final published = post.copyWith(
       visibility: PostVisibility.public,

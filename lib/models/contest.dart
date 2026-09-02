@@ -97,6 +97,9 @@ class ContestEntry {
     this.teamId,
     this.teamName,
     this.photoPath,
+    this.lat,
+    this.lng,
+    this.fromIndex = true,
   });
 
   final String id;
@@ -119,6 +122,22 @@ class ContestEntry {
   /// the app shows another visitor's photo.
   final String? photoPath;
 
+  /// Where the photo was taken. Null when location was refused or unavailable —
+  /// an entry is never blocked on it.
+  final double? lat;
+  final double? lng;
+
+  /// False when the visitor typed a name that is not in the garden's index.
+  /// Counting these tells the curator which plants the records are missing.
+  final bool fromIndex;
+
+  bool get hasLocation => lat != null && lng != null;
+
+  /// Opens the capture spot in any maps app.
+  String? get mapsUrl => hasLocation
+      ? 'https://www.google.com/maps/search/?api=1&query=$lat,$lng'
+      : null;
+
   static String docId(String contestId, String uid, String plantKey) =>
       '${contestId}__${uid}__$plantKey';
 
@@ -137,6 +156,9 @@ class ContestEntry {
         if (teamId != null) 'teamId': teamId,
         if (teamName != null) 'teamName': teamName,
         if (photoPath != null) 'photoPath': photoPath,
+        if (lat != null) 'lat': lat,
+        if (lng != null) 'lng': lng,
+        'fromIndex': fromIndex,
       };
 
   factory ContestEntry.fromDoc(DocumentSnapshot<Map<String, dynamic>> d) {
@@ -155,6 +177,10 @@ class ContestEntry {
       teamId: m['teamId'] as String?,
       teamName: m['teamName'] as String?,
       photoPath: m['photoPath'] as String?,
+      lat: (m['lat'] as num?)?.toDouble(),
+      lng: (m['lng'] as num?)?.toDouble(),
+      // Entries written before this field existed came from the picker.
+      fromIndex: (m['fromIndex'] as bool?) ?? true,
     );
   }
 }
@@ -195,6 +221,23 @@ class ContestTeam {
   }
 }
 
+/// One person (and their team, if any) who picked a plant.
+class Picker {
+  const Picker({
+    required this.uid,
+    required this.name,
+    required this.at,
+    this.teamName,
+  });
+
+  final String uid;
+  final String name;
+  final String? teamName;
+  final DateTime at;
+
+  String get label => teamName == null ? name : '$name · $teamName';
+}
+
 /// One row of the leaderboard: a plant and how many people picked it.
 ///
 /// Rank is the number of DISTINCT people who entered that plant, which is what
@@ -216,12 +259,26 @@ class LeaderboardRow {
   /// Everyone who picked this plant — used to resolve the prize afterwards.
   final Set<String> voterUids = {};
 
+  /// Who picked it, in the order they did, so the prize for a top plant can be
+  /// handed to the right person or team without digging through Firestore.
+  final List<Picker> pickers = [];
+
+  /// Distinct team names among the pickers, blank for solo players.
+  Set<String> get teamNames =>
+      pickers.map((p) => p.teamName).whereType<String>().toSet();
+
   /// Mean position per axis, for the "how people saw it" bar.
   final Map<String, List<int>> _byAxis = {};
 
   void add(ContestEntry e) {
     if (!voterUids.add(e.uid)) return; // one entry per person per plant
     votes++;
+    pickers.add(Picker(
+      uid: e.uid,
+      name: e.displayName.isEmpty ? 'Visitor' : e.displayName,
+      teamName: e.teamName,
+      at: e.createdAt,
+    ));
     e.ratings.forEach((k, v) => _byAxis.putIfAbsent(k, () => []).add(v));
   }
 

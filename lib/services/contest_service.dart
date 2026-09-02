@@ -11,7 +11,7 @@
 // ponytail: no aggregation function, no cached counters, no pagination. Revisit
 // only if a contest ever runs long enough to produce thousands of entries.
 
-import 'dart:io';
+import 'dart:typed_data';
 
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_storage/firebase_storage.dart';
@@ -71,22 +71,56 @@ class ContestService {
     return d.exists;
   }
 
+  /// Name of the team-mate who already claimed this plant, or null if nobody
+  /// has. The deterministic document id stops one PERSON entering a plant
+  /// twice; this stops a team farming the same plant through its members.
+  ///
+  /// Queried by plantKey and filtered in memory: a plant has a handful of
+  /// entries, so this avoids a three-field composite index for one check.
+  Future<String?> teamMateWhoPicked({
+    required String contestId,
+    required String teamId,
+    required String plantKey,
+    required String exceptUid,
+  }) async {
+    final s = await _db
+        .collection(_entries)
+        .where('contestId', isEqualTo: contestId)
+        .where('plantKey', isEqualTo: plantKey)
+        .get();
+    for (final d in s.docs) {
+      final e = ContestEntry.fromDoc(d);
+      if (e.teamId == teamId && e.uid != exceptUid) {
+        return e.displayName.isEmpty ? 'a team-mate' : e.displayName;
+      }
+    }
+    return null;
+  }
+
   /// Saves an entry. The document id is derived from contest + user + plant, so
   /// a second submission for the same plant overwrites the first rather than
   /// inflating that plant's score.
-  Future<void> submitEntry(ContestEntry entry, {File? photo}) async {
+  /// Photo bytes rather than a File: the same code then runs on web, where
+  /// dart:io File does not exist.
+  ///
+  /// Returns null on success, or a description of why the photo could not be
+  /// uploaded. The entry is saved either way — a failed upload must not cost
+  /// the visitor their vote, the photo is a keepsake and the rating is the
+  /// entry — but the failure is reported rather than swallowed, because a
+  /// silently missing photo looks identical to a broken app.
+  Future<String?> submitEntry(ContestEntry entry, {Uint8List? photo}) async {
     String? photoPath;
+    String? photoError;
     if (photo != null) {
       photoPath = 'contests/${entry.contestId}/${entry.uid}/${entry.plantKey}.jpg';
       try {
-        await FirebaseStorage.instance.ref(photoPath).putFile(
+        await FirebaseStorage.instance.ref(photoPath).putData(
               photo,
               SettableMetadata(contentType: 'image/jpeg'),
             );
-      } catch (_) {
-        // A failed upload must not cost the visitor their vote — the photo is
-        // a keepsake, the rating is the entry. Save without it.
+      } catch (e) {
         photoPath = null;
+        photoError = '$e';
       }
     }
 
@@ -103,9 +137,13 @@ class ContestService {
       teamId: entry.teamId,
       teamName: entry.teamName,
       photoPath: photoPath,
+      lat: entry.lat,
+      lng: entry.lng,
+      fromIndex: entry.fromIndex,
     );
 
     await _db.collection(_entries).doc(entry.id).set(withPhoto.toMap());
+    return photoError;
   }
 
   /// Download URL for an entry photo. Only resolves for the owner — Storage
@@ -206,5 +244,34 @@ class ContestService {
       return c != 0 ? c : a.plantName.compareTo(b.plantName);
     });
     return list;
+  }
+
+  /// The same plants ranked by where the crowd put them on ONE scale.
+  ///
+  /// [towardRight] picks which end of the scale leads, so a single axis gives
+  /// both boards a visitor would want — the cutest and the creepiest — without
+  /// doubling the number of tabs.
+  ///
+  /// Plants nobody rated on this axis are dropped rather than shown at zero:
+  /// "not rated" and "dead centre" are different things and must not look the
+  /// same. Ties fall back to the number of people, so where two plants sit at
+  /// the same average the better-attested one leads.
+  static List<LeaderboardRow> rankByAxis(
+    List<ContestEntry> entries,
+    String axisKey, {
+    bool towardRight = true,
+  }) {
+    final rows = rank(entries)
+        .where((r) => r.averageFor(axisKey) != null)
+        .toList();
+    rows.sort((a, b) {
+      final av = a.averageFor(axisKey)!;
+      final bv = b.averageFor(axisKey)!;
+      final c = towardRight ? bv.compareTo(av) : av.compareTo(bv);
+      if (c != 0) return c;
+      final v = b.votes.compareTo(a.votes);
+      return v != 0 ? v : a.plantName.compareTo(b.plantName);
+    });
+    return rows;
   }
 }
