@@ -1,11 +1,11 @@
 {
-    "name": "botanica_ar",
-    "short_name": "botanica_ar",
+    "name": "Botanica — Oulu Botanical Garden",
+    "short_name": "Botanica",
     "start_url": ".",
     "display": "standalone",
-    "background_color": "#0175C2",
-    "theme_color": "#0175C2",
-    "description": "A new Flutter project.",
+    "background_color": "#0A1A0F",
+    "theme_color": "#0A1A0F",
+    "description": "Identify plants, explore the greenhouses and take part in events at Oulu Botanical Garden.",
     "orientation": "portrait-primary",
     "prefer_related_applications": false,
     "icons": [

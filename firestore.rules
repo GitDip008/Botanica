@@ -107,6 +107,30 @@ service cloud.firestore {
     // Entries are world-readable because the leaderboard is built from them on
     // the device. They carry a plant name, a display name and slider values —
     // no photo bytes. The photo is a Storage object readable only by its owner.
+    // ── Plant Hunt scores. One document per person, id = their uid. ──────
+    //
+    // Readable by any signed-in visitor because it IS the leaderboard. The
+    // document id being the uid is what stops someone posting a score under
+    // another name, and the write rule pins the stored uid to the caller so a
+    // forged payload cannot claim a different identity. Points are capped at
+    // the maximum the hunt can award, so a hand-crafted request cannot put a
+    // impossible number at the top of the board.
+    match /hunt_scores/{uid} {
+      allow read: if isSignedIn();
+      allow create, update: if isSignedIn()
+        && request.auth.uid == uid
+        && request.resource.data.uid == uid
+        && request.resource.data.total is int
+        && request.resource.data.total >= 0
+        && request.resource.data.total <= 500
+        && request.resource.data.solved is int
+        && request.resource.data.solved >= 0
+        && request.resource.data.solved <= 5;
+
+      // Scores stand, like everything else the garden records.
+      allow delete: if false;
+    }
+
     match /contest_entries/{doc} {
       allow read: if isSignedIn();
 

@@ -1,131 +1,143 @@
-import 'dart:typed_data';
-import 'package:camera/camera.dart';
-import '../services/camera_utils.dart';
-import '../widgets/zoomable_camera_preview.dart';
+// lib/screens/plant_hunt_screen.dart
+//
+// A five-stop scavenger hunt through the garden.
+//
+// The single rule this screen exists to protect: nothing on the quest card may
+// name the plant before it is found. That rules out the Finnish name, the
+// English family name ("Cacao family" is the answer), and even the emoji — a
+// chocolate bar or a bunch of grapes gives it away as surely as the word does.
+// The header therefore carries a number and nothing else, and the reference
+// photo sits behind the location hint rather than beside the clue.
+//
+// Answers are typed, read off the garden's own metal tags, and judged locally
+// by lib/data/hunt_answers.dart against every name a tag might show — Finnish,
+// scientific, or everyday. Near misses still count and score fewer points, so
+// the leaderboard separates a confident answer from a half-remembered one.
+
 import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
-import 'package:permission_handler/permission_handler.dart';
+
+import '../data/hunt_answers.dart';
+import '../services/auth_service.dart';
 import '../services/badge_service.dart';
-import '../services/chat_service.dart';
-import '../services/gemini_proxy.dart';
+import '../services/hunt_score_service.dart';
 import '../services/language_service.dart';
-import '../services/plant_identification_service.dart';
 import '../services/usage_tracking_service.dart';
 
 // ─── Data ─────────────────────────────────────────────────────────────────────
 
 class _Challenge {
-  final String questNumber;
-  final String emoji;
-  final String familyName;
-  final String familyCommon;
-  final String finnishName;
-  final String clue;
-  final String whereToLook;
-  final String targetName; // used only for Gemini validation
-  final String targetScientific;
-
-  /// Reference photo of this specimen, taken in this garden rather than pulled
-  /// from stock, so a visitor is matching the plant actually in front of them.
-  /// A missing file degrades to no photo — see assets/plant_hunt/README.md.
-  final String image;
-
   const _Challenge({
     required this.questNumber,
-    required this.emoji,
-    required this.familyName,
-    required this.familyCommon,
-    required this.finnishName,
-    required this.clue,
+    required this.clues,
     required this.whereToLook,
+    required this.image,
     required this.targetName,
     required this.targetScientific,
-    required this.image,
+    required this.accepted,
   });
+
+  final String questNumber;
+
+  /// Shown verbatim, one numbered line each — the garden wrote these.
+  final List<String> clues;
+
+  /// Revealed only when the visitor asks for it.
+  final String whereToLook;
+
+  /// Reference photo of this specimen, taken in this garden. Behind the hint
+  /// for the same reason: seeing the plant is most of the answer.
+  final String image;
+
+  /// Shown only after the quest is solved, or when a stuck visitor asks.
+  final String targetName;
+  final String targetScientific;
+
+  /// Every name this plant answers to: what is on the tag, and what a visitor
+  /// would call it at home. Matching is fuzzy, so only distinct forms are
+  /// needed here — not every possible misspelling.
+  final List<String> accepted;
 }
 
-const _kChallenges = [
+// final, not const: the accepted-name lists come from a map lookup, which is
+// not a constant expression. The quests are still immutable.
+final _kChallenges = <_Challenge>[
   _Challenge(
     questNumber: '1',
-    emoji: '🍫',
-    familyName: 'Sterculiaceae',
-    familyCommon: 'Cacao family',
-    finnishName: 'Kaakaopuu',
-    clue: 'My fruit matures over a period comparable to a human pregnancy. '
-        'I am cauliflorous: I produce my flowers, and often my fruits, straight '
-        'from my trunk and older woody stems rather than from the tips of my '
-        'branches. For centuries my seeds have been used to prepare a '
-        'comforting hot drink.',
-    whereToLook: '📍 Greenhouse Romeo. Look at the trunk itself, not the branch '
-        'tips — the flowers and pods grow directly out of the bark.',
+    clues: [
+      'This plant’s fruit matures over a period comparable to a human pregnancy.',
+      'This plant is cauliflorous, i.e. it produces its flowers and often its '
+          'fruits directly from the trunk or older woody stems, rather than '
+          'from the tips of branches.',
+      'For centuries, the seeds of this plant have been used to prepare a '
+          'comforting hot drink.',
+    ],
+    whereToLook: 'You can find me in greenhouse Romeo.',
+    image: 'assets/plant_hunt/cacao_plant.jpg',
     targetName: 'Cacao tree',
     targetScientific: 'Theobroma cacao',
-    image: 'assets/plant_hunt/cacao_plant.jpg',
+    accepted: kHuntAccepted['cacao']!,
   ),
   _Challenge(
     questNumber: '2',
-    emoji: '🌿',
-    familyName: 'Araceae',
-    familyCommon: 'Arum family',
-    finnishName: 'Jättipeikonlehti',
-    clue: 'My species name, deliciosa, means “delicious” — what might that tell '
-        'you about my fruit? You can grow me at home, but my fruit takes almost '
-        'nine months to ripen and is unsafe to eat before it is fully ripe. My '
-        'large leaves develop natural holes and splits, which makes me one of '
-        'the world’s most recognisable houseplants.',
-    whereToLook: '📍 Greenhouse Romeo. Look up — my holed leaves are large and '
-        'high, and the cone-shaped fruit sits among them.',
+    clues: [
+      'My species name, deliciosa, means “delicious”. What might that tell you '
+          'about my fruit?',
+      'You can grow me at home, but my fruit takes almost nine months to ripen '
+          'and is unsafe to eat before it is fully ripe.',
+      'My large leaves develop natural holes and splits, making me one of the '
+          'world\'s most recognisable houseplants.',
+    ],
+    whereToLook: 'You can find me in greenhouse Romeo.',
+    image: 'assets/plant_hunt/monstera.jpg',
     targetName: 'Swiss cheese plant',
     targetScientific: 'Monstera deliciosa',
-    image: 'assets/plant_hunt/monstera.jpg',
+    accepted: kHuntAccepted['monstera']!,
   ),
   _Challenge(
     questNumber: '3',
-    emoji: '🌼',
-    familyName: 'Asteraceae',
-    familyCommon: 'Daisy / Composite family',
-    finnishName: 'Kultapallo',
-    clue: 'I bloom like a golden pom-pom high above the garden. You can easily '
-        'grow me at home, and I come back year after year. Gardeners have grown '
-        'me for centuries for my long-lasting golden flowers — look for the '
-        'plant that looks like a little sun on a tall stem.',
-    whereToLook: '📍 Outdoor garden, among the decorative plantings. I stand '
-        'tall, well above most of my neighbours.',
+    clues: [
+      'I bloom like a golden pom-pom high above the garden. You can easily grow '
+          'me at home, and I come back year after year.',
+      'Gardeners have grown me for centuries for my long-lasting golden '
+          'flowers. Find the plant that looks like a little sun on a tall stem.',
+    ],
+    whereToLook: 'This is a decorative plant in the outdoor garden.',
+    image: 'assets/plant_hunt/kultapallo.jpg',
     targetName: 'Cutleaf coneflower',
     targetScientific: "Rudbeckia laciniata 'Goldquelle'",
-    image: 'assets/plant_hunt/kultapallo.jpg',
+    accepted: kHuntAccepted['kultapallo']!,
   ),
   _Challenge(
     questNumber: '4',
-    emoji: '🍇',
-    familyName: 'Vitaceae',
-    familyCommon: 'Grape family',
-    finnishName: 'Tarhaviiniköynnös',
-    clue: 'For thousands of years people have cultivated me for the sweet '
-        'clusters hanging from my branches. My twisting tendrils help me climb '
-        'towards the sunlight. From ancient empires to modern gardens, I have '
-        'travelled with people across continents.',
-    whereToLook: '📍 Greenhouse Julia. Follow the climbing stems upwards — the '
-        'clusters hang down beneath the broad, toothed leaves.',
+    clues: [
+      'For thousands of years, people have cultivated me for the sweet clusters '
+          'hanging from my branches.',
+      'My twisting tendrils help me climb towards the sunlight.',
+      'From ancient empires to modern gardens, I have travelled with people '
+          'across continents.',
+    ],
+    whereToLook: 'You can find me in greenhouse Julia.',
+    image: 'assets/plant_hunt/grape.jpg',
     targetName: 'Grapevine',
     targetScientific: 'Vitis vinifera subsp. vinifera',
-    image: 'assets/plant_hunt/grape.jpg',
+    accepted: kHuntAccepted['grape']!,
   ),
   _Challenge(
     questNumber: '5',
-    emoji: '🌻',
-    familyName: 'Brassicaceae',
-    familyCommon: 'Cabbage / Mustard family',
-    finnishName: 'Keltasinappi',
-    clue: 'My bright yellow flowers hide tiny seeds with a surprisingly strong '
-        'flavour. Many Finns enjoy a product made from my seeds alongside '
-        'grilled sausage. For centuries my seeds have been valued as both a '
-        'spice and a condiment.',
-    whereToLook: '📍 Economic & medicinal plants section '
-        '(FI hyöty- ja lääkekasvit).',
+    clues: [
+      'My bright yellow flowers hide tiny seeds with a surprisingly strong '
+          'flavour.',
+      'Many Finns enjoy a product made from my seeds alongside grilled sausage.',
+      'For centuries, my seeds have been valued as both a spice and a '
+          'condiment.',
+    ],
+    whereToLook: 'You can find me in the economical and medicinal plants '
+        'section (FI hyöty- ja lääkekasvit).',
+    image: 'assets/plant_hunt/mustard.jpg',
     targetName: 'White mustard',
     targetScientific: 'Sinapis alba',
-    image: 'assets/plant_hunt/mustard.jpg',
+    accepted: kHuntAccepted['mustard']!,
   ),
 ];
 
@@ -138,166 +150,94 @@ class PlantHuntScreen extends StatefulWidget {
   State<PlantHuntScreen> createState() => _PlantHuntScreenState();
 }
 
-enum _StopState { pending, checking, correct, wrong }
+enum _StopState { pending, correct, wrong }
 
 class _PlantHuntScreenState extends State<PlantHuntScreen> {
-  int _current = 0; // which challenge we're on
+  int _current = 0;
   final List<_StopState> _states =
       List.filled(_kChallenges.length, _StopState.pending);
-  String? _feedback; // Gemini one-liner
+
+  /// Points banked per quest, 0 until solved.
+  final List<int> _points = List.filled(_kChallenges.length, 0);
+
+  String? _feedback;
+  bool _feedbackGood = false;
   bool _allDone = false;
 
-  // Wrong-attempt tracking — after 3 wrong, offer "reveal answer"
+  // After three wrong answers, offer the name rather than let someone give up.
   final List<int> _wrongCounts = List.filled(_kChallenges.length, 0);
   final List<bool> _answerRevealed =
       List.filled(_kChallenges.length, false);
 
-  // Camera
-  CameraController? _cam;
-  bool _camReady = false;
-  Uint8List? _capturedPhoto;
-
-  // Text input
   final _textCtrl = TextEditingController();
   bool _showHint = false;
+
+  int get _total => _points.fold(0, (a, b) => a + b);
+  int get _solved => _states.where((s) => s == _StopState.correct).length;
 
   @override
   void initState() {
     super.initState();
-    _initCamera();
     UsageTrackingService.instance.log(UsageTrackingService.featurePlantHunt);
-  }
-
-  Future<void> _initCamera() async {
-    final status = await Permission.camera.request();
-    if (!status.isGranted) return;
-    final cameras = await availableCameras();
-    if (cameras.isEmpty) return;
-    _cam = CameraController(preferredCamera(cameras), ResolutionPreset.medium,
-        enableAudio: false);
-    await _cam!.initialize();
-    if (mounted) setState(() => _camReady = true);
   }
 
   @override
   void dispose() {
-    _cam?.dispose();
     _textCtrl.dispose();
     super.dispose();
   }
 
-  // ── Camera capture ─────────────────────────────────────────────────────────
+  // ── Judging ────────────────────────────────────────────────────────────────
 
-  Future<void> _capture() async {
-    if (_cam == null || !_camReady) return;
-    try {
-      final file = await _cam!.takePicture();
-      // Bytes, not a path: Image.file / File() do not exist on web.
-      final bytes = await file.readAsBytes();
-      setState(() => _capturedPhoto = bytes);
-    } catch (_) {}
-  }
+  void _submit() {
+    final typed = _textCtrl.text.trim();
+    if (typed.isEmpty) return;
 
-  void _retakePhoto() => setState(() => _capturedPhoto = null);
-
-  // ── Validation ─────────────────────────────────────────────────────────────
-
-  Future<void> _submit() async {
     final challenge = _kChallenges[_current];
-    final typedAnswer = _textCtrl.text.trim();
-    if (typedAnswer.isEmpty && _capturedPhoto == null) return;
+    final score = scoreAnswer(typed, challenge.accepted);
 
     setState(() {
-      _states[_current] = _StopState.checking;
-      _feedback = null;
-    });
-
-    try {
-      bool isCorrect;
-      String msg;
-
-      if (_capturedPhoto != null) {
-        // ── Photo submission → PlantNet (free) with Gemini fallback ─────
-        final bytes = _capturedPhoto!;
-        final result = await PlantIdentificationService.instance.validateHunt(
-          imageBytes: bytes,
-          targetCommonName: challenge.targetName,
-          targetScientific: challenge.targetScientific,
-          targetFamily: challenge.familyName,
-        );
-        isCorrect = result.isCorrect;
-        msg = result.feedback;
+      if (score.isCorrect) {
+        _states[_current] = _StopState.correct;
+        // A revealed answer still counts as found, but banks nothing — the
+        // points are for working it out.
+        _points[_current] = _answerRevealed[_current] ? 0 : score.points;
+        _feedbackGood = true;
+        _feedback = _answerRevealed[_current]
+            ? 'Found it. No points for this one — you had the answer.'
+            : score.isApproximate
+                ? 'Found it! Spelling was close enough. +${score.points} points'
+                : 'Found it! +${score.points} points';
       } else {
-        // ── Text-only submission → Groq (free) with Gemini fallback ─────
-        final cloudReply = await ChatService.instance.cloud.completeText(
-          systemPrompt:
-              'You are a friendly botanist helping a child on a plant scavenger hunt at Oulu Botanical Garden. Always reply in EXACTLY two lines: line 1 is just the word CORRECT or WRONG, line 2 is one short encouraging sentence (max 12 words).',
-          userPrompt:
-              'The child is looking for: ${challenge.targetName} (${challenge.targetScientific}). '
-              'Plant family: ${challenge.familyName}. '
-              'The child answered: "$typedAnswer". '
-              'Is their answer correct (same plant, common name, scientific name, or close enough)? '
-              'Be generous — accept common names, partial matches, or the family name.',
-          maxTokens: 60,
-        );
-
-        String? reply = cloudReply;
-        if (reply == null) {
-          // Gemini fallback via Cloud Function proxy
-          final prompt =
-              'You are a friendly botanist helping a child on a plant scavenger hunt. '
-              'The child is looking for ${challenge.targetName} (${challenge.targetScientific}). '
-              'The child answered: "$typedAnswer". '
-              'Reply with exactly two lines: CORRECT or WRONG, then one short sentence (max 12 words).';
-          reply = await GeminiProxy.instance.text(
-            prompt: prompt,
-            model: 'gemini-2.5-flash',
-          );
-        }
-
-        final lines =
-            reply.split('\n').where((l) => l.trim().isNotEmpty).toList();
-        final verdict =
-            lines.isNotEmpty ? lines[0].trim().toUpperCase() : '';
-        msg = lines.length > 1 ? lines[1].trim() : '';
-        isCorrect = verdict.contains('CORRECT');
+        _states[_current] = _StopState.wrong;
+        _wrongCounts[_current]++;
+        _feedbackGood = false;
+        // Deliberately says nothing about what the plant is, not even how
+        // close the guess was — "warmer" would narrow it down.
+        _feedback = 'Not this one. Read the tag on the plant and try again.';
       }
-
-      if (mounted) {
-        setState(() {
-          _states[_current] = isCorrect ? _StopState.correct : _StopState.wrong;
-          if (!isCorrect) _wrongCounts[_current]++;
-          _feedback = msg.isNotEmpty
-              ? msg
-              : isCorrect
-                  ? 'Well done, plant detective! 🌿'
-                  : 'Not quite — look for more clues!';
-        });
-      }
-    } catch (e) {
-      if (mounted) {
-        setState(() {
-          _states[_current] = _StopState.wrong;
-          _feedback = 'Could not check — try again! (${e.toString().split('\n').first})';
-        });
-      }
-    }
+    });
   }
 
   void _nextChallenge() {
     if (_current < _kChallenges.length - 1) {
       setState(() {
         _current++;
-        _capturedPhoto = null;
         _textCtrl.clear();
         _showHint = false;
         _feedback = null;
-        _states[_current] = _StopState.pending;
       });
     } else {
-      // Award persistent badge for completing the hunt — survives sign-outs
-      // and shows up later on the profile / chat shelf.
       BadgeService.instance.award('plant_hunt_completed');
+      final user = AuthService.instance.currentUser;
+      if (user != null) {
+        HuntScoreService.instance.submit(
+          uid: user.id,
+          displayName: user.displayName,
+          total: _total,
+          solved: _solved,
+        );
+      }
       setState(() => _allDone = true);
     }
   }
@@ -305,10 +245,19 @@ class _PlantHuntScreenState extends State<PlantHuntScreen> {
   void _retryChallenge() {
     setState(() {
       _states[_current] = _StopState.pending;
-      _capturedPhoto = null;
       _textCtrl.clear();
       _feedback = null;
     });
+  }
+
+  /// Lets someone stuck on one plant carry on with the rest of the hunt.
+  void _skipChallenge() {
+    setState(() {
+      _states[_current] = _StopState.wrong;
+      _points[_current] = 0;
+      _feedback = null;
+    });
+    _nextChallenge();
   }
 
   // ── Build ──────────────────────────────────────────────────────────────────
@@ -325,14 +274,20 @@ class _PlantHuntScreenState extends State<PlantHuntScreen> {
         ),
         title: const Text('🔍 Plant Hunt',
             style: TextStyle(
-                color: Color(0xFFE8F5E9),
-                fontWeight: FontWeight.bold)),
+                color: Color(0xFFE8F5E9), fontWeight: FontWeight.bold)),
+        actions: [
+          IconButton(
+            tooltip: 'Leaderboard',
+            icon: const Icon(Icons.leaderboard_rounded,
+                color: Color(0xFF66BB6A)),
+            onPressed: () => Navigator.push(context,
+                MaterialPageRoute(builder: (_) => const HuntLeaderboardScreen())),
+          ),
+        ],
       ),
       body: _allDone ? _buildBadge() : _buildHunt(),
     );
   }
-
-  // ── Progress dots + challenge ──────────────────────────────────────────────
 
   Widget _buildHunt() {
     final challenge = _kChallenges[_current];
@@ -343,53 +298,9 @@ class _PlantHuntScreenState extends State<PlantHuntScreen> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          // Progress dots
-          Row(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: List.generate(_kChallenges.length, (i) {
-              final s = _states[i];
-              final isActive = i == _current;
-              Color dotColor;
-              IconData? icon;
-              if (s == _StopState.correct) {
-                dotColor = Colors.greenAccent;
-                icon = Icons.check;
-              } else if (i < _current) {
-                dotColor = Colors.greenAccent;
-                icon = Icons.check;
-              } else if (isActive) {
-                dotColor = const Color(0xFF66BB6A);
-                icon = null;
-              } else {
-                dotColor = const Color(0xFF2E7D32).withOpacity(0.3);
-                icon = null;
-              }
-              return AnimatedContainer(
-                duration: 300.ms,
-                margin: const EdgeInsets.symmetric(horizontal: 6),
-                width: isActive ? 36 : 28,
-                height: isActive ? 36 : 28,
-                decoration: BoxDecoration(
-                  color: dotColor.withOpacity(isActive ? 0.3 : 0.15),
-                  shape: BoxShape.circle,
-                  border: Border.all(color: dotColor, width: isActive ? 2 : 1),
-                ),
-                child: Center(
-                  child: icon != null
-                      ? Icon(icon, color: dotColor, size: 14)
-                      : Text('${i + 1}',
-                          style: TextStyle(
-                              color: dotColor,
-                              fontWeight: FontWeight.bold,
-                              fontSize: 13)),
-                ),
-              );
-            }),
-          ),
-
+          _progressDots(),
           const SizedBox(height: 16),
 
-          // Quest card header
           Container(
             padding: const EdgeInsets.all(16),
             decoration: BoxDecoration(
@@ -400,43 +311,43 @@ class _PlantHuntScreenState extends State<PlantHuntScreen> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
+                // Header: a number and a running total. Nothing here may hint
+                // at which plant this is.
                 Row(
                   children: [
-                    Text(challenge.emoji,
-                        style: const TextStyle(fontSize: 32)),
+                    Container(
+                      width: 34,
+                      height: 34,
+                      alignment: Alignment.center,
+                      decoration: BoxDecoration(
+                        color: const Color(0xFF2E7D32),
+                        borderRadius: BorderRadius.circular(10),
+                      ),
+                      child: Text(challenge.questNumber,
+                          style: const TextStyle(
+                              color: Colors.white,
+                              fontSize: 15,
+                              fontWeight: FontWeight.w800)),
+                    ),
                     const SizedBox(width: 12),
                     Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                              LanguageService.instance.strings
-                                  .questNumber(challenge.questNumber),
-                              style: const TextStyle(
-                                  color: Color(0xFF66BB6A),
-                                  fontSize: 12,
-                                  fontWeight: FontWeight.w600)),
-                          Text(challenge.familyName,
-                              style: const TextStyle(
-                                  color: Color(0xFFE8F5E9),
-                                  fontSize: 17,
-                                  fontWeight: FontWeight.bold)),
-                          Text(challenge.familyCommon,
-                              style: const TextStyle(
-                                  color: Color(0xFF4CAF50), fontSize: 12)),
-                          // The Finnish name is on the garden's own labels, so
-                          // it is what a visitor will actually read on the tag.
-                          Text(challenge.finnishName,
-                              style: const TextStyle(
-                                  color: Color(0xFF2E7D32),
-                                  fontSize: 11.5,
-                                  fontStyle: FontStyle.italic)),
-                        ],
+                      child: Text(
+                        'Quest ${challenge.questNumber} of ${_kChallenges.length}',
+                        style: const TextStyle(
+                            color: Color(0xFFE8F5E9),
+                            fontSize: 16,
+                            fontWeight: FontWeight.bold),
                       ),
                     ),
+                    Text('$_total pts',
+                        style: const TextStyle(
+                            color: Color(0xFFFFD54F),
+                            fontSize: 13,
+                            fontWeight: FontWeight.w700)),
                   ],
                 ),
                 const SizedBox(height: 14),
+
                 Row(children: [
                   const Icon(Icons.format_quote,
                       color: Color(0xFF2E7D32), size: 16),
@@ -447,20 +358,40 @@ class _PlantHuntScreenState extends State<PlantHuntScreen> {
                           fontWeight: FontWeight.bold,
                           fontSize: 12)),
                 ]),
-                const SizedBox(height: 6),
-                Text(challenge.clue,
-                    style: const TextStyle(
-                        color: Color(0xFFE8F5E9),
-                        fontSize: 13,
-                        height: 1.6)),
-                const SizedBox(height: 10),
+                const SizedBox(height: 8),
+
+                // The garden's own wording, one numbered line each.
+                for (var i = 0; i < challenge.clues.length; i++)
+                  Padding(
+                    padding: const EdgeInsets.only(bottom: 8),
+                    child: Row(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        SizedBox(
+                          width: 20,
+                          child: Text('${i + 1}.',
+                              style: const TextStyle(
+                                  color: Color(0xFF4CAF50),
+                                  fontSize: 13,
+                                  fontWeight: FontWeight.w700)),
+                        ),
+                        Expanded(
+                          child: Text(challenge.clues[i],
+                              style: const TextStyle(
+                                  color: Color(0xFFE8F5E9),
+                                  fontSize: 13,
+                                  height: 1.55)),
+                        ),
+                      ],
+                    ),
+                  ),
+
+                const SizedBox(height: 4),
                 GestureDetector(
                   onTap: () => setState(() => _showHint = !_showHint),
                   child: Row(children: [
                     Icon(
-                      _showHint
-                          ? Icons.expand_less
-                          : Icons.explore_outlined,
+                      _showHint ? Icons.expand_less : Icons.explore_outlined,
                       color: const Color(0xFF4CAF50),
                       size: 16,
                     ),
@@ -481,15 +412,11 @@ class _PlantHuntScreenState extends State<PlantHuntScreen> {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Text(challenge.whereToLook,
+                        Text('📍 ${challenge.whereToLook}',
                             style: const TextStyle(
                                 color: Color(0xFF66BB6A),
                                 fontSize: 12,
                                 height: 1.5)),
-                        // Reference photo of this specimen. Sits behind the
-                        // hint rather than beside the clue on purpose: seeing
-                        // the plant first would give the answer away and there
-                        // would be nothing left to work out.
                         const SizedBox(height: 10),
                         ClipRRect(
                           borderRadius: BorderRadius.circular(8),
@@ -498,7 +425,6 @@ class _PlantHuntScreenState extends State<PlantHuntScreen> {
                             width: double.infinity,
                             height: 180,
                             fit: BoxFit.cover,
-                            // A missing file must not break the quest.
                             errorBuilder: (_, __, ___) =>
                                 const SizedBox.shrink(),
                           ),
@@ -511,51 +437,49 @@ class _PlantHuntScreenState extends State<PlantHuntScreen> {
             ),
           ).animate().fadeIn(duration: 350.ms),
 
-          const SizedBox(height: 16),
+          const SizedBox(height: 18),
 
-          // Camera area
-          _buildCameraArea(),
-
+          // ── Answer ──────────────────────────────────────────────────────
+          const Text('WHAT IS IT CALLED?',
+              style: TextStyle(
+                  color: Color(0xFF81C784),
+                  fontSize: 11,
+                  fontWeight: FontWeight.w700,
+                  letterSpacing: 1.2)),
+          const SizedBox(height: 4),
+          const Text(
+            'Read the name off the plant’s tag. Finnish, Latin or the everyday '
+            'name all count, and close spelling is fine.',
+            style: TextStyle(color: Color(0xFF6E8A72), fontSize: 12, height: 1.4),
+          ),
+          const SizedBox(height: 10),
+          TextField(
+            controller: _textCtrl,
+            style: const TextStyle(color: Color(0xFFE8F5E9)),
+            enabled: state != _StopState.correct,
+            onChanged: (_) => setState(() {}),
+            onSubmitted: (_) => _submit(),
+            decoration: const InputDecoration(
+              hintText: 'Type the name from the tag…',
+              prefixIcon: Icon(Icons.local_offer_outlined,
+                  color: Color(0xFF4CAF50)),
+            ),
+            textInputAction: TextInputAction.done,
+          ),
           const SizedBox(height: 14),
 
-          // OR text input
-          if (_capturedPhoto == null) ...[
-            const Row(children: [
-              Expanded(child: Divider(color: Color(0xFF2E7D32))),
-              Padding(
-                padding: EdgeInsets.symmetric(horizontal: 10),
-                child: Text('or type the plant name',
-                    style: TextStyle(
-                        color: Color(0xFF4CAF50), fontSize: 11)),
-              ),
-              Expanded(child: Divider(color: Color(0xFF2E7D32))),
-            ]),
-            const SizedBox(height: 10),
-            TextField(
-              controller: _textCtrl,
-              style: const TextStyle(color: Color(0xFFE8F5E9)),
-              decoration: const InputDecoration(
-                hintText: 'e.g. Chamomile, Matricaria...',
-                prefixIcon: Icon(Icons.edit, color: Color(0xFF4CAF50)),
-              ),
-              textInputAction: TextInputAction.done,
-            ),
-            const SizedBox(height: 14),
-          ],
-
-          // Feedback banner
           if (_feedback != null)
             AnimatedContainer(
               duration: 300.ms,
               padding: const EdgeInsets.all(14),
               margin: const EdgeInsets.only(bottom: 12),
               decoration: BoxDecoration(
-                color: state == _StopState.correct
+                color: _feedbackGood
                     ? Colors.green[900]!.withOpacity(0.4)
                     : Colors.red[900]!.withOpacity(0.3),
                 borderRadius: BorderRadius.circular(12),
                 border: Border.all(
-                  color: state == _StopState.correct
+                  color: _feedbackGood
                       ? Colors.greenAccent
                       : Colors.red[400]!,
                 ),
@@ -563,10 +487,8 @@ class _PlantHuntScreenState extends State<PlantHuntScreen> {
               child: Row(
                 children: [
                   Icon(
-                    state == _StopState.correct
-                        ? Icons.check_circle
-                        : Icons.close,
-                    color: state == _StopState.correct
+                    _feedbackGood ? Icons.check_circle : Icons.close,
+                    color: _feedbackGood
                         ? Colors.greenAccent
                         : Colors.red[400]!,
                     size: 20,
@@ -575,7 +497,7 @@ class _PlantHuntScreenState extends State<PlantHuntScreen> {
                   Expanded(
                     child: Text(_feedback!,
                         style: TextStyle(
-                            color: state == _StopState.correct
+                            color: _feedbackGood
                                 ? Colors.greenAccent
                                 : Colors.orange,
                             fontSize: 14,
@@ -585,116 +507,57 @@ class _PlantHuntScreenState extends State<PlantHuntScreen> {
               ),
             ),
 
-          // Action buttons
           _buildActionButton(state, challenge),
         ],
       ),
     );
   }
 
-  // ── Camera widget ──────────────────────────────────────────────────────────
-
-  Widget _buildCameraArea() {
-    if (_capturedPhoto != null) {
-      return Column(
-        children: [
-          ClipRRect(
-            borderRadius: BorderRadius.circular(14),
-            child: Image.memory(_capturedPhoto!,
-                height: 200, width: double.infinity, fit: BoxFit.cover),
-          ),
-          const SizedBox(height: 8),
-          TextButton.icon(
-            onPressed: _retakePhoto,
-            icon: const Icon(Icons.refresh, color: Color(0xFF66BB6A), size: 16),
-            label: Text(LanguageService.instance.strings.retakePhoto,
-                style: const TextStyle(color: Color(0xFF66BB6A), fontSize: 12)),
-          ),
-        ],
-      );
-    }
-
-    if (!_camReady || _cam == null) {
-      return GestureDetector(
-        onTap: _initCamera,
-        child: Container(
-          height: 160,
+  Widget _progressDots() {
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.center,
+      children: List.generate(_kChallenges.length, (i) {
+        final s = _states[i];
+        final isActive = i == _current;
+        final done = s == _StopState.correct;
+        final color = done
+            ? Colors.greenAccent
+            : isActive
+                ? const Color(0xFF66BB6A)
+                : const Color(0xFF2E7D32).withOpacity(0.3);
+        return AnimatedContainer(
+          duration: 300.ms,
+          margin: const EdgeInsets.symmetric(horizontal: 5),
+          width: isActive ? 34 : 26,
+          height: isActive ? 34 : 26,
           decoration: BoxDecoration(
-            color: const Color(0xFF1A2E1E),
-            borderRadius: BorderRadius.circular(14),
-            border: Border.all(
-                color: const Color(0xFF2E7D32), style: BorderStyle.solid),
+            color: color.withOpacity(isActive ? 0.3 : 0.15),
+            shape: BoxShape.circle,
+            border: Border.all(color: color, width: isActive ? 2 : 1),
           ),
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              const Icon(Icons.camera_alt, color: Color(0xFF4CAF50), size: 36),
-              const SizedBox(height: 8),
-              Text(LanguageService.instance.strings.tapToOpenCamera,
-                  style: const TextStyle(color: Color(0xFF4CAF50), fontSize: 13)),
-              Text(LanguageService.instance.strings.takeAPhotoOfThePlant,
-                  style: const TextStyle(color: Color(0xFF2E7D32), fontSize: 11)),
-            ],
+          child: Center(
+            child: done
+                ? Icon(Icons.check, color: color, size: 13)
+                : Text('${i + 1}',
+                    style: TextStyle(
+                        color: color,
+                        fontWeight: FontWeight.bold,
+                        fontSize: 12)),
           ),
-        ),
-      );
-    }
-
-    return Column(
-      children: [
-        ClipRRect(
-          borderRadius: BorderRadius.circular(14),
-          child: AspectRatio(
-            aspectRatio: _cam!.value.aspectRatio,
-            child: ZoomableCameraPreview(controller: _cam!),
-          ),
-        ),
-        const SizedBox(height: 8),
-        ElevatedButton.icon(
-          style: ElevatedButton.styleFrom(
-            backgroundColor: const Color(0xFF1A2E1E),
-            foregroundColor: const Color(0xFF66BB6A),
-            side: const BorderSide(color: Color(0xFF2E7D32)),
-            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
-            shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(12)),
-          ),
-          icon: const Icon(Icons.camera, size: 18),
-          label: Text(LanguageService.instance.strings.takePhoto,
-              style: const TextStyle(fontSize: 13)),
-          onPressed: _capture,
-        ),
-      ],
+        );
+      }),
     );
   }
 
-  // ── Action button ──────────────────────────────────────────────────────────
-
   Widget _buildActionButton(_StopState state, _Challenge challenge) {
-    if (state == _StopState.checking) {
-      return Center(
-        child: Padding(
-          padding: const EdgeInsets.symmetric(vertical: 12),
-          child: Column(
-            children: [
-              const CircularProgressIndicator(color: Color(0xFF66BB6A)),
-              const SizedBox(height: 8),
-              Text(LanguageService.instance.strings.checkingYourAnswer,
-                  style: const TextStyle(color: Color(0xFF4CAF50), fontSize: 13)),
-            ],
-          ),
-        ),
-      );
-    }
-
     if (state == _StopState.correct) {
       return ElevatedButton.icon(
         style: ElevatedButton.styleFrom(
           backgroundColor: Colors.green[800],
           foregroundColor: Colors.white,
           padding: const EdgeInsets.symmetric(vertical: 14),
-          shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(14)),
+          shape:
+              RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
         ),
         icon: const Icon(Icons.arrow_forward),
         label: Text(
@@ -708,11 +571,9 @@ class _PlantHuntScreenState extends State<PlantHuntScreen> {
     }
 
     if (state == _StopState.wrong) {
-      final challenge = _kChallenges[_current];
       final showReveal = _wrongCounts[_current] >= 3;
       return Column(
         children: [
-          // After 3 wrong attempts → offer to reveal the answer
           if (showReveal) ...[
             if (_answerRevealed[_current])
               Container(
@@ -727,18 +588,16 @@ class _PlantHuntScreenState extends State<PlantHuntScreen> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Row(
-                      children: [
-                        const Icon(Icons.lightbulb_rounded,
-                            color: Color(0xFFFFD54F), size: 16),
-                        const SizedBox(width: 6),
-                        Text(LanguageService.instance.strings.theAnswerIs,
-                            style: const TextStyle(
-                                color: Color(0xFFFFD54F),
-                                fontSize: 12,
-                                fontWeight: FontWeight.w700)),
-                      ],
-                    ),
+                    Row(children: [
+                      const Icon(Icons.lightbulb_rounded,
+                          color: Color(0xFFFFD54F), size: 16),
+                      const SizedBox(width: 6),
+                      Text(LanguageService.instance.strings.theAnswerIs,
+                          style: const TextStyle(
+                              color: Color(0xFFFFD54F),
+                              fontSize: 12,
+                              fontWeight: FontWeight.w700)),
+                    ]),
                     const SizedBox(height: 6),
                     Text(
                       '${challenge.targetName} (${challenge.targetScientific})',
@@ -748,11 +607,9 @@ class _PlantHuntScreenState extends State<PlantHuntScreen> {
                           fontWeight: FontWeight.w700),
                     ),
                     const SizedBox(height: 4),
-                    Text(
-                      LanguageService.instance.strings.goFindItToContinue,
-                      style: const TextStyle(
-                          color: Color(0xFF81C784), fontSize: 12),
-                    ),
+                    Text(LanguageService.instance.strings.goFindItToContinue,
+                        style: const TextStyle(
+                            color: Color(0xFF81C784), fontSize: 12)),
                   ],
                 ),
               )
@@ -769,7 +626,8 @@ class _PlantHuntScreenState extends State<PlantHuntScreen> {
                         borderRadius: BorderRadius.circular(12)),
                   ),
                   icon: const Icon(Icons.lightbulb_outline_rounded, size: 16),
-                  label: Text(LanguageService.instance.strings.tapToKnowTheAnswer),
+                  label: Text(
+                      LanguageService.instance.strings.tapToKnowTheAnswer),
                   onPressed: () =>
                       setState(() => _answerRevealed[_current] = true),
                 ),
@@ -788,21 +646,24 @@ class _PlantHuntScreenState extends State<PlantHuntScreen> {
             label: Text(LanguageService.instance.strings.tryAgain),
             onPressed: _retryChallenge,
           ),
+          if (showReveal)
+            TextButton(
+              onPressed: _skipChallenge,
+              child: const Text('Skip this plant',
+                  style: TextStyle(color: Color(0xFF6E8A72), fontSize: 12)),
+            ),
         ],
       );
     }
 
-    // Pending state
-    final canSubmit =
-        _capturedPhoto != null || _textCtrl.text.trim().isNotEmpty;
+    final canSubmit = _textCtrl.text.trim().isNotEmpty;
     return ElevatedButton.icon(
       style: ElevatedButton.styleFrom(
         backgroundColor:
             canSubmit ? const Color(0xFF2E7D32) : const Color(0xFF1A2E1E),
         foregroundColor: Colors.white,
         padding: const EdgeInsets.symmetric(vertical: 14),
-        shape:
-            RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
       ),
       icon: const Icon(Icons.send_rounded),
       label: Text(LanguageService.instance.strings.submitAnswer,
@@ -811,17 +672,16 @@ class _PlantHuntScreenState extends State<PlantHuntScreen> {
     );
   }
 
-  // ── Badge screen ───────────────────────────────────────────────────────────
+  // ── Badge ──────────────────────────────────────────────────────────────────
 
   Widget _buildBadge() {
     return SingleChildScrollView(
       child: Container(
-        padding: const EdgeInsets.fromLTRB(24, 40, 24, 40),
+        padding: const EdgeInsets.fromLTRB(24, 32, 24, 40),
         child: Column(
           children: [
-            // Badge container
             Container(
-              padding: const EdgeInsets.all(28),
+              padding: const EdgeInsets.all(24),
               decoration: BoxDecoration(
                 gradient: const LinearGradient(
                   begin: Alignment.topLeft,
@@ -844,57 +704,66 @@ class _PlantHuntScreenState extends State<PlantHuntScreen> {
               ),
               child: Column(
                 children: [
-                  const Text('🏆', style: TextStyle(fontSize: 72))
+                  const Text('🏆', style: TextStyle(fontSize: 64))
                       .animate()
                       .scale(duration: 600.ms, curve: Curves.elasticOut),
-                  const SizedBox(height: 16),
+                  const SizedBox(height: 12),
                   const Text(
                     'PLANT DETECTIVE',
                     style: TextStyle(
                       color: Colors.greenAccent,
-                      fontSize: 22,
+                      fontSize: 21,
                       fontWeight: FontWeight.bold,
                       letterSpacing: 3,
                     ),
                     textAlign: TextAlign.center,
                   ),
-                  const SizedBox(height: 6),
-                  const Text(
-                    'Official Badge',
-                    style: TextStyle(
-                        color: Color(0xFF66BB6A),
-                        fontSize: 13,
-                        letterSpacing: 1),
-                  ),
-                  const SizedBox(height: 20),
-                  const Divider(color: Color(0xFF2E7D32)),
                   const SizedBox(height: 14),
-                  // Wraps rather than a Row: five names do not fit across a
-                  // phone, and the list is what decides how many there are.
-                  Wrap(
-                    alignment: WrapAlignment.center,
-                    spacing: 12,
-                    runSpacing: 12,
-                    children: [
-                      for (final c in _kChallenges)
-                        _BadgeStar(emoji: c.emoji, label: c.targetName),
-                    ],
-                  ),
-                  const SizedBox(height: 20),
+                  Text('$_total',
+                      style: const TextStyle(
+                          color: Color(0xFFFFD54F),
+                          fontSize: 40,
+                          fontWeight: FontWeight.w900)),
+                  Text('points · $_solved of ${_kChallenges.length} found',
+                      style: const TextStyle(
+                          color: Color(0xFF9CCC9F), fontSize: 12.5)),
+                  const SizedBox(height: 18),
                   const Divider(color: Color(0xFF2E7D32)),
-                  const SizedBox(height: 14),
-                  const Text(
-                    'Oulu Botanical Garden',
-                    style: TextStyle(
-                        color: Color(0xFF4CAF50),
-                        fontSize: 13,
-                        fontStyle: FontStyle.italic),
-                  ),
+                  const SizedBox(height: 12),
+                  // Names are safe here: the hunt is over.
+                  for (var i = 0; i < _kChallenges.length; i++)
+                    Padding(
+                      padding: const EdgeInsets.only(bottom: 6),
+                      child: Row(
+                        children: [
+                          Icon(
+                            _states[i] == _StopState.correct
+                                ? Icons.check_circle
+                                : Icons.remove_circle_outline,
+                            size: 15,
+                            color: _states[i] == _StopState.correct
+                                ? Colors.greenAccent
+                                : const Color(0xFF4A7A50),
+                          ),
+                          const SizedBox(width: 8),
+                          Expanded(
+                            child: Text(_kChallenges[i].targetName,
+                                style: const TextStyle(
+                                    color: Color(0xFFE8F5E9), fontSize: 13)),
+                          ),
+                          Text('${_points[i]}',
+                              style: const TextStyle(
+                                  color: Color(0xFFFFD54F),
+                                  fontSize: 12.5,
+                                  fontWeight: FontWeight.w700)),
+                        ],
+                      ),
+                    ),
                 ],
               ),
             ).animate().fadeIn(duration: 500.ms),
 
-            const SizedBox(height: 28),
+            const SizedBox(height: 22),
 
             Container(
               padding: const EdgeInsets.all(16),
@@ -905,35 +774,40 @@ class _PlantHuntScreenState extends State<PlantHuntScreen> {
               ),
               child: const Column(
                 children: [
-                  Icon(Icons.card_giftcard,
-                      color: Colors.greenAccent, size: 32),
+                  Icon(Icons.card_giftcard, color: Colors.greenAccent, size: 30),
                   SizedBox(height: 10),
                   Text(
                     'Show this badge to a garden staff member\nat the info desk for a small surprise! 🎁',
                     textAlign: TextAlign.center,
                     style: TextStyle(
-                        color: Color(0xFFE8F5E9),
-                        fontSize: 14,
-                        height: 1.6),
+                        color: Color(0xFFE8F5E9), fontSize: 14, height: 1.6),
                   ),
                 ],
               ),
             ).animate().slideY(begin: 0.2, delay: 300.ms, duration: 400.ms),
 
-            const SizedBox(height: 20),
+            const SizedBox(height: 18),
 
             ElevatedButton.icon(
               style: ElevatedButton.styleFrom(
-                backgroundColor: const Color(0xFF2E7D32),
-                foregroundColor: Colors.white,
-                padding: const EdgeInsets.symmetric(
-                    horizontal: 28, vertical: 14),
+                backgroundColor: const Color(0xFFFFB300),
+                foregroundColor: const Color(0xFF231A00),
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 24, vertical: 13),
                 shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(14)),
               ),
-              icon: const Icon(Icons.home),
+              icon: const Icon(Icons.leaderboard_rounded),
+              label: const Text('See the leaderboard',
+                  style: TextStyle(fontWeight: FontWeight.w700)),
+              onPressed: () => Navigator.push(context,
+                  MaterialPageRoute(builder: (_) => const HuntLeaderboardScreen())),
+            ),
+            const SizedBox(height: 10),
+            TextButton.icon(
+              icon: const Icon(Icons.home, color: Color(0xFF66BB6A), size: 18),
               label: Text(LanguageService.instance.strings.backToHome,
-                  style: const TextStyle(fontSize: 14)),
+                  style: const TextStyle(color: Color(0xFF66BB6A))),
               onPressed: () => Navigator.pop(context),
             ),
           ],
@@ -943,33 +817,112 @@ class _PlantHuntScreenState extends State<PlantHuntScreen> {
   }
 }
 
-class _BadgeStar extends StatelessWidget {
-  final String emoji;
-  final String label;
+// ─── Leaderboard ──────────────────────────────────────────────────────────────
 
-  const _BadgeStar({required this.emoji, required this.label});
+class HuntLeaderboardScreen extends StatelessWidget {
+  const HuntLeaderboardScreen({super.key});
 
   @override
   Widget build(BuildContext context) {
-    return Column(
-      children: [
-        Container(
-          width: 52,
-          height: 52,
-          decoration: BoxDecoration(
-            color: Colors.greenAccent.withOpacity(0.15),
-            shape: BoxShape.circle,
-            border:
-                Border.all(color: Colors.greenAccent.withOpacity(0.6)),
-          ),
-          child: Center(child: Text(emoji, style: const TextStyle(fontSize: 24))),
-        ),
-        const SizedBox(height: 6),
-        Text(label,
-            style: const TextStyle(
-                color: Color(0xFF66BB6A), fontSize: 10),
-            textAlign: TextAlign.center),
-      ],
+    final myUid = AuthService.instance.currentUser?.id;
+    return Scaffold(
+      backgroundColor: const Color(0xFF0D1F14),
+      appBar: AppBar(
+        backgroundColor: const Color(0xFF1A2E1E),
+        title: const Text('Plant Hunt leaderboard',
+            style: TextStyle(color: Color(0xFFE8F5E9))),
+        iconTheme: const IconThemeData(color: Color(0xFF66BB6A)),
+      ),
+      body: StreamBuilder<List<HuntScore>>(
+        stream: HuntScoreService.instance.watchTop(),
+        builder: (context, snap) {
+          if (!snap.hasData) {
+            return const Center(child: CircularProgressIndicator());
+          }
+          final rows = snap.data!;
+          if (rows.isEmpty) {
+            return const Center(
+              child: Padding(
+                padding: EdgeInsets.all(32),
+                child: Text(
+                  'Nobody has finished the hunt yet.\nBe the first.',
+                  textAlign: TextAlign.center,
+                  style: TextStyle(color: Color(0xFF9CCC9F), height: 1.5),
+                ),
+              ),
+            );
+          }
+          return ListView.builder(
+            padding: const EdgeInsets.fromLTRB(16, 16, 16, 32),
+            itemCount: rows.length,
+            itemBuilder: (_, i) {
+              final r = rows[i];
+              final mine = r.uid == myUid;
+              final medal = i == 0
+                  ? const Color(0xFFFFD54F)
+                  : i == 1
+                      ? const Color(0xFFCFD8DC)
+                      : i == 2
+                          ? const Color(0xFFBCAAA4)
+                          : const Color(0xFF2A4A2F);
+              return Container(
+                margin: const EdgeInsets.only(bottom: 8),
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: mine
+                      ? const Color(0xFF16301D)
+                      : const Color(0xFF111F16),
+                  borderRadius: BorderRadius.circular(10),
+                  border: Border.all(
+                    color: mine
+                        ? const Color(0xFF66BB6A)
+                        : (i < 3 ? medal : const Color(0xFF2A4A2F)),
+                    width: i < 3 || mine ? 1.5 : 1,
+                  ),
+                ),
+                child: Row(
+                  children: [
+                    SizedBox(
+                      width: 28,
+                      child: Text('${i + 1}',
+                          style: TextStyle(
+                              color: medal,
+                              fontSize: 16,
+                              fontWeight: FontWeight.w800)),
+                    ),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(mine ? '${r.displayName}  (you)' : r.displayName,
+                              style: const TextStyle(
+                                  color: Color(0xFFE8F5E9),
+                                  fontSize: 14.5,
+                                  fontWeight: FontWeight.w600)),
+                          Text('${r.solved} of ${_kChallenges.length} found',
+                              style: const TextStyle(
+                                  color: Color(0xFF4A7A50), fontSize: 11.5)),
+                        ],
+                      ),
+                    ),
+                    Text('${r.total}',
+                        style: const TextStyle(
+                            color: Color(0xFFFFD54F),
+                            fontSize: 17,
+                            fontWeight: FontWeight.w800)),
+                    const Padding(
+                      padding: EdgeInsets.only(left: 4),
+                      child: Text('pts',
+                          style: TextStyle(
+                              color: Color(0xFF4A7A50), fontSize: 10.5)),
+                    ),
+                  ],
+                ),
+              );
+            },
+          );
+        },
+      ),
     );
   }
 }
