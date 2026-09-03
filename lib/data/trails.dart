@@ -29,6 +29,7 @@ class TrailStop {
     required this.sectionLabel,
     required this.why,
     this.finnishName,
+    this.sectionRoom,
   });
 
   final String scientificName;
@@ -39,7 +40,27 @@ class TrailStop {
   final String? finnishName;
 
   final String sectionCode;
+
+  /// Visitor-facing name of the place, e.g. "Tropical house".
   final String sectionLabel;
+
+  /// The garden's own name for the same place, as it appears on its signs and
+  /// in its records, e.g. "TROOPPINEN HUONE". Kept alongside the English gloss
+  /// because the sign in front of the visitor is in Finnish.
+  final String? sectionRoom;
+
+  /// Where to go, in one line. Shows both names when they differ, so a visitor
+  /// reading an English app can still match the Finnish sign on the door.
+  String get locationLine {
+    final room = (sectionRoom ?? '').trim();
+    if (room.isEmpty) return sectionLabel;
+    if (room.toUpperCase() == sectionLabel.toUpperCase()) return sectionLabel;
+    return '$sectionLabel  ·  $room';
+  }
+
+  /// Under glass, as opposed to out in the grounds. Worth saying: it decides
+  /// whether a visitor needs a coat.
+  bool get isIndoors => sectionCode.startsWith('G-');
 
   /// The garden's own curated note for this plant under this theme. This is
   /// why the stop is on the trail, and it is why nothing here needed writing.
@@ -166,6 +187,18 @@ const kMaxTrailStops = 10;
 /// into a walk somebody would actually finish.
 const kMaxTrailSections = 4;
 
+/// The common-name column is not always a name.
+///
+/// Rows carry placeholders — "No common name", "-", "N/A" — which were being
+/// printed as the plant's name, so a trail listed a stop called "No common
+/// name". Where there is no real common name the botanical one is the name.
+String _commonNameOr(String? common, String scientific) {
+  final c = (common ?? '').trim();
+  if (c.isEmpty) return scientific;
+  const placeholders = {'no common name', 'none', 'n/a', '-', '?', 'unknown'};
+  return placeholders.contains(c.toLowerCase()) ? scientific : c;
+}
+
 /// Some section cells in the garden's data separate code from room name with a
 /// space rather than a tab, so the same place arrives as both 'G-HA' and
 /// 'G-HA TROOPPINEN HUONE'. Left alone they become two stops in two different
@@ -194,17 +227,27 @@ List<Trail> buildTrails(Iterable<PlantFacts> plants,
     for (final p in plants) {
       final why = p.tags[tag];
       final code = canonicalSectionCode(p.sectionCode ?? '');
-      // Both are required: a plant with no section cannot be walked to, and a
-      // plant with no curated note has nothing to say when you get there.
+      // A plant with no curated note has nothing to say when you get there.
       if (why == null || why.trim().isEmpty || code.isEmpty) continue;
+
+      // And a stop nobody can find is not a stop. A bare code like "P-D" is
+      // not a location a visitor can walk to, so a plant only qualifies when
+      // the data can actually name the place: either the garden's own room
+      // name, or an English gloss for one of the greenhouse zones.
+      final room = (p.sectionRoom ?? '').trim();
+      final gloss = label(code).trim();
+      final nameable = room.isNotEmpty || (gloss.isNotEmpty && gloss != code);
+      if (!nameable) continue;
+
       tagged.add(TrailStop(
         scientificName: p.scientificName,
-        displayName: (p.englishName?.trim().isNotEmpty ?? false)
-            ? p.englishName!.trim()
-            : p.scientificName,
+        displayName: _commonNameOr(p.englishName, p.scientificName),
         finnishName: p.finnishName,
         sectionCode: code,
-        sectionLabel: label(code).isEmpty ? code : label(code),
+        sectionLabel: gloss.isEmpty || gloss == code
+            ? (room.isEmpty ? code : room)
+            : gloss,
+        sectionRoom: room.isEmpty ? null : room,
         why: why.trim(),
       ));
     }

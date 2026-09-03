@@ -13,11 +13,16 @@ PlantFacts _plant(
   String sci, {
   String? section,
   String? english,
+  String? room,
   Map<String, String> tags = const {},
 }) {
   final p = PlantFacts(sci);
   p.sectionCode = section;
   p.englishName = english;
+  // A room name by default, matching the real data: 4,792 of the 4,922 plants
+  // with a section also carry the garden's own name for it. Pass room: null
+  // explicitly to test a plant whose place cannot be named.
+  p.sectionRoom = room ?? (section == null ? null : 'ROOM $section');
   tags.forEach((k, v) => p.tags[k] = v);
   return p;
 }
@@ -140,6 +145,9 @@ void main() {
     });
   });
 
+  _locationTests();
+  _nameTests();
+
   group('estimated time', () {
     test('counts both the looking and the walking between sections', () {
       final trails = buildTrails(_many('Edible', 8, ['G-HA', 'G-HB']));
@@ -180,6 +188,128 @@ void main() {
         final names = t.stops.map((s) => s.scientificName).toList();
         expect(names.toSet().length, names.length, reason: t.title);
       }
+    });
+  });
+}
+
+// ─── Locations ────────────────────────────────────────────────────────────────
+
+void _locationTests() {
+  group('every stop can be found', () {
+    test('a plant whose place cannot be named is left out', () {
+      // A bare code like "P-D" is not somewhere a visitor can walk to. Before
+      // this, such plants appeared as stops labelled with the raw code.
+      final plants = [
+        for (var i = 0; i < 8; i++)
+          _plant('Nameable species$i',
+              section: 'G-HA',
+              english: 'Findable $i',
+              room: 'TROOPPINEN HUONE',
+              tags: {'Edible': 'Note $i'}),
+        _plant('Unfindable plantus',
+            section: 'P-D', room: '', tags: {'Edible': 'Somewhere, unnamed.'}),
+      ];
+      final stops = buildTrails(plants).single.stops
+          .map((s) => s.scientificName);
+      expect(stops, isNot(contains('Unfindable plantus')));
+    });
+
+    test('a greenhouse zone qualifies on its English gloss alone', () {
+      // No room name in the data, but "G-HA" glosses to "Tropical house",
+      // which is a place a visitor can walk to.
+      final plants = [
+        for (var i = 0; i < 8; i++)
+          _plant('Glossed species$i',
+              section: 'G-HA', room: '', english: 'Plant $i',
+              tags: {'Edible': 'Note $i'}),
+      ];
+      final trails = buildTrails(plants,
+          labelFor: (c) => c == 'G-HA' ? 'Tropical house' : (c ?? ''));
+      expect(trails.single.stops.first.sectionLabel, 'Tropical house');
+    });
+
+    test('the location line carries both names when they differ', () {
+      // The app is in English but the sign on the door is in Finnish, so the
+      // visitor needs both to match one to the other.
+      const stop = TrailStop(
+        scientificName: 'Theobroma cacao',
+        displayName: 'Cacao',
+        sectionCode: 'G-HA',
+        sectionLabel: 'Tropical house',
+        sectionRoom: 'TROOPPINEN HUONE',
+        why: 'why',
+      );
+      expect(stop.locationLine, contains('Tropical house'));
+      expect(stop.locationLine, contains('TROOPPINEN HUONE'));
+    });
+
+    test('the location line does not say the same thing twice', () {
+      const stop = TrailStop(
+        scientificName: 'Abies alba',
+        displayName: 'Silver fir',
+        sectionCode: 'R-O',
+        sectionLabel: 'ARBORETUM',
+        sectionRoom: 'ARBORETUM',
+        why: 'why',
+      );
+      expect(stop.locationLine, 'ARBORETUM');
+    });
+
+    test('indoors is decided by the section code, not the name', () {
+      const indoor = TrailStop(
+        scientificName: 'a', displayName: 'a', sectionCode: 'G-HA',
+        sectionLabel: 'Tropical house', why: 'w');
+      const outdoor = TrailStop(
+        scientificName: 'b', displayName: 'b', sectionCode: 'R-O',
+        sectionLabel: 'ARBORETUM', why: 'w');
+      expect(indoor.isIndoors, isTrue);
+      expect(outdoor.isIndoors, isFalse);
+    });
+  });
+
+  group('against the real garden data', () {
+    setUpAll(() async {
+      TestWidgetsFlutterBinding.ensureInitialized();
+      await PlantIndex.instance.ready();
+    });
+
+    test('every stop on every trail names a place', () {
+      final trails = buildTrails(PlantIndex.instance.all,
+          labelFor: PlantIndex.instance.sectionLabel);
+      for (final t in trails) {
+        for (final s in t.stops) {
+          expect(s.locationLine.trim(), isNotEmpty, reason: t.title);
+          // Never just a raw code — that is not a location.
+          expect(s.locationLine.trim(), isNot(s.sectionCode),
+              reason: '${t.title}: ${s.displayName} shows only a code');
+        }
+      }
+    });
+  });
+}
+
+void _nameTests() {
+  group('plant names', () {
+    test('a placeholder in the common-name column is not used as a name', () {
+      // The data carries "No common name" as a literal value, and it was being
+      // printed as the plant's name on a trail stop.
+      for (final placeholder in ['No common name', '-', 'N/A', 'unknown']) {
+        final trails = buildTrails([
+          for (var i = 0; i < 6; i++)
+            _plant('Realis botanicus$i',
+                section: 'G-HA',
+                english: placeholder,
+                tags: {'Edible': 'Note $i'}),
+        ]);
+        expect(trails.single.stops.first.displayName,
+            startsWith('Realis botanicus'),
+            reason: 'placeholder "$placeholder" leaked through as a name');
+      }
+    });
+
+    test('a real common name is still preferred', () {
+      final trails = buildTrails(_many('Edible', 6, ['G-HA']));
+      expect(trails.single.stops.first.displayName, startsWith('Plant '));
     });
   });
 }

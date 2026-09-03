@@ -198,11 +198,40 @@ class _TrailDetailScreenState extends State<TrailDetailScreen> {
                   color: Color(0xFF9CCC9F), fontSize: 13.5, height: 1.5)),
           const SizedBox(height: 12),
           _Progress(found: _found.length, total: t.stops.length),
+          const SizedBox(height: 14),
+          Container(
+            padding: const EdgeInsets.all(12),
+            decoration: BoxDecoration(
+              color: _surface,
+              borderRadius: BorderRadius.circular(10),
+              border: Border.all(color: _border),
+            ),
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Icon(Icons.route_rounded, size: 15, color: _green),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: Text(
+                    'Your route: ${t.sections.join("  →  ")}',
+                    style: const TextStyle(
+                        color: Color(0xFFCFE8D2), fontSize: 12.5, height: 1.4),
+                  ),
+                ),
+              ],
+            ),
+          ),
           const SizedBox(height: 20),
           for (final entry in grouped.entries) ...[
             Row(
               children: [
-                const Icon(Icons.place_rounded, size: 15, color: _green),
+                Icon(
+                  entry.value.first.isIndoors
+                      ? Icons.holiday_village_rounded
+                      : Icons.park_rounded,
+                  size: 15,
+                  color: _green,
+                ),
                 const SizedBox(width: 6),
                 Expanded(
                   child: Text(entry.key.toUpperCase(),
@@ -212,10 +241,28 @@ class _TrailDetailScreenState extends State<TrailDetailScreen> {
                           fontWeight: FontWeight.w700,
                           letterSpacing: 1)),
                 ),
-                Text('${entry.value.length}',
-                    style: const TextStyle(color: _textDim, fontSize: 11.5)),
+                Text(
+                  '${entry.value.length} · '
+                  '${entry.value.first.isIndoors ? "indoors" : "outdoors"}',
+                  style: const TextStyle(color: _textDim, fontSize: 11.5),
+                ),
               ],
             ),
+            // The garden's own name for the same place — what is printed on
+            // the sign the visitor is looking for.
+            if ((entry.value.first.sectionRoom ?? '').isNotEmpty &&
+                entry.value.first.sectionRoom!.toUpperCase() !=
+                    entry.key.toUpperCase())
+              Padding(
+                padding: const EdgeInsets.only(left: 21, top: 2),
+                child: Text(
+                  'signed “${entry.value.first.sectionRoom}”',
+                  style: const TextStyle(
+                      color: Color(0xFF4A7A50),
+                      fontSize: 11,
+                      fontStyle: FontStyle.italic),
+                ),
+              ),
             const SizedBox(height: 8),
             for (final stop in entry.value)
               _StopTile(
@@ -331,6 +378,19 @@ class _StopTile extends StatelessWidget {
                             color: _textDim,
                             fontSize: 11.5,
                             fontStyle: FontStyle.italic),
+                      ),
+                      const SizedBox(height: 5),
+                      Row(
+                        children: [
+                          const Icon(Icons.place_outlined,
+                              size: 12, color: Color(0xFF81C784)),
+                          const SizedBox(width: 4),
+                          Expanded(
+                            child: Text(stop.locationLine,
+                                style: const TextStyle(
+                                    color: Color(0xFF81C784), fontSize: 11.5)),
+                          ),
+                        ],
                       ),
                       const SizedBox(height: 6),
                       // The garden's own words about this plant.
