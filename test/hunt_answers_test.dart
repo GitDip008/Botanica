@@ -322,6 +322,40 @@ void _pointsTests() {
       expect(kPhotoHintCost, greaterThan(kLocationHintCost));
     });
 
+    test('an unconfirmed photo costs more than any hint', () {
+      // It has to. The photo check is what ties a submission to standing in
+      // front of the plant; if skipping it were cheap, anyone who knew the
+      // name could photograph any leaf in the garden.
+      expect(kUncheckedPhotoCost, greaterThan(kPhotoHintCost));
+      expect(kUncheckedPhotoCost, greaterThan(kLocationHintCost));
+    });
+
+    test('skipping the photo check costs what the rules say', () {
+      expect(
+        questPoints(
+            answerScore: 100,
+            usedLocationHint: false,
+            usedPhotoHint: false,
+            answerRevealed: false,
+            uncheckedPhoto: true),
+        100 - kUncheckedPhotoCost,
+      );
+    });
+
+    test('every cost together cannot drive a score below zero', () {
+      // Unlike the hints alone, these do add up past the best answer, so the
+      // clamp is doing real work — firestore.rules rejects a negative total.
+      expect(
+        questPoints(
+            answerScore: 68,
+            usedLocationHint: true,
+            usedPhotoHint: true,
+            answerRevealed: false,
+            uncheckedPhoto: true),
+        0,
+      );
+    });
+
     test('finding the plant is never worth nothing', () {
       // Worst case a visitor can actually reach: the lowest score that still
       // counts as correct (68), with both hints bought. No floor is needed for

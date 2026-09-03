@@ -48,6 +48,16 @@ const kLocationHintCost = 15;
 /// seeing the plant is most of the puzzle.
 const kPhotoHintCost = 30;
 
+/// Cost of submitting a photo the identifier would not confirm.
+///
+/// Dearer than any hint, and deliberately so. The photo check is what ties a
+/// submission to actually standing in front of the plant; without a price,
+/// anyone who knows the name could photograph any leaf in the garden and the
+/// check would mean nothing. It stays available because identifiers do misread
+/// correct photos, and being locked out by a machine's mistake is worse than
+/// someone paying 40 points to get past it.
+const kUncheckedPhotoCost = 40;
+
 /// Points banked for a quest, after hints.
 ///
 /// Buying both hints on the roughest accepted answer still leaves 23 points,
@@ -60,6 +70,7 @@ int questPoints({
   required bool usedLocationHint,
   required bool usedPhotoHint,
   required bool answerRevealed,
+  bool uncheckedPhoto = false,
 }) {
   // Being told the answer outright banks nothing; the points are for working
   // it out.
@@ -67,6 +78,9 @@ int questPoints({
   var p = answerScore;
   if (usedLocationHint) p -= kLocationHintCost;
   if (usedPhotoHint) p -= kPhotoHintCost;
+  if (uncheckedPhoto) p -= kUncheckedPhotoCost;
+  // Every cost together can exceed the best answer, so this clamp is load
+  // bearing: firestore.rules rejects a negative total outright.
   return p < 0 ? 0 : p;
 }
 
@@ -240,6 +254,15 @@ class _PlantHuntScreenState extends State<PlantHuntScreen> {
   /// quest they have not actually solved, only past a photo the AI misread.
   bool _photoOverridden = false;
 
+  /// Rejected photos on this quest. The override only appears from the second
+  /// one on: a first misread is usually fixed by stepping closer, and making
+  /// the escape hatch the immediate path would make it the normal path.
+  int _photoRejectCount = 0;
+
+  /// Whether the last rejection was "there is no plant here". An empty frame
+  /// is never overridable — the visitor is plainly not photographing a plant.
+  bool _lastRejectWasNotAPlant = false;
+
   String? _wikiUrl;
   bool _loadingWiki = false;
 
@@ -315,6 +338,8 @@ class _PlantHuntScreenState extends State<PlantHuntScreen> {
         _suggestion = (info.isPlant && info.scientificName != 'Unknown')
             ? info.scientificName
             : null;
+        if (verdict != PhotoVerdict.accepted) _photoRejectCount++;
+        _lastRejectWasNotAPlant = verdict == PhotoVerdict.notAPlant;
         switch (verdict) {
           case PhotoVerdict.accepted:
             _photoAccepted = true;
@@ -432,15 +457,17 @@ class _PlantHuntScreenState extends State<PlantHuntScreen> {
           usedLocationHint: _locationHint[_current],
           usedPhotoHint: _photoHint[_current],
           answerRevealed: _answerRevealed[_current],
+          uncheckedPhoto: _photoOverridden,
         );
         _feedbackGood = true;
         final spent = (_locationHint[_current] ? kLocationHintCost : 0) +
-            (_photoHint[_current] ? kPhotoHintCost : 0);
+            (_photoHint[_current] ? kPhotoHintCost : 0) +
+            (_photoOverridden ? kUncheckedPhotoCost : 0);
         _feedback = _answerRevealed[_current]
             ? 'Found it. No points for this one — you had the answer.'
             : spent > 0
-                ? 'Found it! ${score.points} − $spent for hints '
-                    '= +${_points[_current]} points'
+                ? 'Found it! ${score.points} − $spent = '
+                    '+${_points[_current]} points'
                 : 'Found it! +${_points[_current]} points';
         // Fires after this frame so the popup opens over a card that already
         // shows the result.
@@ -534,6 +561,8 @@ class _PlantHuntScreenState extends State<PlantHuntScreen> {
     _photoAccepted = false;
     _photoRejection = null;
     _photoOverridden = false;
+    _photoRejectCount = 0;
+    _lastRejectWasNotAPlant = false;
     _wikiUrl = null;
     _feedback = null;
   }
@@ -721,11 +750,12 @@ class _PlantHuntScreenState extends State<PlantHuntScreen> {
           _pointRow('Close spelling', 'slightly fewer'),
           _pointRow('Hint 1 — where to look', '−$kLocationHintCost pts'),
           _pointRow('Hint 2 — photo of the plant', '−$kPhotoHintCost pts'),
+          _pointRow('Photo we cannot confirm', '−$kUncheckedPhotoCost pts'),
           _pointRow('Being told the answer', '0 pts'),
           const Divider(color: Color(0xFF2E7D32), height: 18),
           const Text(
-            'Wrong answers cost nothing — only hints do. Even with both hints, '
-            'a plant you find is still worth points.',
+            'Wrong answers cost nothing. Your photo has to be the right plant '
+            '— if we cannot confirm it, you can still submit, but it costs.',
             style: TextStyle(
                 color: Color(0xFF9CCC9F), fontSize: 12, height: 1.45),
           ),
@@ -999,27 +1029,52 @@ class _PlantHuntScreenState extends State<PlantHuntScreen> {
                               color: Color(0xFFFFCDD2),
                               fontSize: 12.5,
                               height: 1.4)),
-                      const SizedBox(height: 6),
-                      // The identifier gets it wrong often enough that it
-                      // cannot be allowed to lock someone out of a plant they
-                      // are standing in front of. The typed name still has to
-                      // be right, so this opens no door to cheating.
-                      GestureDetector(
-                        onTap: () => setState(() {
-                          _photoOverridden = true;
-                          _photoRejection = null;
-                        }),
-                        child: const Text(
-                          'Sure this is the right plant? Use it anyway →',
-                          style: TextStyle(
-                            color: Color(0xFFFFD54F),
-                            fontSize: 12.5,
-                            fontWeight: FontWeight.w700,
-                            decoration: TextDecoration.underline,
-                            decorationColor: Color(0xFFFFD54F),
+                      // The escape hatch, deliberately narrow. Never for an
+                      // empty frame, never on the first try, never free — a
+                      // free one would let anyone who knows the name submit a
+                      // photo of any leaf in the garden.
+                      if (!_lastRejectWasNotAPlant && _photoRejectCount >= 2)
+                        Padding(
+                          padding: const EdgeInsets.only(top: 6),
+                          child: GestureDetector(
+                            onTap: () async {
+                              if (await _confirmHintCost(
+                                  'Submitting a photo we could not confirm',
+                                  kUncheckedPhotoCost)) {
+                                if (mounted) {
+                                  setState(() {
+                                    _photoOverridden = true;
+                                    _photoRejection = null;
+                                  });
+                                }
+                              }
+                            },
+                            child: const Text(
+                              'Sure this is the right plant? '
+                              'Submit unchecked (−$kUncheckedPhotoCost pts) →',
+                              style: TextStyle(
+                                color: Color(0xFFFFD54F),
+                                fontSize: 12.5,
+                                fontWeight: FontWeight.w700,
+                                decoration: TextDecoration.underline,
+                                decorationColor: Color(0xFFFFD54F),
+                              ),
+                            ),
+                          ),
+                        )
+                      else if (!_lastRejectWasNotAPlant)
+                        const Padding(
+                          padding: EdgeInsets.only(top: 6),
+                          child: Text(
+                            'Step closer and try once more. If it still will '
+                            'not confirm, you can submit it unchecked for a '
+                            'points cost.',
+                            style: TextStyle(
+                                color: Color(0xFF9CCC9F),
+                                fontSize: 11.5,
+                                height: 1.35),
                           ),
                         ),
-                      ),
                     ],
                   ),
                 ),
@@ -1035,8 +1090,8 @@ class _PlantHuntScreenState extends State<PlantHuntScreen> {
                   size: 15, color: Color(0xFFFFD54F)),
               SizedBox(width: 6),
               Expanded(
-                child: Text('Using your photo without the check. '
-                    'The name still has to match the tag.',
+                child: Text('Submitting unchecked — '
+                    '−$kUncheckedPhotoCost pts on this plant.',
                     style:
                         TextStyle(color: Color(0xFFFFD54F), fontSize: 12)),
               ),
