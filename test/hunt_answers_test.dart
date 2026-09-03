@@ -322,12 +322,43 @@ void _pointsTests() {
       expect(kPhotoHintCost, greaterThan(kLocationHintCost));
     });
 
-    test('an unconfirmed photo costs more than any hint', () {
-      // It has to. The photo check is what ties a submission to standing in
-      // front of the plant; if skipping it were cheap, anyone who knew the
-      // name could photograph any leaf in the garden.
-      expect(kUncheckedPhotoCost, greaterThan(kPhotoHintCost));
-      expect(kUncheckedPhotoCost, greaterThan(kLocationHintCost));
+    test('an unconfirmed photo is the cheapest way through, by choice', () {
+      // This reverses an earlier deliberate rule. The garden decided a refusal
+      // is usually the identifier's failing rather than the visitor's, so the
+      // hatch is priced as a nuisance rather than a penalty. The check still
+      // has teeth from the gate around it: never for an empty frame, never
+      // before a second rejected photo.
+      expect(kUncheckedPhotoCost, lessThan(kLocationHintCost));
+      expect(kUncheckedPhotoCost, lessThan(kPhotoHintCost));
+    });
+
+    test('a waived unconfirmed-photo cost deducts nothing', () {
+      // Kultapallo: a garden cultivar among lookalike yellow composites that
+      // the identifier regularly misreads. Charging for the app's blind spot
+      // would be charging the visitor for our problem.
+      expect(
+        questPoints(
+            answerScore: 100,
+            usedLocationHint: false,
+            usedPhotoHint: false,
+            answerRevealed: false,
+            uncheckedPhoto: true,
+            uncheckedPhotoCost: 0),
+        100,
+      );
+    });
+
+    test('the waiver does not leak into the hint costs', () {
+      expect(
+        questPoints(
+            answerScore: 100,
+            usedLocationHint: true,
+            usedPhotoHint: true,
+            answerRevealed: false,
+            uncheckedPhoto: true,
+            uncheckedPhotoCost: 0),
+        100 - kLocationHintCost - kPhotoHintCost,
+      );
     });
 
     test('skipping the photo check costs what the rules say', () {

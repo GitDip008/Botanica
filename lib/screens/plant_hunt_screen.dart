@@ -42,24 +42,21 @@ import '../widgets/zoomable_camera_preview.dart';
 const kMaxQuestPoints = 100;
 
 /// Cost of the first hint — where in the garden to look.
-const kLocationHintCost = 10;
+const kLocationHintCost = 15;
 
 /// Cost of the second hint — a photograph of the plant itself. Dearer because
 /// seeing the plant is most of the puzzle.
-const kPhotoHintCost = 15;
+const kPhotoHintCost = 20;
 
 /// Cost of submitting a photo the identifier would not confirm.
 ///
-/// Dearer than any hint, and deliberately so. The photo check is what ties a
-/// submission to actually standing in front of the plant; without a price,
-/// anyone who knows the name could photograph any leaf in the garden and the
-/// check would mean nothing. It stays available because identifiers do misread
-/// correct photos, and being locked out by a machine's mistake is worse than
-/// someone paying to get past it.
-///
-/// Kept low enough that a hunt full of hints still ends on a respectable
-/// score — the costs are there to order the leaderboard, not to punish.
-const kUncheckedPhotoCost = 25;
+/// Priced low on purpose: a refusal is usually the identifier's failing rather
+/// than the visitor's, and it is still gated behind a second rejected photo
+/// and never offered for an empty frame. The trade is deliberate — it no
+/// longer deters someone who knows the name from photographing any leaf in the
+/// garden, but it stops an honest visitor being punished for a machine's
+/// mistake, which is the likelier problem at a friendly event.
+const kUncheckedPhotoCost = 10;
 
 /// Points banked for a quest, after hints.
 ///
@@ -74,6 +71,7 @@ int questPoints({
   required bool usedPhotoHint,
   required bool answerRevealed,
   bool uncheckedPhoto = false,
+  int uncheckedPhotoCost = kUncheckedPhotoCost,
 }) {
   // Being told the answer outright banks nothing; the points are for working
   // it out.
@@ -81,7 +79,7 @@ int questPoints({
   var p = answerScore;
   if (usedLocationHint) p -= kLocationHintCost;
   if (usedPhotoHint) p -= kPhotoHintCost;
-  if (uncheckedPhoto) p -= kUncheckedPhotoCost;
+  if (uncheckedPhoto) p -= uncheckedPhotoCost;
   // Every cost together can exceed the best answer, so this clamp is load
   // bearing: firestore.rules rejects a negative total outright.
   return p < 0 ? 0 : p;
@@ -98,6 +96,7 @@ class _Challenge {
     required this.targetScientific,
     required this.families,
     required this.accepted,
+    this.freeUncheckedPhoto = false,
   });
 
   final String questNumber;
@@ -117,6 +116,14 @@ class _Challenge {
 
   /// Families the photo check will accept — see [kHuntFamilies].
   final List<String> families;
+
+  /// Waives the unconfirmed-photo cost for this plant.
+  ///
+  /// Set where the identifier is known to struggle: kultapallo is a garden
+  /// cultivar in a bed of lookalike yellow composites, and it is regularly
+  /// read as a different plant or as nothing at all. Charging for the app's
+  /// own blind spot would be charging the visitor for our problem.
+  final bool freeUncheckedPhoto;
 
   /// Every name this plant answers to: what is on the tag, and what a visitor
   /// would call it at home. Matching is fuzzy, so only distinct forms are
@@ -172,6 +179,7 @@ final _kChallenges = <_Challenge>[
     targetScientific: 'Rudbeckia laciniata',
     families: kHuntFamilies['kultapallo']!,
     accepted: kHuntAccepted['kultapallo']!,
+    freeUncheckedPhoto: true,
   ),
   _Challenge(
     questNumber: '4',
@@ -271,6 +279,12 @@ class _PlantHuntScreenState extends State<PlantHuntScreen> {
 
   String? _feedback;
   bool _feedbackGood = false;
+
+  /// What an unconfirmed photo costs on the quest in play — zero where the
+  /// identifier is known to struggle.
+  int get _uncheckedCost => _kChallenges[_current].freeUncheckedPhoto
+      ? 0
+      : kUncheckedPhotoCost;
 
   int get _total => _points.fold(0, (a, b) => a + b);
   int get _solved => _states.where((s) => s == _StopState.correct).length;
@@ -461,11 +475,12 @@ class _PlantHuntScreenState extends State<PlantHuntScreen> {
           usedPhotoHint: _photoHint[_current],
           answerRevealed: _answerRevealed[_current],
           uncheckedPhoto: _photoOverridden,
+          uncheckedPhotoCost: _uncheckedCost,
         );
         _feedbackGood = true;
         final spent = (_locationHint[_current] ? kLocationHintCost : 0) +
             (_photoHint[_current] ? kPhotoHintCost : 0) +
-            (_photoOverridden ? kUncheckedPhotoCost : 0);
+            (_photoOverridden ? _uncheckedCost : 0);
         _feedback = _answerRevealed[_current]
             ? 'Found it. No points for this one — you had the answer.'
             : spent > 0
@@ -1041,21 +1056,26 @@ class _PlantHuntScreenState extends State<PlantHuntScreen> {
                           padding: const EdgeInsets.only(top: 6),
                           child: GestureDetector(
                             onTap: () async {
-                              if (await _confirmHintCost(
-                                  'Submitting a photo we could not confirm',
-                                  kUncheckedPhotoCost)) {
-                                if (mounted) {
-                                  setState(() {
-                                    _photoOverridden = true;
-                                    _photoRejection = null;
-                                  });
-                                }
+                              // No dialog when it is free — there is nothing
+                              // to weigh up, and this plant needs the hatch.
+                              final ok = _uncheckedCost == 0 ||
+                                  await _confirmHintCost(
+                                      'Submitting a photo we could not confirm',
+                                      _uncheckedCost);
+                              if (ok && mounted) {
+                                setState(() {
+                                  _photoOverridden = true;
+                                  _photoRejection = null;
+                                });
                               }
                             },
-                            child: const Text(
-                              'Sure this is the right plant? '
-                              'Submit unchecked (−$kUncheckedPhotoCost pts) →',
-                              style: TextStyle(
+                            child: Text(
+                              _uncheckedCost == 0
+                                  ? 'Sure this is the right plant? '
+                                      'Submit it anyway (no cost) →'
+                                  : 'Sure this is the right plant? '
+                                      'Submit unchecked (−$_uncheckedCost pts) →',
+                              style: const TextStyle(
                                 color: Color(0xFFFFD54F),
                                 fontSize: 12.5,
                                 fontWeight: FontWeight.w700,
@@ -1070,8 +1090,8 @@ class _PlantHuntScreenState extends State<PlantHuntScreen> {
                           padding: EdgeInsets.only(top: 6),
                           child: Text(
                             'Step closer and try once more. If it still will '
-                            'not confirm, you can submit it unchecked for a '
-                            'points cost.',
+                            'not confirm, you will be able to submit it '
+                            'anyway.',
                             style: TextStyle(
                                 color: Color(0xFF9CCC9F),
                                 fontSize: 11.5,
@@ -1086,17 +1106,20 @@ class _PlantHuntScreenState extends State<PlantHuntScreen> {
           ),
 
         if (_photoOverridden && !_identifying)
-          const Padding(
-            padding: EdgeInsets.only(top: 8),
+          Padding(
+            padding: const EdgeInsets.only(top: 8),
             child: Row(children: [
-              Icon(Icons.info_outline_rounded,
+              const Icon(Icons.info_outline_rounded,
                   size: 15, color: Color(0xFFFFD54F)),
-              SizedBox(width: 6),
+              const SizedBox(width: 6),
               Expanded(
-                child: Text('Submitting unchecked — '
-                    '−$kUncheckedPhotoCost pts on this plant.',
-                    style:
-                        TextStyle(color: Color(0xFFFFD54F), fontSize: 12)),
+                child: Text(
+                    _uncheckedCost == 0
+                        ? 'Submitting unchecked — no cost on this plant.'
+                        : 'Submitting unchecked — '
+                            '−$_uncheckedCost pts on this plant.',
+                    style: const TextStyle(
+                        color: Color(0xFFFFD54F), fontSize: 12)),
               ),
             ]),
           ),
