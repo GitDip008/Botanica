@@ -342,12 +342,29 @@ void _pointsTests() {
       );
     });
 
-    test('every cost together cannot drive a score below zero', () {
-      // Unlike the hints alone, these do add up past the best answer, so the
-      // clamp is doing real work — firestore.rules rejects a negative total.
+    test('a found plant always banks something, whatever it cost', () {
+      // Worst case anyone can reach: the lowest answer that still counts,
+      // with both hints and an unconfirmed photo. The costs are tuned to stay
+      // under it, so finding a plant is never worth nothing.
+      expect(kLocationHintCost + kPhotoHintCost + kUncheckedPhotoCost,
+          lessThan(68));
       expect(
         questPoints(
             answerScore: 68,
+            usedLocationHint: true,
+            usedPhotoHint: true,
+            answerRevealed: false,
+            uncheckedPhoto: true),
+        greaterThan(0),
+      );
+    });
+
+    test('the clamp still guards against a negative total', () {
+      // firestore.rules rejects one, so this must hold even if the costs are
+      // retuned past the answer score later.
+      expect(
+        questPoints(
+            answerScore: 0,
             usedLocationHint: true,
             usedPhotoHint: true,
             answerRevealed: false,
@@ -366,7 +383,7 @@ void _pointsTests() {
           usedLocationHint: true,
           usedPhotoHint: true,
           answerRevealed: false);
-      expect(worst, 23);
+      expect(worst, 68 - kLocationHintCost - kPhotoHintCost);
       expect(worst, greaterThan(0));
     });
 

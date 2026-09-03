@@ -42,11 +42,11 @@ import '../widgets/zoomable_camera_preview.dart';
 const kMaxQuestPoints = 100;
 
 /// Cost of the first hint — where in the garden to look.
-const kLocationHintCost = 15;
+const kLocationHintCost = 10;
 
 /// Cost of the second hint — a photograph of the plant itself. Dearer because
 /// seeing the plant is most of the puzzle.
-const kPhotoHintCost = 30;
+const kPhotoHintCost = 15;
 
 /// Cost of submitting a photo the identifier would not confirm.
 ///
@@ -55,8 +55,11 @@ const kPhotoHintCost = 30;
 /// anyone who knows the name could photograph any leaf in the garden and the
 /// check would mean nothing. It stays available because identifiers do misread
 /// correct photos, and being locked out by a machine's mistake is worse than
-/// someone paying 40 points to get past it.
-const kUncheckedPhotoCost = 40;
+/// someone paying to get past it.
+///
+/// Kept low enough that a hunt full of hints still ends on a respectable
+/// score — the costs are there to order the leaderboard, not to punish.
+const kUncheckedPhotoCost = 25;
 
 /// Points banked for a quest, after hints.
 ///
