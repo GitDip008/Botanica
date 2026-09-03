@@ -170,6 +170,49 @@ service cloud.firestore {
       allow delete: if false;
     }
 
+    // ── Plant Hunt submissions — the permanent record of the event. ─────
+    //
+    // Append-only by design, like the garden's own records: a visitor may file
+    // their own attempt and may read their own history, but cannot edit or
+    // withdraw one afterwards. Only an admin sees everybody's.
+    match /hunt_submissions/{doc} {
+      allow read: if isAdmin()
+        || (isSignedIn() && resource.data.uid == request.auth.uid);
+
+      allow create: if isSignedIn()
+        && request.resource.data.uid == request.auth.uid;
+
+      // What was submitted, was submitted.
+      allow update, delete: if false;
+    }
+
+    // ── Review requests — a visitor asking a human to judge a photo. ─────
+    //
+    // The visitor opens it and watches their own; only an admin may decide it.
+    // Splitting create from update is the whole security model here: without
+    // it, anyone could approve their own request.
+    match /hunt_reviews/{doc} {
+      allow read: if isAdmin()
+        || (isSignedIn() && resource.data.uid == request.auth.uid);
+
+      allow create: if isSignedIn()
+        && request.resource.data.uid == request.auth.uid
+        && request.resource.data.status == 'pending';
+
+      allow update: if isAdmin();
+      allow delete: if false;
+    }
+
+    // ── Participant index — one row per person, for the admin's list. ────
+    //
+    // Written by its owner as a running tally so the admin panel is one cheap
+    // query instead of a scan of every submission in the event.
+    match /participants/{uid} {
+      allow read: if isAdmin() || isOwner(uid);
+      allow create, update: if isOwner(uid);
+      allow delete: if isAdmin();
+    }
+
     // ── Visitor photo gallery ───────────────────────────────────────────
     //
     // Only PUBLIC posts exist here at all. A private post never leaves the

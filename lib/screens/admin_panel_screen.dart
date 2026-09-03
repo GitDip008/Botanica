@@ -11,7 +11,9 @@ import '../widgets/feature_usage_chart.dart';
 import '../services/gallery_service.dart';
 import '../models/contest.dart';
 import '../services/contest_service.dart';
+import '../services/hunt_submission_service.dart';
 import 'admin/contest_submissions_screen.dart';
+import 'admin/hunt_reviews_screen.dart';
 import 'admin/reported_posts_screen.dart';
 import 'admin_user_list_screen.dart';
 import 'edit_holidays_screen.dart';
@@ -79,6 +81,7 @@ class AdminPanelScreen extends StatelessWidget {
                 );
               },
             ),
+            const _ReviewAlert(),
             _sectionLabel(s.statsOverview),
             const SizedBox(height: 10),
             const _StatsGrid(),
@@ -101,6 +104,8 @@ class AdminPanelScreen extends StatelessWidget {
             const SizedBox(height: 24),
             // Contest submissions — renders nothing when no contest is set up.
             const _ContestSubmissionsTile(),
+            const _ParticipantsTile(),
+            const SizedBox(height: 24),
             // Edit holiday hours tile
             Material(
               color: Colors.transparent,
@@ -566,6 +571,132 @@ class _ReportTile extends StatelessWidget {
             ],
           ),
         ],
+      ),
+    );
+  }
+}
+
+
+/// Red, loud, and at the top of the panel — a visitor is standing in a
+/// greenhouse waiting on this, unlike everything else here. Renders nothing
+/// when the queue is empty rather than sitting there as permanent noise.
+class _ReviewAlert extends StatelessWidget {
+  const _ReviewAlert();
+
+  @override
+  Widget build(BuildContext context) {
+    return StreamBuilder<int>(
+      stream: HuntSubmissionService.instance.watchPendingReviewCount(),
+      builder: (context, snap) {
+        final n = snap.data ?? 0;
+        if (n == 0) return const SizedBox.shrink();
+        return Padding(
+          padding: const EdgeInsets.only(bottom: 20),
+          child: Material(
+            color: Colors.transparent,
+            child: InkWell(
+              borderRadius: BorderRadius.circular(14),
+              onTap: () => Navigator.push(
+                context,
+                MaterialPageRoute(builder: (_) => const HuntReviewsScreen()),
+              ),
+              child: Container(
+                padding: const EdgeInsets.all(16),
+                decoration: BoxDecoration(
+                  color: const Color(0xFF3B1414),
+                  borderRadius: BorderRadius.circular(14),
+                  border: Border.all(color: const Color(0xFFEF5350), width: 1.5),
+                ),
+                child: Row(
+                  children: [
+                    Container(
+                      width: 40,
+                      height: 40,
+                      decoration: BoxDecoration(
+                        color: const Color(0xFFEF5350),
+                        borderRadius: BorderRadius.circular(11),
+                      ),
+                      child: const Icon(Icons.pending_actions_rounded,
+                          color: Colors.white, size: 22),
+                    ),
+                    const SizedBox(width: 13),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            n == 1
+                                ? '1 photo waiting for review'
+                                : '$n photos waiting for review',
+                            style: const TextStyle(
+                                color: Color(0xFFFFCDD2),
+                                fontSize: 15,
+                                fontWeight: FontWeight.w700),
+                          ),
+                          const Text(
+                            'A visitor is waiting on your answer. Tap to check.',
+                            style: TextStyle(
+                                color: Color(0xFFEF9A9A), fontSize: 12.5),
+                          ),
+                        ],
+                      ),
+                    ),
+                    const Icon(Icons.chevron_right, color: Color(0xFFEF5350)),
+                  ],
+                ),
+              ),
+            ),
+          ),
+        );
+      },
+    );
+  }
+}
+
+/// Everyone who has submitted anything, and what they sent.
+class _ParticipantsTile extends StatelessWidget {
+  const _ParticipantsTile();
+
+  @override
+  Widget build(BuildContext context) {
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        borderRadius: BorderRadius.circular(14),
+        onTap: () => Navigator.push(
+          context,
+          MaterialPageRoute(builder: (_) => const ParticipantsScreen()),
+        ),
+        child: Container(
+          padding: const EdgeInsets.all(14),
+          decoration: BoxDecoration(
+            color: const Color(0xFF111F16),
+            borderRadius: BorderRadius.circular(14),
+            border: Border.all(color: const Color(0xFF2A4A2F)),
+          ),
+          child: Row(
+            children: [
+              const Icon(Icons.groups_rounded, color: Color(0xFF81C784)),
+              const SizedBox(width: 12),
+              const Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text('Participants',
+                        style: TextStyle(
+                            color: Color(0xFFE8F5E9),
+                            fontSize: 14.5,
+                            fontWeight: FontWeight.w600)),
+                    Text('Every Plant Hunt submission, by person',
+                        style: TextStyle(
+                            color: Color(0xFF6E8A72), fontSize: 12.5)),
+                  ],
+                ),
+              ),
+              const Icon(Icons.chevron_right, color: Color(0xFF4A7A50)),
+            ],
+          ),
+        ),
       ),
     );
   }

@@ -39,7 +39,7 @@ class OngoingContestCard extends StatelessWidget {
               ),
               const SizedBox(width: 7),
               const Text(
-                'ONGOING CONTESTS',
+                'ONGOING CHALLENGES',
                 style: TextStyle(
                   color: Color(0xFFFF7043),
                   fontSize: 11,

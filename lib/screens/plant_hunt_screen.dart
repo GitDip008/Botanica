@@ -30,6 +30,7 @@ import '../services/auth_service.dart';
 import '../services/badge_service.dart';
 import '../services/camera_utils.dart';
 import '../services/hunt_score_service.dart';
+import '../services/hunt_submission_service.dart';
 import '../services/language_service.dart';
 import '../services/plant_identification_service.dart';
 import '../services/usage_tracking_service.dart';
@@ -280,6 +281,20 @@ class _PlantHuntScreenState extends State<PlantHuntScreen> {
   String? _feedback;
   bool _feedbackGood = false;
 
+  // ── Recording + admin review ───────────────────────────────────────────────
+  /// Storage path of the current photo, uploaded once and reused while the
+  /// bytes are unchanged — re-uploading on every retyped answer is the one
+  /// thing that would take this off the free tier.
+  String? _photoPath;
+
+  /// What the identifier made of the current photo, kept for the record.
+  String _photoVerdict = '';
+  String? _detectedName;
+
+  /// The open review request, if the visitor has asked a human to look.
+  String? _reviewId;
+  ReviewRequest? _review;
+
   /// What an unconfirmed photo costs on the quest in play — zero where the
   /// identifier is known to struggle.
   int get _uncheckedCost => _kChallenges[_current].freeUncheckedPhoto
@@ -334,6 +349,9 @@ class _PlantHuntScreenState extends State<PlantHuntScreen> {
         _photoAccepted = false;
         _photoRejection = null;
         _photoOverridden = false;
+        _photoPath = null;
+        _reviewId = null;
+        _review = null;
       });
 
       final info = await PlantIdentificationService.instance.identify(bytes);
@@ -357,6 +375,8 @@ class _PlantHuntScreenState extends State<PlantHuntScreen> {
             : null;
         if (verdict != PhotoVerdict.accepted) _photoRejectCount++;
         _lastRejectWasNotAPlant = verdict == PhotoVerdict.notAPlant;
+        _photoVerdict = verdict.name;
+        _detectedName = info.isPlant ? info.scientificName : null;
         switch (verdict) {
           case PhotoVerdict.accepted:
             _photoAccepted = true;
@@ -456,6 +476,70 @@ class _PlantHuntScreenState extends State<PlantHuntScreen> {
     });
   }
 
+  /// Uploads the current photo once and remembers where it went.
+  Future<String?> _ensurePhotoUploaded() async {
+    if (_photoPath != null || _photo == null) return _photoPath;
+    final uid = AuthService.instance.currentUser?.id;
+    if (uid == null) return null;
+    final path = await HuntSubmissionService.instance
+        .uploadPhoto(_photo!, uid, _current);
+    if (mounted) setState(() => _photoPath = path);
+    return path;
+  }
+
+  /// Asks a person to look at a photo the identifier says holds no plant.
+  ///
+  /// Offered only for that verdict, and only after two tries: "no plant here"
+  /// is the failure a visitor cannot argue with by retaking, and the one where
+  /// the identifier is most often simply wrong about a real specimen.
+  Future<void> _requestAdminReview() async {
+    final user = AuthService.instance.currentUser;
+    if (user == null) return;
+    setState(() => _feedback = null);
+
+    final path = await _ensurePhotoUploaded();
+    final id = await HuntSubmissionService.instance.requestReview(
+      uid: user.id,
+      displayName: user.displayName,
+      questIndex: _current,
+      plantName: _kChallenges[_current].targetName,
+      typedAnswer: _textCtrl.text.trim(),
+      photoPath: path,
+    );
+    if (!mounted) return;
+    if (id == null) {
+      setState(() {
+        _feedback = 'Could not reach the garden team. Try again in a moment.';
+        _feedbackGood = false;
+      });
+      return;
+    }
+    setState(() => _reviewId = id);
+
+    // Watch for the decision so the screen reacts the moment it lands.
+    HuntSubmissionService.instance.watchReview(id).listen((r) {
+      if (!mounted || r == null) return;
+      setState(() {
+        _review = r;
+        if (r.isApproved) {
+          _photoAccepted = true;
+          _photoRejection = null;
+          _feedbackGood = true;
+          _feedback = 'A garden staff member checked your photo and approved '
+              'it. Type the name and submit.';
+        } else if (r.isDeclined) {
+          _photo = null;
+          _photoPath = null;
+          _photoAccepted = false;
+          _reviewId = null;
+          _feedbackGood = false;
+          _feedback = 'The garden team could not see the plant in that photo. '
+              'Take another one and try again.';
+        }
+      });
+    });
+  }
+
   // ── Judging ────────────────────────────────────────────────────────────────
 
   void _submit() {
@@ -465,6 +549,7 @@ class _PlantHuntScreenState extends State<PlantHuntScreen> {
 
     final challenge = _kChallenges[_current];
     final score = scoreAnswer(typed, challenge.accepted);
+    _record(challenge, typed, score);
 
     setState(() {
       if (score.isCorrect) {
@@ -572,6 +657,42 @@ class _PlantHuntScreenState extends State<PlantHuntScreen> {
     _nextChallenge();
   }
 
+  /// Keeps the attempt — photo, typed name, verdict, points — whether it was
+  /// right or wrong. A wrong answer is the interesting one when the garden
+  /// later asks what people thought its plants were called, and it cannot be
+  /// recovered afterwards if it was never written down.
+  Future<void> _record(
+      _Challenge challenge, String typed, AnswerScore score) async {
+    final user = AuthService.instance.currentUser;
+    if (user == null) return;
+    final path = await _ensurePhotoUploaded();
+    await HuntSubmissionService.instance.recordAttempt(
+      uid: user.id,
+      displayName: user.displayName,
+      questIndex: _current,
+      plantName: challenge.targetName,
+      typedAnswer: typed,
+      correct: score.isCorrect,
+      points: score.isCorrect
+          ? questPoints(
+              answerScore: score.points,
+              usedLocationHint: _locationHint[_current],
+              usedPhotoHint: _photoHint[_current],
+              answerRevealed: _answerRevealed[_current],
+              uncheckedPhoto: _photoOverridden,
+              uncheckedPhotoCost: _uncheckedCost,
+            )
+          : 0,
+      photoVerdict: _review?.isApproved == true ? 'adminApproved' : _photoVerdict,
+      detectedName: _detectedName,
+      photoPath: path,
+      usedLocationHint: _locationHint[_current],
+      usedPhotoHint: _photoHint[_current],
+      uncheckedPhoto: _photoOverridden,
+      adminApproved: _review?.isApproved == true,
+    );
+  }
+
   void _resetQuestState() {
     _textCtrl.clear();
     _photo = null;
@@ -581,6 +702,11 @@ class _PlantHuntScreenState extends State<PlantHuntScreen> {
     _photoOverridden = false;
     _photoRejectCount = 0;
     _lastRejectWasNotAPlant = false;
+    _photoPath = null;
+    _photoVerdict = '';
+    _detectedName = null;
+    _reviewId = null;
+    _review = null;
     _wikiUrl = null;
     _feedback = null;
   }
@@ -1047,6 +1173,49 @@ class _PlantHuntScreenState extends State<PlantHuntScreen> {
                               color: Color(0xFFFFCDD2),
                               fontSize: 12.5,
                               height: 1.4)),
+                      // "No plant here" is the verdict a visitor cannot argue
+                      // with by retaking, and the one the identifier most often
+                      // gets wrong about a real specimen. After two tries, a
+                      // person looks at it instead.
+                      if (_lastRejectWasNotAPlant && _photoRejectCount >= 2)
+                        Padding(
+                          padding: const EdgeInsets.only(top: 8),
+                          child: _reviewId != null
+                              ? const Row(children: [
+                                  SizedBox(
+                                      width: 13,
+                                      height: 13,
+                                      child: CircularProgressIndicator(
+                                          strokeWidth: 2,
+                                          color: Color(0xFFFFD54F))),
+                                  SizedBox(width: 8),
+                                  Expanded(
+                                    child: Text(
+                                        'Sent to the garden team. Keep this '
+                                        'screen open — you will hear back in a '
+                                        'moment.',
+                                        style: TextStyle(
+                                            color: Color(0xFFFFD54F),
+                                            fontSize: 12,
+                                            height: 1.35)),
+                                  ),
+                                ])
+                              : GestureDetector(
+                                  onTap: _requestAdminReview,
+                                  child: const Text(
+                                    'Sure there is a plant here? '
+                                    'Ask a garden staff member to check →',
+                                    style: TextStyle(
+                                      color: Color(0xFFFFD54F),
+                                      fontSize: 12.5,
+                                      fontWeight: FontWeight.w700,
+                                      decoration: TextDecoration.underline,
+                                      decorationColor: Color(0xFFFFD54F),
+                                    ),
+                                  ),
+                                ),
+                        ),
+
                       // The escape hatch, deliberately narrow. Never for an
                       // empty frame, never on the first try, never free — a
                       // free one would let anyone who knows the name submit a
