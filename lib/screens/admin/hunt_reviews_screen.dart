@@ -9,7 +9,9 @@
 
 import 'package:flutter/material.dart';
 
+import '../../models/contest.dart';
 import '../../services/auth_service.dart';
+import '../../services/contest_service.dart';
 import '../../services/hunt_submission_service.dart';
 
 const _bg = Color(0xFF0A1A0F);
@@ -279,8 +281,13 @@ class ParticipantsScreen extends StatelessWidget {
                                       fontSize: 14.5,
                                       fontWeight: FontWeight.w600)),
                               Text(
-                                '${p.huntAttempts} submissions · '
-                                '${p.huntSolved} correct',
+                                [
+                                  if (p.huntAttempts > 0)
+                                    '${p.huntAttempts} hunt · '
+                                        '${p.huntSolved} correct',
+                                  if (p.contestEntries > 0)
+                                    '${p.contestEntries} contest picks',
+                                ].join('   ·   '),
                                 style: const TextStyle(
                                     color: _textDim, fontSize: 12),
                               ),
@@ -317,26 +324,50 @@ class ParticipantDetailScreen extends StatelessWidget {
             style: const TextStyle(color: _textPri)),
         iconTheme: const IconThemeData(color: Color(0xFF66BB6A)),
       ),
-      body: StreamBuilder<List<HuntSubmission>>(
-        stream: HuntSubmissionService.instance
-            .watchUserSubmissions(participant.uid),
-        builder: (context, snap) {
-          if (!snap.hasData) {
-            return const Center(child: CircularProgressIndicator());
-          }
-          final rows = snap.data!;
-          if (rows.isEmpty) {
-            return const Center(
-              child: Text('No Plant Hunt submissions.',
-                  style: TextStyle(color: Color(0xFF9CCC9F))),
-            );
-          }
-          return ListView.builder(
-            padding: const EdgeInsets.fromLTRB(16, 16, 16, 32),
-            itemCount: rows.length,
-            itemBuilder: (_, i) => _SubmissionCard(s: rows[i]),
-          );
-        },
+      // Both challenges on one page: the admin is looking at a person, not at
+      // a feature, and asking "what did they do today" should not mean opening
+      // two different screens.
+      body: ListView(
+        padding: const EdgeInsets.fromLTRB(16, 16, 16, 32),
+        children: [
+          const _SectionLabel('PLANT HUNT'),
+          StreamBuilder<List<HuntSubmission>>(
+            stream: HuntSubmissionService.instance
+                .watchUserSubmissions(participant.uid),
+            builder: (context, snap) {
+              if (!snap.hasData) {
+                return const Padding(
+                  padding: EdgeInsets.symmetric(vertical: 20),
+                  child: Center(child: CircularProgressIndicator()),
+                );
+              }
+              final rows = snap.data!;
+              if (rows.isEmpty) return const _Empty('No Plant Hunt attempts.');
+              return Column(
+                children: [for (final r in rows) _SubmissionCard(s: r)],
+              );
+            },
+          ),
+          const SizedBox(height: 22),
+          const _SectionLabel('CONTEST PICKS'),
+          StreamBuilder<List<ContestEntry>>(
+            stream:
+                ContestService.instance.watchEntriesByUser(participant.uid),
+            builder: (context, snap) {
+              if (!snap.hasData) {
+                return const Padding(
+                  padding: EdgeInsets.symmetric(vertical: 20),
+                  child: Center(child: CircularProgressIndicator()),
+                );
+              }
+              final rows = snap.data!;
+              if (rows.isEmpty) return const _Empty('No contest picks.');
+              return Column(
+                children: [for (final e in rows) _ContestEntryCard(entry: e)],
+              );
+            },
+          ),
+        ],
       ),
     );
   }
@@ -446,6 +477,163 @@ class _SubmissionCard extends StatelessWidget {
                 Text(_when,
                     style: const TextStyle(
                         color: Color(0xFF4A7A50), fontSize: 11)),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _SectionLabel extends StatelessWidget {
+  const _SectionLabel(this.text);
+  final String text;
+
+  @override
+  Widget build(BuildContext context) => Padding(
+        padding: const EdgeInsets.only(bottom: 10),
+        child: Text(text,
+            style: const TextStyle(
+                color: Color(0xFF81C784),
+                fontSize: 11,
+                fontWeight: FontWeight.w700,
+                letterSpacing: 1.2)),
+      );
+}
+
+class _Empty extends StatelessWidget {
+  const _Empty(this.text);
+  final String text;
+
+  @override
+  Widget build(BuildContext context) => Padding(
+        padding: const EdgeInsets.only(bottom: 8),
+        child: Text(text,
+            style: const TextStyle(color: _textDim, fontSize: 12.5)),
+      );
+}
+
+/// One contest pick: the photo they took, where they were standing, and how
+/// they placed it on the scales. Admins can read contest photos — see
+/// storage.rules.
+class _ContestEntryCard extends StatelessWidget {
+  const _ContestEntryCard({required this.entry});
+  final ContestEntry entry;
+
+  String get _when {
+    final d = entry.createdAt;
+    String two(int n) => n.toString().padLeft(2, '0');
+    return '${two(d.day)}.${two(d.month)}  ${two(d.hour)}:${two(d.minute)}';
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      margin: const EdgeInsets.only(bottom: 10),
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: _surface,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: _border),
+      ),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          FutureBuilder<String?>(
+            future: ContestService.instance.photoUrl(entry.photoPath),
+            builder: (_, snap) => GestureDetector(
+              onTap: snap.data == null
+                  ? null
+                  : () => showDialog<void>(
+                        context: context,
+                        builder: (_) => Dialog(
+                          backgroundColor: Colors.black,
+                          insetPadding: const EdgeInsets.all(12),
+                          child: InteractiveViewer(
+                              child: Image.network(snap.data!)),
+                        ),
+                      ),
+              child: Container(
+                width: 66,
+                height: 66,
+                margin: const EdgeInsets.only(right: 12),
+                decoration: BoxDecoration(
+                  color: const Color(0xFF13301A),
+                  borderRadius: BorderRadius.circular(8),
+                  image: snap.data == null
+                      ? null
+                      : DecorationImage(
+                          image: NetworkImage(snap.data!), fit: BoxFit.cover),
+                ),
+                child: snap.data == null
+                    ? const Icon(Icons.local_florist_rounded,
+                        size: 16, color: Color(0xFF4A7A50))
+                    : null,
+              ),
+            ),
+          ),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  children: [
+                    Expanded(
+                      child: Text(entry.plantName,
+                          style: const TextStyle(
+                              color: _textPri,
+                              fontSize: 13.5,
+                              fontWeight: FontWeight.w600)),
+                    ),
+                    // Flags a plant typed by hand — one the garden's index is
+                    // missing, which is the point of recording it.
+                    if (!entry.fromIndex)
+                      const Icon(Icons.edit_note_rounded,
+                          size: 15, color: Color(0xFFFFD54F)),
+                  ],
+                ),
+                Text(
+                  [
+                    if (entry.plantSection.isNotEmpty) entry.plantSection,
+                    if (entry.teamName != null) 'Team ${entry.teamName}',
+                  ].join(' · '),
+                  style: const TextStyle(color: _textDim, fontSize: 12),
+                ),
+                const SizedBox(height: 3),
+                Text(
+                  entry.ratings.entries
+                      .map((r) =>
+                          '${r.key} ${r.value > 0 ? "+" : ""}${r.value}')
+                      .join('   '),
+                  style:
+                      const TextStyle(color: Color(0xFFCFE8D2), fontSize: 11),
+                ),
+                Row(children: [
+                  Icon(
+                    entry.hasLocation
+                        ? Icons.place_rounded
+                        : Icons.location_off_rounded,
+                    size: 12,
+                    color: entry.hasLocation
+                        ? const Color(0xFF81C784)
+                        : const Color(0xFF4A7A50),
+                  ),
+                  const SizedBox(width: 4),
+                  Expanded(
+                    child: Text(
+                      entry.hasLocation
+                          ? '${entry.lat!.toStringAsFixed(5)}, '
+                              '${entry.lng!.toStringAsFixed(5)}'
+                          : 'no location',
+                      style: const TextStyle(
+                          color: Color(0xFF4A7A50), fontSize: 11),
+                    ),
+                  ),
+                  Text(_when,
+                      style: const TextStyle(
+                          color: Color(0xFF4A7A50), fontSize: 11)),
+                ]),
               ],
             ),
           ),

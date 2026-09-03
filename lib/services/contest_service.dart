@@ -62,6 +62,18 @@ class ContestService {
       .snapshots()
       .map((s) => s.docs.map(ContestEntry.fromDoc).toList());
 
+  /// Every pick one person has made, across any contest. Sorted on the device
+  /// so no composite index is needed for uid + createdAt.
+  Stream<List<ContestEntry>> watchEntriesByUser(String uid) => _db
+      .collection(_entries)
+      .where('uid', isEqualTo: uid)
+      .snapshots()
+      .map((s) {
+        final list = s.docs.map(ContestEntry.fromDoc).toList()
+          ..sort((a, b) => b.createdAt.compareTo(a.createdAt));
+        return list;
+      });
+
   /// True when this person has already voted on this plant.
   Future<bool> hasEntered(String contestId, String uid, String plantKey) async {
     final d = await _db

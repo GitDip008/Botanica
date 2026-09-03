@@ -153,6 +153,7 @@ class Participant {
     required this.displayName,
     required this.huntAttempts,
     required this.huntSolved,
+    required this.contestEntries,
     required this.lastSeen,
   });
 
@@ -160,6 +161,10 @@ class Participant {
   final String displayName;
   final int huntAttempts;
   final int huntSolved;
+
+  /// Picks filed in the timed contest. Counted here so the admin list shows
+  /// someone who only played the contest, not just Plant Hunt players.
+  final int contestEntries;
   final DateTime lastSeen;
 
   factory Participant.fromDoc(DocumentSnapshot<Map<String, dynamic>> d) {
@@ -169,6 +174,7 @@ class Participant {
       displayName: (m['displayName'] ?? 'Visitor') as String,
       huntAttempts: (m['huntAttempts'] as num?)?.toInt() ?? 0,
       huntSolved: (m['huntSolved'] as num?)?.toInt() ?? 0,
+      contestEntries: (m['contestEntries'] as num?)?.toInt() ?? 0,
       lastSeen: (m['lastSeen'] as Timestamp?)?.toDate() ?? DateTime.now(),
     );
   }
@@ -254,6 +260,26 @@ class HuntSubmissionService {
       }, SetOptions(merge: true));
     } catch (_) {
       // Recording is bookkeeping, not gameplay.
+    }
+  }
+
+  /// Records that someone filed a contest pick, so the admin's participant
+  /// list covers both challenges rather than only the Plant Hunt.
+  ///
+  /// The entry itself already lives in contest_entries with its photo, GPS and
+  /// ratings — this only maintains the index the admin list reads.
+  Future<void> noteContestEntry({
+    required String uid,
+    required String displayName,
+  }) async {
+    try {
+      await _db.collection(_participants).doc(uid).set({
+        'displayName': displayName.isEmpty ? 'Visitor' : displayName,
+        'contestEntries': FieldValue.increment(1),
+        'lastSeen': Timestamp.now(),
+      }, SetOptions(merge: true));
+    } catch (_) {
+      // Bookkeeping, not gameplay.
     }
   }
 

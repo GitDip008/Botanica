@@ -23,6 +23,7 @@ import '../../services/camera_utils.dart';
 import '../../models/contest.dart';
 import '../../services/auth_service.dart';
 import '../../services/contest_service.dart';
+import '../../services/hunt_submission_service.dart';
 import '../../widgets/zoomable_camera_preview.dart';
 
 class ContestEntryFlow extends StatefulWidget {
@@ -188,6 +189,12 @@ class _ContestEntryFlowState extends State<ContestEntryFlow> {
     try {
       final photoError =
           await ContestService.instance.submitEntry(entry, photo: _photo);
+      // Puts this person on the admin's participant list, so someone who only
+      // plays the contest is not invisible there.
+      await HuntSubmissionService.instance.noteContestEntry(
+        uid: user.id,
+        displayName: user.displayName,
+      );
       if (!mounted) return;
       Navigator.pop(context);
       ScaffoldMessenger.of(context).showSnackBar(
