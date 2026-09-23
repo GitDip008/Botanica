@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../theme/tokens.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import '../services/language_service.dart';
@@ -34,12 +35,12 @@ class _MainNavScreenState extends State<MainNavScreen> {
   Widget build(BuildContext context) {
     return AnnotatedRegion<SystemUiOverlayStyle>(
       value: SystemUiOverlayStyle.light.copyWith(
-        systemNavigationBarColor: const Color(0xFF0A1A0F),
+        systemNavigationBarColor: C.bg,
         systemNavigationBarIconBrightness: Brightness.light,
       ),
       child: Scaffold(
         key: MainNavScreen.scaffoldKey,
-        backgroundColor: const Color(0xFF0A1A0F),
+        backgroundColor: C.bg,
         drawer: AppDrawer(
           onSelectTab: (i) => setState(() => _currentIndex = i),
         ),
@@ -63,14 +64,11 @@ class _BottomNav extends StatelessWidget {
   Widget build(BuildContext context) {
     final s = context.watch<LanguageService>().strings;
     return Container(
-      decoration: const BoxDecoration(
-        color: Color(0xFF0D1F14),
-        border: Border(top: BorderSide(color: Color(0xFF1E3D24), width: 1)),
-      ),
+      decoration: const BoxDecoration(color: C.bg),
       child: SafeArea(
         top: false,
         child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+          padding: const EdgeInsets.fromLTRB(Sp.m, Sp.s, Sp.m, Sp.s),
           child: Row(
             children: [
               _NavItem(
@@ -130,38 +128,33 @@ class _NavItem extends StatelessWidget {
       child: GestureDetector(
         onTap: onTap,
         behavior: HitTestBehavior.opaque,
-        child: AnimatedContainer(
-          duration: const Duration(milliseconds: 220),
-          curve: Curves.easeInOut,
-          padding: const EdgeInsets.symmetric(vertical: 8),
-          decoration: BoxDecoration(
-            color: selected
-                ? const Color(0xFF1A3320)
-                : Colors.transparent,
-            borderRadius: BorderRadius.circular(14),
-          ),
+        child: Padding(
+          padding: const EdgeInsets.symmetric(vertical: 6),
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
               AnimatedContainer(
-                duration: const Duration(milliseconds: 220),
+                duration: const Duration(milliseconds: 200),
+                curve: Curves.easeOut,
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 18, vertical: 5),
+                decoration: BoxDecoration(
+                  color: selected ? C.accentWash : Colors.transparent,
+                  borderRadius: BorderRadius.circular(R.pill),
+                ),
                 child: Icon(
                   icon,
-                  size: 22,
-                  color: selected
-                      ? const Color(0xFF66BB6A)
-                      : const Color(0xFF3D6B44),
+                  size: 21,
+                  color: selected ? C.accent : C.textFaint,
                 ),
               ),
-              const SizedBox(height: 3),
+              const SizedBox(height: 4),
               AnimatedDefaultTextStyle(
-                duration: const Duration(milliseconds: 220),
+                duration: const Duration(milliseconds: 200),
                 style: TextStyle(
-                  fontSize: 11,
-                  fontWeight: selected ? FontWeight.w600 : FontWeight.w400,
-                  color: selected
-                      ? const Color(0xFF66BB6A)
-                      : const Color(0xFF3D6B44),
+                  fontSize: 10.5,
+                  fontWeight: selected ? FontWeight.w700 : FontWeight.w500,
+                  color: selected ? C.accent : C.textFaint,
                 ),
                 child: Text(label),
               ),

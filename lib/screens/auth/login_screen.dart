@@ -3,6 +3,8 @@ import 'package:flutter_animate/flutter_animate.dart';
 import 'package:provider/provider.dart';
 import '../../services/auth_service.dart';
 import '../../services/language_service.dart';
+import '../../theme/tokens.dart';
+import '../../widgets/ui_kit.dart';
 import 'signup_screen.dart';
 
 class LoginScreen extends StatefulWidget {
@@ -55,6 +57,35 @@ class _LoginScreenState extends State<LoginScreen> {
       await AuthService.instance.signInWithGoogle();
     } catch (e) {
       setState(() => _error = e.toString().replaceFirst('Exception: ', ''));
+    } finally {
+      if (mounted) setState(() => _busy = false);
+    }
+  }
+
+  /// Straight in, under a name of their choosing, no account.
+  ///
+  /// This is the primary path at an event. Researchers' Night is a four-hour
+  /// drop-in; a sign-up wall between a visitor and the plant in front of them
+  /// loses most of them at the door, and the University's programme promises
+  /// the app will simply work.
+  Future<void> _continueAsGuest() async {
+    final name = await showDialog<String>(
+      context: context,
+      builder: (ctx) => const _GuestNameDialog(),
+    );
+    if (name == null || !mounted) return;
+
+    setState(() {
+      _busy = true;
+      _error = null;
+    });
+    try {
+      await AuthService.instance.signInAsGuest(displayName: name);
+    } catch (e) {
+      if (mounted) {
+        setState(() =>
+            _error = e.toString().replaceFirst('Exception: ', ''));
+      }
     } finally {
       if (mounted) setState(() => _busy = false);
     }
@@ -154,6 +185,35 @@ class _LoginScreenState extends State<LoginScreen> {
                 ),
                 const SizedBox(height: 36),
 
+                // ── Straight in, no account ──────────────────
+                // Placed above the form on purpose: at a public event this is
+                // the path almost everyone should take, and a button below a
+                // password field is a button most people never reach.
+                AppButton(
+                  label: 'Continue as guest',
+                  icon: Icons.bolt_rounded,
+                  onPressed: _busy ? null : _continueAsGuest,
+                ),
+                const SizedBox(height: Sp.s),
+                const Text(
+                  'No account, no email — just a name. Everything works, '
+                  'including the leaderboards.',
+                  textAlign: TextAlign.center,
+                  style: TextStyle(
+                      color: C.textFaint, fontSize: 12, height: 1.4),
+                ),
+                const SizedBox(height: Sp.xl),
+                Row(children: [
+                  Expanded(child: Container(height: 1, color: C.line)),
+                  const Padding(
+                    padding: EdgeInsets.symmetric(horizontal: 12),
+                    child: Text('or sign in',
+                        style: TextStyle(color: C.textFaint, fontSize: 12)),
+                  ),
+                  Expanded(child: Container(height: 1, color: C.line)),
+                ]),
+                const SizedBox(height: Sp.xl),
+
                 // ── Email ────────────────────────────────────
                 TextFormField(
                   controller: _emailCtrl,
@@ -230,8 +290,6 @@ class _LoginScreenState extends State<LoginScreen> {
                     ),
                   ),
                 ],
-
-                const SizedBox(height: 22),
 
                 // ── Sign in button ───────────────────────────
                 ElevatedButton(
@@ -324,6 +382,86 @@ class _LoginScreenState extends State<LoginScreen> {
         borderRadius: BorderRadius.circular(14),
         borderSide: const BorderSide(color: Color(0xFF66BB6A), width: 1.5),
       ),
+    );
+  }
+}
+
+
+/// One field, one button. The only thing a guest has to decide is what the
+/// leaderboard should call them.
+class _GuestNameDialog extends StatefulWidget {
+  const _GuestNameDialog();
+
+  @override
+  State<_GuestNameDialog> createState() => _GuestNameDialogState();
+}
+
+class _GuestNameDialogState extends State<_GuestNameDialog> {
+  final _ctrl = TextEditingController();
+
+  @override
+  void dispose() {
+    _ctrl.dispose();
+    super.dispose();
+  }
+
+  void _go() {
+    final name = _ctrl.text.trim();
+    if (name.isEmpty) return;
+    Navigator.pop(context, name);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return AlertDialog(
+      backgroundColor: C.surface,
+      shape: RoundedRectangleBorder(borderRadius: R.rm),
+      title: const Text('What should we call you?', style: T.h2),
+      content: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Text(
+            'Shown on the leaderboards. A first name or a nickname is fine.',
+            style: T.bodySm,
+          ),
+          const SizedBox(height: Sp.l),
+          TextField(
+            controller: _ctrl,
+            autofocus: true,
+            textCapitalization: TextCapitalization.words,
+            maxLength: 24,
+            style: const TextStyle(color: C.textHi),
+            onChanged: (_) => setState(() {}),
+            onSubmitted: (_) => _go(),
+            decoration: InputDecoration(
+              hintText: 'e.g. Aino, or Team Kaktus',
+              hintStyle: const TextStyle(color: C.textFaint),
+              counterStyle: const TextStyle(color: C.textFaint),
+              filled: true,
+              fillColor: C.surfaceAlt,
+              border: OutlineInputBorder(
+                borderRadius: R.rs,
+                borderSide: BorderSide.none,
+              ),
+            ),
+          ),
+        ],
+      ),
+      actions: [
+        TextButton(
+          onPressed: () => Navigator.pop(context),
+          child: const Text('Cancel', style: TextStyle(color: C.textSoft)),
+        ),
+        FilledButton(
+          style: FilledButton.styleFrom(
+            backgroundColor: C.accent,
+            foregroundColor: C.bg,
+          ),
+          onPressed: _ctrl.text.trim().isEmpty ? null : _go,
+          child: const Text('Start exploring'),
+        ),
+      ],
     );
   }
 }

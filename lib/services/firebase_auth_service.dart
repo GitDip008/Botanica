@@ -131,6 +131,33 @@ class FirebaseAuthService implements AuthService {
   }
 
   @override
+  Future<AppUser> signInAsGuest({required String displayName}) async {
+    final cred = await _auth.signInAnonymously();
+    final fbUser = cred.user!;
+
+    // The name is set on the Firebase user as well as the document so that
+    // anything reading displayName straight off the auth token — a leaderboard
+    // row, a contest entry — shows what the visitor typed rather than "Visitor".
+    final name = displayName.trim().isEmpty ? 'Guest' : displayName.trim();
+    await fbUser.updateDisplayName(name);
+
+    final user = AppUser(
+      id: fbUser.uid,
+      email: '',
+      displayName: name,
+      tier: SubscriptionTier.free,
+      joinedAt: DateTime.now(),
+    );
+    // A guest is never an admin: admin is decided by verified token email and
+    // an anonymous session has none, so the rules refuse it server-side too.
+    await _firestore.collection('users').doc(fbUser.uid).set(user.toJson());
+
+    _currentUser = user;
+    _controller.add(_currentUser);
+    return user;
+  }
+
+  @override
   Future<void> signOut() async {
     await _auth.signOut();
     await _googleSignIn.signOut();

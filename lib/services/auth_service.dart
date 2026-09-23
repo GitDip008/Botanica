@@ -18,6 +18,18 @@ abstract class AuthService {
     required String displayName,
   });
   Future<AppUser> signInWithGoogle();
+
+  /// Signs in without an account, under a name the visitor picks.
+  ///
+  /// This exists for events. Researchers' Night is a four-hour drop-in with
+  /// families arriving off a minitrain; asking each of them to create an
+  /// account and verify an email before they can look at a plant loses most of
+  /// them at the door. An anonymous session still carries a real Firebase uid,
+  /// so scores, contest entries and submissions all work exactly as they do
+  /// for a registered visitor — the only thing missing is a way back in on
+  /// another device, which nobody needs for one evening.
+  Future<AppUser> signInAsGuest({required String displayName});
+
   Future<void> signOut();
   Future<void> sendPasswordReset(String email);
 
@@ -114,6 +126,20 @@ class MockAuthService implements AuthService {
       id: 'mock-google-user',
       email: 'visitor@gmail.com',
       displayName: 'Garden Visitor',
+      tier: SubscriptionTier.free,
+      joinedAt: DateTime.now(),
+    );
+    await _saveToPrefs();
+    _controller.add(_currentUser);
+    return _currentUser!;
+  }
+
+  @override
+  Future<AppUser> signInAsGuest({required String displayName}) async {
+    _currentUser = AppUser(
+      id: 'mock-guest-${DateTime.now().millisecondsSinceEpoch}',
+      email: '',
+      displayName: displayName,
       tier: SubscriptionTier.free,
       joinedAt: DateTime.now(),
     );

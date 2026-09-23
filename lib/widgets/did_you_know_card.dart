@@ -1,5 +1,7 @@
 import 'dart:math';
 import 'package:flutter/material.dart';
+import '../theme/tokens.dart';
+import 'ui_kit.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:provider/provider.dart';
 import '../i18n/app_strings.dart';
@@ -149,29 +151,30 @@ class _DidYouKnowCardState extends State<DidYouKnowCard> {
   Widget build(BuildContext context) {
     final s = context.watch<LanguageService>().strings;
 
-    return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        gradient: const LinearGradient(
-          colors: [Color(0xFF1A2E1E), Color(0xFF111F16)],
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-        ),
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: const Color(0xFF2A4A2F)),
-      ),
+    return AppCard(
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Row(
-            children: const [
-              Icon(Icons.lightbulb_rounded,
-                  color: Color(0xFFFFD54F), size: 20),
-              SizedBox(width: 8),
-              Text('🌱', style: TextStyle(fontSize: 16)),
+            children: [
+              const IconTile(Icons.lightbulb_rounded, color: C.gold, size: 34),
+              const SizedBox(width: Sp.m),
+              Expanded(
+                child: Text(s.newFact.toUpperCase(),
+                    style: T.overline.copyWith(color: C.gold)),
+              ),
+              // The refresh lives in the header, where it does not compete
+              // with the fact itself for the bottom of the card.
+              IconButton(
+                onPressed: _loading ? null : _fetch,
+                visualDensity: VisualDensity.compact,
+                icon: Icon(Icons.refresh_rounded,
+                    size: 18,
+                    color: _loading ? C.textFaint : C.accent),
+              ),
             ],
           ),
-          const SizedBox(height: 10),
+          const SizedBox(height: Sp.m),
           AnimatedSwitcher(
             duration: const Duration(milliseconds: 350),
             transitionBuilder: (child, animation) =>
@@ -179,55 +182,27 @@ class _DidYouKnowCardState extends State<DidYouKnowCard> {
             child: _loading
                 ? Padding(
                     key: const ValueKey('loading'),
-                    padding: const EdgeInsets.symmetric(vertical: 8),
+                    padding: const EdgeInsets.symmetric(vertical: Sp.s),
                     child: Row(
                       children: [
                         const SizedBox(
                           width: 14,
                           height: 14,
                           child: CircularProgressIndicator(
-                              strokeWidth: 2, color: Color(0xFF66BB6A)),
+                              strokeWidth: 2, color: C.accent),
                         ),
-                        const SizedBox(width: 10),
+                        const SizedBox(width: Sp.m),
                         Text(s.loadingFact,
-                            style: const TextStyle(
-                                color: Color(0xFF81C784),
-                                fontSize: 13,
-                                fontStyle: FontStyle.italic)),
+                            style: T.bodySm
+                                .copyWith(fontStyle: FontStyle.italic)),
                       ],
                     ),
                   )
                 : Text(
                     _fact ?? '',
                     key: ValueKey(_fact),
-                    style: const TextStyle(
-                      color: Color(0xFFE8F5E9),
-                      fontSize: 14,
-                      height: 1.5,
-                    ),
+                    style: T.body,
                   ),
-          ),
-          const SizedBox(height: 12),
-          Align(
-            alignment: Alignment.centerRight,
-            child: TextButton.icon(
-              onPressed: _loading ? null : _fetch,
-              icon: const Icon(Icons.refresh_rounded,
-                  size: 16, color: Color(0xFF66BB6A)),
-              label: Text(
-                s.newFact,
-                style: const TextStyle(
-                    color: Color(0xFF66BB6A),
-                    fontSize: 12,
-                    fontWeight: FontWeight.w600),
-              ),
-              style: TextButton.styleFrom(
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-                minimumSize: Size.zero,
-                tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-              ),
-            ),
           ),
         ],
       ),
