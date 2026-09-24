@@ -25,6 +25,7 @@ import '../../services/auth_service.dart';
 import '../../services/contest_service.dart';
 import '../../services/hunt_submission_service.dart';
 import '../../widgets/zoomable_camera_preview.dart';
+import '../../theme/tokens.dart';
 
 class ContestEntryFlow extends StatefulWidget {
   const ContestEntryFlow({super.key, required this.contest});
@@ -200,14 +201,14 @@ class _ContestEntryFlowState extends State<ContestEntryFlow> {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           backgroundColor: photoError == null
-              ? const Color(0xFF1B4020)
+              ? C.surfaceAlt
               : const Color(0xFF3A2A06),
           duration: Duration(seconds: photoError == null ? 3 : 7),
           content: Text(
             photoError == null
                 ? '$name added to the leaderboard.'
                 : '$name added, but the photo could not be saved: $photoError',
-            style: const TextStyle(color: Color(0xFFE8F5E9)),
+            style: const TextStyle(color: C.textHi),
           ),
         ),
       );
@@ -226,9 +227,9 @@ class _ContestEntryFlowState extends State<ContestEntryFlow> {
     final suggestions = _suggestions();
 
     return Scaffold(
-      backgroundColor: const Color(0xFF0A1A0F),
+      backgroundColor: C.bg,
       appBar: AppBar(
-        backgroundColor: const Color(0xFF0D1F14),
+        backgroundColor: C.bg,
         elevation: 0,
         title: const Text('Add a plant'),
       ),
@@ -250,9 +251,9 @@ class _ContestEntryFlowState extends State<ContestEntryFlow> {
             child: Container(
               height: _photo == null ? 96 : 200,
               decoration: BoxDecoration(
-                color: const Color(0xFF13301A),
+                color: C.surfaceAlt,
                 borderRadius: BorderRadius.circular(10),
-                border: Border.all(color: const Color(0xFF2E7D32)),
+                border: Border.all(color: C.accentDim),
                 image: _photo == null
                     ? null
                     : DecorationImage(
@@ -265,14 +266,14 @@ class _ContestEntryFlowState extends State<ContestEntryFlow> {
                         mainAxisSize: MainAxisSize.min,
                         children: [
                           Icon(Icons.add_a_photo_rounded,
-                              color: Color(0xFF81C784)),
+                              color: C.accent),
                           SizedBox(height: 6),
                           Text('Tap to photograph it',
                               style: TextStyle(
-                                  color: Color(0xFF81C784), fontSize: 13)),
+                                  color: C.accent, fontSize: 13)),
                           Text('Only you will see this photo',
                               style: TextStyle(
-                                  color: Color(0xFF4A7A50), fontSize: 11)),
+                                  color: C.textFaint, fontSize: 11)),
                         ],
                       ),
                     ),
@@ -289,8 +290,8 @@ class _ContestEntryFlowState extends State<ContestEntryFlow> {
                         : Icons.place_rounded,
                     size: 13,
                     color: _pos == null
-                        ? const Color(0xFF4A7A50)
-                        : const Color(0xFF81C784),
+                        ? C.textFaint
+                        : C.accent,
                   ),
                   const SizedBox(width: 5),
                   Text(
@@ -300,8 +301,8 @@ class _ContestEntryFlowState extends State<ContestEntryFlow> {
                             '${_pos!.longitude.toStringAsFixed(5)}',
                     style: TextStyle(
                         color: _pos == null
-                            ? const Color(0xFF4A7A50)
-                            : const Color(0xFF81C784),
+                            ? C.textFaint
+                            : C.accent,
                         fontSize: 11),
                   ),
                 ],
@@ -313,17 +314,17 @@ class _ContestEntryFlowState extends State<ContestEntryFlow> {
           const SizedBox(height: 8),
           TextField(
             controller: _searchCtrl,
-            style: const TextStyle(color: Color(0xFFE8F5E9)),
+            style: const TextStyle(color: C.textHi),
             onChanged: (v) => setState(() {
               _plantName = v.trim().isEmpty ? null : v.trim();
               _fromIndex = false; // typing over a picked name un-picks it
             }),
             decoration: InputDecoration(
               hintText: 'Search, or just type what you see',
-              hintStyle: const TextStyle(color: Color(0xFF6E8A72)),
-              prefixIcon: const Icon(Icons.search, color: Color(0xFF81C784)),
+              hintStyle: const TextStyle(color: C.textFaint),
+              prefixIcon: const Icon(Icons.search, color: C.accent),
               filled: true,
-              fillColor: const Color(0xFF13301A),
+              fillColor: C.surfaceAlt,
               border: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(10),
                 borderSide: BorderSide.none,
@@ -335,9 +336,9 @@ class _ContestEntryFlowState extends State<ContestEntryFlow> {
             Container(
               margin: const EdgeInsets.only(top: 8),
               decoration: BoxDecoration(
-                color: const Color(0xFF111F16),
+                color: C.surface,
                 borderRadius: BorderRadius.circular(10),
-                border: Border.all(color: const Color(0xFF2A4A2F)),
+                border: Border.all(color: C.line),
               ),
               child: Column(
                 children: [
@@ -346,7 +347,7 @@ class _ContestEntryFlowState extends State<ContestEntryFlow> {
                       dense: true,
                       title: Text(p.scientificName,
                           style: const TextStyle(
-                              color: Color(0xFFE8F5E9),
+                              color: C.textHi,
                               fontSize: 13.5,
                               fontStyle: FontStyle.italic)),
                       subtitle: Text(
@@ -355,7 +356,7 @@ class _ContestEntryFlowState extends State<ContestEntryFlow> {
                           PlantIndex.instance.sectionLabel(p.sectionCode),
                         ].where((e) => e.isNotEmpty).join('  ·  '),
                         style: const TextStyle(
-                            color: Color(0xFF6E8A72), fontSize: 11.5),
+                            color: C.textFaint, fontSize: 11.5),
                       ),
                       onTap: () {
                         setState(() {
@@ -376,7 +377,7 @@ class _ContestEntryFlowState extends State<ContestEntryFlow> {
               padding: const EdgeInsets.only(top: 8),
               child: Text(
                 'Using "$_plantName" — not in the garden records, that is fine.',
-                style: const TextStyle(color: Color(0xFF6E8A72), fontSize: 12),
+                style: const TextStyle(color: C.textFaint, fontSize: 12),
               ),
             ),
 
@@ -384,14 +385,14 @@ class _ContestEntryFlowState extends State<ContestEntryFlow> {
           _label('3  ·  WHAT KIND OF VIBE?'),
           const SizedBox(height: 4),
           const Text('There are no right answers. Trust your first impression.',
-              style: TextStyle(color: Color(0xFF6E8A72), fontSize: 12)),
+              style: TextStyle(color: C.textFaint, fontSize: 12)),
           const SizedBox(height: 12),
           for (final a in widget.contest.axes) _axisSlider(a),
 
           if (_error != null) ...[
             const SizedBox(height: 12),
             Text(_error!,
-                style: const TextStyle(color: Color(0xFFEF9A9A), fontSize: 13)),
+                style: const TextStyle(color: C.danger, fontSize: 13)),
           ],
 
           const SizedBox(height: 24),
@@ -405,7 +406,7 @@ class _ContestEntryFlowState extends State<ContestEntryFlow> {
                 : const Icon(Icons.check_rounded),
             label: Text(_saving ? 'Saving…' : 'Submit my pick'),
             style: FilledButton.styleFrom(
-              backgroundColor: const Color(0xFFFFB300),
+              backgroundColor: C.gold,
               foregroundColor: const Color(0xFF231A00),
               padding: const EdgeInsets.symmetric(vertical: 14),
               textStyle:
@@ -429,22 +430,22 @@ class _ContestEntryFlowState extends State<ContestEntryFlow> {
               Expanded(
                 child: Text(a.left,
                     style: const TextStyle(
-                        color: Color(0xFFE8F5E9),
+                        color: C.textHi,
                         fontSize: 13,
                         fontWeight: FontWeight.w600)),
               ),
               Text(a.right,
                   style: const TextStyle(
-                      color: Color(0xFFE8F5E9),
+                      color: C.textHi,
                       fontSize: 13,
                       fontWeight: FontWeight.w600)),
             ],
           ),
           SliderTheme(
             data: SliderTheme.of(context).copyWith(
-              activeTrackColor: const Color(0xFFFFB300),
-              inactiveTrackColor: const Color(0xFF13301A),
-              thumbColor: const Color(0xFFFFD54F),
+              activeTrackColor: C.gold,
+              inactiveTrackColor: C.surfaceAlt,
+              thumbColor: C.gold,
               overlayColor: const Color(0x33FFD54F),
             ),
             child: Slider(
@@ -463,7 +464,7 @@ class _ContestEntryFlowState extends State<ContestEntryFlow> {
 
   Widget _label(String t) => Text(t,
       style: const TextStyle(
-          color: Color(0xFF81C784),
+          color: C.accent,
           fontSize: 11,
           fontWeight: FontWeight.w700,
           letterSpacing: 1.2));
@@ -534,7 +535,7 @@ class _ContestCameraState extends State<_ContestCamera> {
                         tooltip: 'Switch camera',
                         icon: Icon(Icons.flip_camera_android_rounded,
                             color: isFront(_active)
-                                ? const Color(0xFFFFD54F)
+                                ? C.gold
                                 : Colors.white),
                         onPressed: _switch,
                       ),
@@ -558,7 +559,7 @@ class _ContestCameraState extends State<_ContestCamera> {
                         shape: BoxShape.circle,
                         color: Colors.white,
                         border: Border.all(
-                            color: const Color(0xFFFFB300), width: 4),
+                            color: C.gold, width: 4),
                       ),
                     ),
                   ),

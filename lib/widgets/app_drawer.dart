@@ -8,6 +8,7 @@ import '../screens/report_screen.dart';
 import '../screens/settings_screen.dart';
 import '../services/language_service.dart';
 import '../services/user_state.dart';
+import '../theme/tokens.dart';
 
 /// Side navigation drawer with all main destinations + developer info.
 class AppDrawer extends StatelessWidget {
@@ -22,7 +23,7 @@ class AppDrawer extends StatelessWidget {
     final isAdmin = user?.isAdmin ?? false;
 
     return Drawer(
-      backgroundColor: const Color(0xFF0A1A0F),
+      backgroundColor: C.bg,
       child: SafeArea(
         child: Column(
           children: [
@@ -31,7 +32,7 @@ class AppDrawer extends StatelessWidget {
               padding: const EdgeInsets.all(20),
               decoration: const BoxDecoration(
                 border: Border(
-                  bottom: BorderSide(color: Color(0xFF1E3D24)),
+                  bottom: BorderSide(color: C.line),
                 ),
               ),
               child: Row(
@@ -47,7 +48,7 @@ class AppDrawer extends StatelessWidget {
                       children: [
                         const Text('Botanica',
                             style: TextStyle(
-                                color: Color(0xFFE8F5E9),
+                                color: C.textHi,
                                 fontSize: 18,
                                 fontWeight: FontWeight.w800,
                                 letterSpacing: 0.3)),
@@ -55,7 +56,7 @@ class AppDrawer extends StatelessWidget {
                             maxLines: 1,
                             overflow: TextOverflow.ellipsis,
                             style: const TextStyle(
-                                color: Color(0xFF81C784), fontSize: 12)),
+                                color: C.accent, fontSize: 12)),
                       ],
                     ),
                   ),
@@ -111,7 +112,7 @@ class AppDrawer extends StatelessWidget {
                             builder: (_) => const AgentScreen()));
                   }),
 
-                  const Divider(color: Color(0xFF1E3D24), height: 24),
+                  const Divider(color: C.line, height: 24),
 
                   // ── Section 2: Account & settings ────────────
                   _item(context, Icons.person_rounded, s.navProfile, () {
@@ -135,7 +136,7 @@ class AppDrawer extends StatelessWidget {
 
                   // ── Section 3: Admin (admin email users only) ─
                   if (isAdmin) ...[
-                    const Divider(color: Color(0xFF1E3D24), height: 24),
+                    const Divider(color: C.line, height: 24),
                     _item(context, Icons.admin_panel_settings_rounded,
                         s.adminPanel, () {
                       Navigator.pop(context);
@@ -143,7 +144,7 @@ class AppDrawer extends StatelessWidget {
                           context,
                           MaterialPageRoute(
                               builder: (_) => const AdminPanelScreen()));
-                    }, highlight: const Color(0xFFFFD54F)),
+                    }, highlight: C.gold),
                   ],
                 ],
               ),
@@ -166,11 +167,11 @@ class AppDrawer extends StatelessWidget {
           child: Row(
             children: [
               Icon(icon,
-                  color: highlight ?? const Color(0xFF66BB6A), size: 22),
+                  color: highlight ?? C.accent, size: 22),
               const SizedBox(width: 14),
               Text(label,
                   style: TextStyle(
-                      color: highlight ?? const Color(0xFFE8F5E9),
+                      color: highlight ?? C.textHi,
                       fontSize: 14,
                       fontWeight:
                           highlight != null ? FontWeight.w700 : FontWeight.w500)),

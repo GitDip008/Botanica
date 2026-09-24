@@ -21,6 +21,7 @@ import 'package:camera/camera.dart';
 import 'package:flutter/material.dart';
 
 import '../services/camera_utils.dart';
+import '../theme/tokens.dart';
 
 class ZoomableCameraPreview extends StatefulWidget {
   const ZoomableCameraPreview({super.key, required this.controller});
@@ -121,7 +122,7 @@ class _ZoomableCameraPreviewState extends State<ZoomableCameraPreview> {
                         ),
                         Text('${_zoom.toStringAsFixed(1)}×',
                             style: const TextStyle(
-                                color: Color(0xFFFFD54F),
+                                color: C.gold,
                                 fontSize: 11,
                                 fontWeight: FontWeight.w700)),
                         IconButton(

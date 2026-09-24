@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../services/holiday_hours_service.dart';
 import '../services/language_service.dart';
+import '../theme/tokens.dart';
 
 class EditHolidaysScreen extends StatefulWidget {
   const EditHolidaysScreen({super.key});
@@ -66,9 +67,9 @@ class _EditHolidaysScreenState extends State<EditHolidaysScreen> {
     final parsed = await showDialog<List<HolidayEntry>>(
       context: context,
       builder: (ctx) => AlertDialog(
-        backgroundColor: const Color(0xFF111F16),
+        backgroundColor: C.surface,
         title: Text(s.pasteFromWebsite,
-            style: const TextStyle(color: Color(0xFFE8F5E9))),
+            style: const TextStyle(color: C.textHi)),
         content: SingleChildScrollView(
           child: Column(
             mainAxisSize: MainAxisSize.min,
@@ -76,7 +77,7 @@ class _EditHolidaysScreenState extends State<EditHolidaysScreen> {
             children: [
               Text(s.pasteHolidayInstructions,
                   style: const TextStyle(
-                      color: Color(0xFF81C784), fontSize: 12)),
+                      color: C.accent, fontSize: 12)),
               const SizedBox(height: 12),
               TextField(
                 controller: pasteCtrl,
@@ -84,13 +85,13 @@ class _EditHolidaysScreenState extends State<EditHolidaysScreen> {
                 minLines: 6,
                 autofocus: true,
                 style: const TextStyle(
-                    color: Color(0xFFE8F5E9), fontFamily: 'monospace', fontSize: 12),
+                    color: C.textHi, fontFamily: 'monospace', fontSize: 12),
                 decoration: const InputDecoration(
                   hintText:
                       'Good Friday 3rd April closed\nSat 4th April 10 -16\n...',
-                  hintStyle: TextStyle(color: Color(0xFF4A7A50), fontSize: 11),
+                  hintStyle: TextStyle(color: C.textFaint, fontSize: 11),
                   filled: true,
-                  fillColor: Color(0xFF0A1A0F),
+                  fillColor: C.bg,
                   border: OutlineInputBorder(),
                 ),
               ),
@@ -106,7 +107,7 @@ class _EditHolidaysScreenState extends State<EditHolidaysScreen> {
               Navigator.pop(ctx, parsed);
             },
             child: Text(s.parse,
-                style: const TextStyle(color: Color(0xFF66BB6A))),
+                style: const TextStyle(color: C.accent)),
           ),
         ],
       ),
@@ -128,7 +129,7 @@ class _EditHolidaysScreenState extends State<EditHolidaysScreen> {
     setState(() {});
     if (mounted) {
       ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-        backgroundColor: const Color(0xFF2E7D32),
+        backgroundColor: C.accentDim,
         content: Text(s.parsedCount(parsed.length)),
       ));
     }
@@ -145,7 +146,7 @@ class _EditHolidaysScreenState extends State<EditHolidaysScreen> {
     await HolidayHoursService.instance.save(entries);
     if (!mounted) return;
     ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-      backgroundColor: const Color(0xFF2E7D32),
+      backgroundColor: C.accentDim,
       content: Text(s.holidaysSaved),
     ));
     setState(() => _saving = false);
@@ -156,23 +157,23 @@ class _EditHolidaysScreenState extends State<EditHolidaysScreen> {
   Widget build(BuildContext context) {
     final s = context.watch<LanguageService>().strings;
     return Scaffold(
-      backgroundColor: const Color(0xFF0A1A0F),
+      backgroundColor: C.bg,
       appBar: AppBar(
         title: Text(s.editHolidays),
-        backgroundColor: const Color(0xFF0D1F14),
+        backgroundColor: C.bg,
         elevation: 0,
         actions: [
           IconButton(
             tooltip: s.pasteFromWebsite,
             icon: const Icon(Icons.content_paste_rounded,
-                color: Color(0xFF66BB6A)),
+                color: C.accent),
             onPressed: _loading ? null : () => _pasteFromWebsite(s),
           ),
         ],
       ),
       body: _loading
           ? const Center(
-              child: CircularProgressIndicator(color: Color(0xFF66BB6A)))
+              child: CircularProgressIndicator(color: C.accent))
           : ListView(
               padding: const EdgeInsets.all(16),
               children: [
@@ -190,15 +191,15 @@ class _EditHolidaysScreenState extends State<EditHolidaysScreen> {
                 TextButton.icon(
                   onPressed: () => setState(_addEmptyRow),
                   icon: const Icon(Icons.add_rounded,
-                      color: Color(0xFF66BB6A)),
+                      color: C.accent),
                   label: Text(s.addRow,
-                      style: const TextStyle(color: Color(0xFF66BB6A))),
+                      style: const TextStyle(color: C.accent)),
                 ),
                 const SizedBox(height: 24),
                 ElevatedButton(
                   onPressed: _saving ? null : () => _save(s),
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: const Color(0xFF2E7D32),
+                    backgroundColor: C.accentDim,
                     foregroundColor: Colors.white,
                     padding: const EdgeInsets.symmetric(vertical: 16),
                     shape: RoundedRectangleBorder(
@@ -239,9 +240,9 @@ class _Row extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.fromLTRB(12, 8, 4, 8),
       decoration: BoxDecoration(
-        color: const Color(0xFF111F16),
+        color: C.surface,
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: const Color(0xFF2A4A2F)),
+        border: Border.all(color: C.line),
       ),
       child: Row(
         children: [
@@ -249,11 +250,11 @@ class _Row extends StatelessWidget {
             flex: 3,
             child: TextField(
               controller: labelCtrl,
-              style: const TextStyle(color: Color(0xFFE8F5E9), fontSize: 13),
+              style: const TextStyle(color: C.textHi, fontSize: 13),
               decoration: InputDecoration(
                 hintText: labelHint,
                 hintStyle:
-                    const TextStyle(color: Color(0xFF4A7A50), fontSize: 12),
+                    const TextStyle(color: C.textFaint, fontSize: 12),
                 isDense: true,
                 border: InputBorder.none,
               ),
@@ -264,11 +265,11 @@ class _Row extends StatelessWidget {
             flex: 2,
             child: TextField(
               controller: hoursCtrl,
-              style: const TextStyle(color: Color(0xFF81C784), fontSize: 13),
+              style: const TextStyle(color: C.accent, fontSize: 13),
               decoration: InputDecoration(
                 hintText: hoursHint,
                 hintStyle:
-                    const TextStyle(color: Color(0xFF4A7A50), fontSize: 12),
+                    const TextStyle(color: C.textFaint, fontSize: 12),
                 isDense: true,
                 border: InputBorder.none,
               ),
@@ -277,7 +278,7 @@ class _Row extends StatelessWidget {
           IconButton(
             onPressed: onDelete,
             icon: const Icon(Icons.delete_outline_rounded,
-                color: Color(0xFFEF5350), size: 18),
+                color: C.danger, size: 18),
             visualDensity: VisualDensity.compact,
           ),
         ],

@@ -4,6 +4,7 @@ import 'package:provider/provider.dart';
 import '../../models/user_model.dart';
 import '../../services/auth_service.dart';
 import '../../services/language_service.dart';
+import '../../theme/tokens.dart';
 
 class PaywallScreen extends StatefulWidget {
   const PaywallScreen({super.key});
@@ -33,7 +34,7 @@ class _PaywallScreenState extends State<PaywallScreen> {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(SnackBar(
           content: Text(s.welcomePremium),
-          backgroundColor: const Color(0xFF2E7D32),
+          backgroundColor: C.accentDim,
         ));
         Navigator.pop(context);
       }
@@ -52,11 +53,11 @@ class _PaywallScreenState extends State<PaywallScreen> {
     final s = lang.strings;
     final plans = _plansFor(lang);
     return Scaffold(
-      backgroundColor: const Color(0xFF0A1A0F),
+      backgroundColor: C.bg,
       appBar: AppBar(
         backgroundColor: Colors.transparent,
         elevation: 0,
-        iconTheme: const IconThemeData(color: Color(0xFFE8F5E9)),
+        iconTheme: const IconThemeData(color: C.textHi),
       ),
       body: SafeArea(
         child: SingleChildScrollView(
@@ -67,19 +68,19 @@ class _PaywallScreenState extends State<PaywallScreen> {
               // ── Header ────────────────────────────────────
               const Center(
                 child: Icon(Icons.workspace_premium_rounded,
-                    color: Color(0xFFFFD54F), size: 64),
+                    color: C.gold, size: 64),
               ).animate().scale(duration: 400.ms),
               const SizedBox(height: 12),
               Text(s.premiumTitle,
                   textAlign: TextAlign.center,
                   style: const TextStyle(
-                      color: Color(0xFFE8F5E9),
+                      color: C.textHi,
                       fontSize: 26,
                       fontWeight: FontWeight.w700)),
               const SizedBox(height: 4),
               Text(s.unlockFullExperience,
                   textAlign: TextAlign.center,
-                  style: const TextStyle(color: Color(0xFF81C784), fontSize: 13)),
+                  style: const TextStyle(color: C.accent, fontSize: 13)),
 
               const SizedBox(height: 28),
 
@@ -134,7 +135,7 @@ class _PaywallScreenState extends State<PaywallScreen> {
               Text(
                 s.cancelAnytime,
                 textAlign: TextAlign.center,
-                style: const TextStyle(color: Color(0xFF4A7A50), fontSize: 11),
+                style: const TextStyle(color: C.textFaint, fontSize: 11),
               ),
             ],
           ),
@@ -150,10 +151,10 @@ class _PaywallScreenState extends State<PaywallScreen> {
         Container(
           width: 40, height: 40,
           decoration: BoxDecoration(
-            color: const Color(0xFF1A2E1E),
+            color: C.surface,
             borderRadius: BorderRadius.circular(12),
           ),
-          child: Icon(icon, color: const Color(0xFFFFD54F), size: 20),
+          child: Icon(icon, color: C.gold, size: 20),
         ),
         const SizedBox(width: 12),
         Expanded(
@@ -162,9 +163,9 @@ class _PaywallScreenState extends State<PaywallScreen> {
             children: [
               Text(title,
                   style: const TextStyle(
-                      color: Color(0xFFE8F5E9), fontSize: 14, fontWeight: FontWeight.w600)),
+                      color: C.textHi, fontSize: 14, fontWeight: FontWeight.w600)),
               Text(subtitle,
-                  style: const TextStyle(color: Color(0xFF81C784), fontSize: 12)),
+                  style: const TextStyle(color: C.accent, fontSize: 12)),
             ],
           ),
         ),
@@ -199,17 +200,17 @@ class _PlanCard extends StatelessWidget {
         child: Container(
           padding: const EdgeInsets.all(14),
           decoration: BoxDecoration(
-            color: selected ? const Color(0xFF1A3320) : const Color(0xFF111F16),
+            color: selected ? C.surfaceAlt : C.surface,
             borderRadius: BorderRadius.circular(14),
             border: Border.all(
-              color: selected ? const Color(0xFFB8860B) : const Color(0xFF2A4A2F),
+              color: selected ? const Color(0xFFB8860B) : C.line,
               width: selected ? 2 : 1,
             ),
           ),
           child: Row(children: [
             Icon(
               selected ? Icons.radio_button_checked_rounded : Icons.radio_button_unchecked_rounded,
-              color: selected ? const Color(0xFFFFD54F) : const Color(0xFF4A7A50),
+              color: selected ? C.gold : C.textFaint,
             ),
             const SizedBox(width: 12),
             Expanded(
@@ -217,7 +218,7 @@ class _PlanCard extends StatelessWidget {
                 children: [
                   Text(plan.title,
                       style: const TextStyle(
-                          color: Color(0xFFE8F5E9), fontWeight: FontWeight.w600, fontSize: 14)),
+                          color: C.textHi, fontWeight: FontWeight.w600, fontSize: 14)),
                   if (plan.badge.isNotEmpty) ...[
                     const SizedBox(width: 8),
                     Container(
@@ -239,9 +240,9 @@ class _PlanCard extends StatelessWidget {
               children: [
                 Text(plan.price,
                     style: const TextStyle(
-                        color: Color(0xFFE8F5E9), fontSize: 16, fontWeight: FontWeight.w700)),
+                        color: C.textHi, fontSize: 16, fontWeight: FontWeight.w700)),
                 Text(plan.period,
-                    style: const TextStyle(color: Color(0xFF81C784), fontSize: 10)),
+                    style: const TextStyle(color: C.accent, fontSize: 10)),
               ],
             ),
           ]),

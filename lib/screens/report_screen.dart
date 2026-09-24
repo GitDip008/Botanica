@@ -10,6 +10,7 @@ import '../services/gemini_proxy.dart';
 import '../services/language_service.dart';
 import '../services/report_service.dart';
 import '../services/usage_tracking_service.dart';
+import '../theme/tokens.dart';
 
 // ─── Authority contact ────────────────────────────────────────────────────────
 // Change this to the real garden staff email before deployment.
@@ -303,17 +304,17 @@ Sent from Botanica AR — Oulu Botanical Garden companion app.
   Widget build(BuildContext context) {
     final s = LanguageService.instance.strings;
     return Scaffold(
-      backgroundColor: const Color(0xFF0D1F14),
+      backgroundColor: C.bg,
       appBar: AppBar(
-        backgroundColor: const Color(0xFF1A2E1E),
+        backgroundColor: C.surface,
         leading: IconButton(
           icon: const Icon(Icons.arrow_back_rounded,
-              color: Color(0xFF66BB6A)),
+              color: C.accent),
           onPressed: () => Navigator.pop(context),
         ),
         title: Text('🔬 ${s.reportTitle}',
             style: const TextStyle(
-                color: Color(0xFFE8F5E9),
+                color: C.textHi,
                 fontWeight: FontWeight.bold)),
         actions: [
           if (_reports.isNotEmpty)
@@ -322,7 +323,7 @@ Sent from Botanica AR — Oulu Botanical Garden companion app.
               child: Text(
                 '${_reports.length} saved',
                 style: const TextStyle(
-                    color: Color(0xFF66BB6A), fontSize: 12),
+                    color: C.accent, fontSize: 12),
               ),
             ),
         ],
@@ -360,7 +361,7 @@ Sent from Botanica AR — Oulu Botanical Garden companion app.
           Center(
             child: Text(s.reportSaved,
                 style: const TextStyle(
-                    color: Color(0xFF66BB6A),
+                    color: C.accent,
                     fontSize: 22,
                     fontWeight: FontWeight.bold)),
           ),
@@ -370,7 +371,7 @@ Sent from Botanica AR — Oulu Botanical Garden companion app.
               '${r.category}  ·  ${r.timeText}\n📍 ${r.gpsText}',
               textAlign: TextAlign.center,
               style: const TextStyle(
-                  color: Color(0xFF4CAF50),
+                  color: C.accent,
                   fontSize: 13,
                   height: 1.6),
             ),
@@ -382,20 +383,20 @@ Sent from Botanica AR — Oulu Botanical Garden companion app.
           Container(
             padding: const EdgeInsets.all(14),
             decoration: BoxDecoration(
-              color: const Color(0xFF1A2E1E),
+              color: C.surface,
               borderRadius: BorderRadius.circular(12),
-              border: Border.all(color: const Color(0xFF2E7D32)),
+              border: Border.all(color: C.accentDim),
             ),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Row(children: [
                   const Icon(Icons.storage,
-                      color: Color(0xFF66BB6A), size: 16),
+                      color: C.accent, size: 16),
                   const SizedBox(width: 6),
                   Text(s.whereIsThisStored,
                       style: const TextStyle(
-                          color: Color(0xFF66BB6A),
+                          color: C.accent,
                           fontWeight: FontWeight.bold,
                           fontSize: 13)),
                 ]),
@@ -406,7 +407,7 @@ Sent from Botanica AR — Oulu Botanical Garden companion app.
                   '• Tap "Email Garden Staff" to notify the authority\n'
                   '• Your photo and GPS location are included',
                   style: TextStyle(
-                      color: Color(0xFFE8F5E9),
+                      color: C.textHi,
                       fontSize: 13,
                       height: 1.6),
                 ),
@@ -439,7 +440,7 @@ Sent from Botanica AR — Oulu Botanical Garden companion app.
             'One tap to send — garden staff are notified instantly.',
             textAlign: TextAlign.center,
             style: TextStyle(
-                color: Color(0xFF4CAF50), fontSize: 11, height: 1.5),
+                color: C.accent, fontSize: 11, height: 1.5),
           ),
 
           const SizedBox(height: 16),
@@ -449,8 +450,8 @@ Sent from Botanica AR — Oulu Botanical Garden companion app.
               Expanded(
                 child: OutlinedButton.icon(
                   style: OutlinedButton.styleFrom(
-                    foregroundColor: const Color(0xFF66BB6A),
-                    side: const BorderSide(color: Color(0xFF2E7D32)),
+                    foregroundColor: C.accent,
+                    side: const BorderSide(color: C.accentDim),
                     padding: const EdgeInsets.symmetric(vertical: 12),
                     shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(12)),
@@ -465,7 +466,7 @@ Sent from Botanica AR — Oulu Botanical Garden companion app.
               Expanded(
                 child: ElevatedButton.icon(
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: const Color(0xFF2E7D32),
+                    backgroundColor: C.accentDim,
                     foregroundColor: Colors.white,
                     padding: const EdgeInsets.symmetric(vertical: 12),
                     shape: RoundedRectangleBorder(
@@ -499,7 +500,7 @@ Sent from Botanica AR — Oulu Botanical Garden companion app.
             decoration: BoxDecoration(
               color: Colors.black,
               borderRadius: BorderRadius.circular(14),
-              border: Border.all(color: const Color(0xFF2E7D32)),
+              border: Border.all(color: C.accentDim),
             ),
             clipBehavior: Clip.hardEdge,
             child: _imagePath != null
@@ -546,17 +547,17 @@ Sent from Botanica AR — Oulu Botanical Garden companion app.
                                   decoration: BoxDecoration(
                                     shape: BoxShape.circle,
                                     border: Border.all(
-                                        color: const Color(0xFF66BB6A),
+                                        color: C.accent,
                                         width: 2.5),
                                     color: Colors.white.withValues(alpha: 0.15),
                                   ),
                                   child: _capturing
                                       ? const Center(
                                           child: CircularProgressIndicator(
-                                              color: Color(0xFF66BB6A),
+                                              color: C.accent,
                                               strokeWidth: 2))
                                       : const Icon(Icons.camera_alt,
-                                          color: Color(0xFF66BB6A), size: 28),
+                                          color: C.accent, size: 28),
                                 ),
                               ),
                             ),
@@ -565,7 +566,7 @@ Sent from Botanica AR — Oulu Botanical Garden companion app.
                       )
                     : const Center(
                         child: CircularProgressIndicator(
-                            color: Color(0xFF66BB6A))),
+                            color: C.accent)),
           ),
 
           const SizedBox(height: 14),
@@ -578,38 +579,38 @@ Sent from Botanica AR — Oulu Botanical Garden companion app.
                     width: 16,
                     height: 16,
                     child: CircularProgressIndicator(
-                        color: Color(0xFF66BB6A), strokeWidth: 2)),
+                        color: C.accent, strokeWidth: 2)),
                 const SizedBox(width: 10),
                 Text(LanguageService.instance.strings.analyzingImage,
                     style: const TextStyle(
-                        color: Color(0xFF4CAF50), fontSize: 13)),
+                        color: C.accent, fontSize: 13)),
               ],
             ),
           if (_aiDescription.isNotEmpty)
             Container(
               padding: const EdgeInsets.all(12),
               decoration: BoxDecoration(
-                color: const Color(0xFF1A2E1E),
+                color: C.surface,
                 borderRadius: BorderRadius.circular(12),
-                border: Border.all(color: const Color(0xFF2E7D32)),
+                border: Border.all(color: C.accentDim),
               ),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Row(children: [
                     const Icon(Icons.auto_awesome,
-                        color: Color(0xFF66BB6A), size: 14),
+                        color: C.accent, size: 14),
                     const SizedBox(width: 6),
                     Text(s.aiAnalysisLabel,
                         style: const TextStyle(
-                            color: Color(0xFF66BB6A),
+                            color: C.accent,
                             fontSize: 12,
                             fontWeight: FontWeight.bold)),
                   ]),
                   const SizedBox(height: 6),
                   Text(_aiDescription,
                       style: const TextStyle(
-                          color: Color(0xFFE8F5E9),
+                          color: C.textHi,
                           fontSize: 13,
                           height: 1.5)),
                 ],
@@ -621,7 +622,7 @@ Sent from Botanica AR — Oulu Botanical Garden companion app.
           // Category
           Text(s.categoryLabel,
               style: const TextStyle(
-                  color: Color(0xFF66BB6A),
+                  color: C.accent,
                   fontSize: 13,
                   fontWeight: FontWeight.bold)),
           const SizedBox(height: 8),
@@ -638,17 +639,17 @@ Sent from Botanica AR — Oulu Botanical Garden companion app.
                       horizontal: 12, vertical: 6),
                   decoration: BoxDecoration(
                     color: sel
-                        ? const Color(0xFF2E7D32)
-                        : const Color(0xFF1A2E1E),
+                        ? C.accentDim
+                        : C.surface,
                     borderRadius: BorderRadius.circular(20),
                     border: Border.all(
-                        color: const Color(0xFF2E7D32)),
+                        color: C.accentDim),
                   ),
                   child: Text(cat,
                       style: TextStyle(
                           color: sel
                               ? Colors.white
-                              : const Color(0xFF66BB6A),
+                              : C.accent,
                           fontSize: 12)),
                 ),
               );
@@ -661,15 +662,15 @@ Sent from Botanica AR — Oulu Botanical Garden companion app.
           Container(
             padding: const EdgeInsets.all(12),
             decoration: BoxDecoration(
-              color: const Color(0xFF1A2E1E),
+              color: C.surface,
               borderRadius: BorderRadius.circular(12),
-              border: Border.all(color: const Color(0xFF2E7D32)),
+              border: Border.all(color: C.accentDim),
             ),
             child: Row(
               children: [
                 Icon(Icons.location_on,
                     color: _location != null
-                        ? const Color(0xFF66BB6A)
+                        ? C.accent
                         : Colors.orange,
                     size: 18),
                 const SizedBox(width: 8),
@@ -680,7 +681,7 @@ Sent from Botanica AR — Oulu Botanical Garden companion app.
                         : s.gettingLocation,
                     style: TextStyle(
                       color: _location != null
-                          ? const Color(0xFF66BB6A)
+                          ? C.accent
                           : Colors.orange,
                       fontSize: 12,
                     ),
@@ -695,26 +696,26 @@ Sent from Botanica AR — Oulu Botanical Garden companion app.
           // Note
           TextField(
             controller: _noteCtrl,
-            style: const TextStyle(color: Color(0xFFE8F5E9)),
+            style: const TextStyle(color: C.textHi),
             maxLines: 3,
             decoration: InputDecoration(
               hintText: s.addNoteHint,
               filled: true,
-              fillColor: const Color(0xFF1A2E1E),
+              fillColor: C.surface,
               border: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(12),
                   borderSide:
-                      const BorderSide(color: Color(0xFF2E7D32))),
+                      const BorderSide(color: C.accentDim)),
               enabledBorder: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(12),
                   borderSide:
-                      const BorderSide(color: Color(0xFF2E7D32))),
+                      const BorderSide(color: C.accentDim)),
               focusedBorder: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(12),
                   borderSide: const BorderSide(
-                      color: Color(0xFF66BB6A), width: 2)),
+                      color: C.accent, width: 2)),
               hintStyle:
-                  const TextStyle(color: Color(0xFF4CAF50)),
+                  const TextStyle(color: C.accent),
             ),
           ),
 
@@ -723,7 +724,7 @@ Sent from Botanica AR — Oulu Botanical Garden companion app.
           ElevatedButton.icon(
             style: ElevatedButton.styleFrom(
               backgroundColor: _imagePath != null
-                  ? const Color(0xFF2E7D32)
+                  ? C.accentDim
                   : Colors.grey[700],
               foregroundColor: Colors.white,
               padding: const EdgeInsets.symmetric(vertical: 14),
@@ -742,7 +743,7 @@ Sent from Botanica AR — Oulu Botanical Garden companion app.
             'directly to garden staff after submission.',
             textAlign: TextAlign.center,
             style: TextStyle(
-                color: Color(0xFF4CAF50), fontSize: 11, height: 1.5),
+                color: C.accent, fontSize: 11, height: 1.5),
           ),
         ],
       ),
@@ -754,7 +755,7 @@ Sent from Botanica AR — Oulu Botanical Garden companion app.
   void _showHistory() {
     showModalBottomSheet(
       context: context,
-      backgroundColor: const Color(0xFF1A2E1E),
+      backgroundColor: C.surface,
       isScrollControlled: true,
       shape: const RoundedRectangleBorder(
           borderRadius: BorderRadius.vertical(top: Radius.circular(20))),
@@ -770,7 +771,7 @@ Sent from Botanica AR — Oulu Botanical Garden companion app.
               width: 40,
               height: 4,
               decoration: BoxDecoration(
-                color: const Color(0xFF2E7D32),
+                color: C.accentDim,
                 borderRadius: BorderRadius.circular(2),
               ),
             ),
@@ -780,13 +781,13 @@ Sent from Botanica AR — Oulu Botanical Garden companion app.
                 children: [
                   Text(LanguageService.instance.strings.savedReports,
                       style: TextStyle(
-                          color: Color(0xFF66BB6A),
+                          color: C.accent,
                           fontWeight: FontWeight.bold,
                           fontSize: 16)),
                   const Spacer(),
                   Text('${_reports.length} total',
                       style: const TextStyle(
-                          color: Color(0xFF4CAF50), fontSize: 12)),
+                          color: C.accent, fontSize: 12)),
                 ],
               ),
             ),
@@ -795,7 +796,7 @@ Sent from Botanica AR — Oulu Botanical Garden companion app.
                 child: Center(
                   child: Text(LanguageService.instance.strings.noReportsYet,
                       style: const TextStyle(
-                          color: Color(0xFF4CAF50), fontSize: 14)),
+                          color: C.accent, fontSize: 14)),
                 ),
               )
             else
@@ -810,10 +811,10 @@ Sent from Botanica AR — Oulu Botanical Garden companion app.
                       margin: const EdgeInsets.only(bottom: 10),
                       padding: const EdgeInsets.all(12),
                       decoration: BoxDecoration(
-                        color: const Color(0xFF0D1F14),
+                        color: C.bg,
                         borderRadius: BorderRadius.circular(12),
                         border: Border.all(
-                            color: const Color(0xFF2E7D32)),
+                            color: C.accentDim),
                       ),
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
@@ -837,13 +838,13 @@ Sent from Botanica AR — Oulu Botanical Garden companion app.
                                   height: 52,
                                   decoration: BoxDecoration(
                                     color:
-                                        const Color(0xFF1A2E1E),
+                                        C.surface,
                                     borderRadius:
                                         BorderRadius.circular(6),
                                   ),
                                   child: const Icon(
                                       Icons.image_not_supported,
-                                      color: Color(0xFF4CAF50)),
+                                      color: C.accent),
                                 ),
                               const SizedBox(width: 10),
                               Expanded(
@@ -853,17 +854,17 @@ Sent from Botanica AR — Oulu Botanical Garden companion app.
                                   children: [
                                     Text(r.category,
                                         style: const TextStyle(
-                                            color: Color(0xFFE8F5E9),
+                                            color: C.textHi,
                                             fontWeight:
                                                 FontWeight.bold,
                                             fontSize: 13)),
                                     Text(r.timeText,
                                         style: const TextStyle(
-                                            color: Color(0xFF4CAF50),
+                                            color: C.accent,
                                             fontSize: 11)),
                                     Text('📍 ${r.gpsText}',
                                         style: const TextStyle(
-                                            color: Color(0xFF4CAF50),
+                                            color: C.accent,
                                             fontSize: 11)),
                                   ],
                                 ),
@@ -886,7 +887,7 @@ Sent from Botanica AR — Oulu Botanical Garden companion app.
                             const SizedBox(height: 8),
                             Text(r.aiDescription,
                                 style: const TextStyle(
-                                    color: Color(0xFFE8F5E9),
+                                    color: C.textHi,
                                     fontSize: 12,
                                     height: 1.4),
                                 maxLines: 3,

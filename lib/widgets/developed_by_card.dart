@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:url_launcher/url_launcher.dart';
+import '../theme/tokens.dart';
 
 /// Stylized "Developed by" card — terminal/IDE aesthetic.
 class DevelopedByCard extends StatelessWidget {
@@ -18,7 +19,7 @@ class DevelopedByCard extends StatelessWidget {
     return Container(
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: const Color(0xFF1E3D24), width: 1),
+        border: Border.all(color: C.line, width: 1),
         gradient: const LinearGradient(
           colors: [Color(0xFF0D1A11), Color(0xFF0F1F15)],
           begin: Alignment.topLeft,
@@ -32,25 +33,25 @@ class DevelopedByCard extends StatelessWidget {
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
             decoration: const BoxDecoration(
-              color: Color(0xFF0A1410),
+              color: C.bg,
               borderRadius: BorderRadius.only(
                 topLeft: Radius.circular(15),
                 topRight: Radius.circular(15),
               ),
-              border: Border(bottom: BorderSide(color: Color(0xFF1E3D24))),
+              border: Border(bottom: BorderSide(color: C.line)),
             ),
             child: Row(
               children: [
-                _trafficDot(const Color(0xFFEF5350)),
+                _trafficDot(C.danger),
                 const SizedBox(width: 6),
                 _trafficDot(const Color(0xFFFFB74D)),
                 const SizedBox(width: 6),
-                _trafficDot(const Color(0xFF66BB6A)),
+                _trafficDot(C.accent),
                 const SizedBox(width: 12),
                 const Text(
                   '~/developed_by',
                   style: TextStyle(
-                    color: Color(0xFF4A7A50),
+                    color: C.textFaint,
                     fontSize: 11,
                     fontFamily: 'monospace',
                   ),
@@ -68,7 +69,7 @@ class DevelopedByCard extends StatelessWidget {
                 const Text(
                   _name,
                   style: TextStyle(
-                    color: Color(0xFFE8F5E9),
+                    color: C.textHi,
                     fontSize: 16,
                     fontWeight: FontWeight.w700,
                     height: 1.2,
@@ -82,7 +83,7 @@ class DevelopedByCard extends StatelessWidget {
                     _iconColumn(
                       icon: FontAwesomeIcons.github,
                       label: 'GitHub',
-                      color: const Color(0xFFE8F5E9),
+                      color: C.textHi,
                       url: _github,
                     ),
                     const SizedBox(width: 10),
@@ -138,7 +139,7 @@ class DevelopedByCard extends StatelessWidget {
           child: Container(
             padding: const EdgeInsets.symmetric(vertical: 10),
             decoration: BoxDecoration(
-              color: const Color(0xFF0A1410),
+              color: C.bg,
               borderRadius: BorderRadius.circular(10),
               border: Border.all(color: color.withValues(alpha: 0.25), width: 1),
             ),

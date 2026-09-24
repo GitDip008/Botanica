@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../services/auth_service.dart';
 import '../../services/language_service.dart';
+import '../../theme/tokens.dart';
 
 class SignupScreen extends StatefulWidget {
   const SignupScreen({super.key});
@@ -50,11 +51,11 @@ class _SignupScreenState extends State<SignupScreen> {
   Widget build(BuildContext context) {
     final s = context.watch<LanguageService>().strings;
     return Scaffold(
-      backgroundColor: const Color(0xFF0A1A0F),
+      backgroundColor: C.bg,
       appBar: AppBar(
         backgroundColor: Colors.transparent,
         elevation: 0,
-        iconTheme: const IconThemeData(color: Color(0xFFE8F5E9)),
+        iconTheme: const IconThemeData(color: C.textHi),
       ),
       body: SafeArea(
         child: SingleChildScrollView(
@@ -66,10 +67,10 @@ class _SignupScreenState extends State<SignupScreen> {
               children: [
                 Text(s.createAccount,
                     style: const TextStyle(
-                        color: Color(0xFFE8F5E9), fontSize: 28, fontWeight: FontWeight.w700)),
+                        color: C.textHi, fontSize: 28, fontWeight: FontWeight.w700)),
                 const SizedBox(height: 6),
                 Text(s.joinBotanicaSubtitle,
-                    style: const TextStyle(color: Color(0xFF81C784), fontSize: 13)),
+                    style: const TextStyle(color: C.accent, fontSize: 13)),
                 const SizedBox(height: 32),
 
                 TextFormField(
@@ -103,7 +104,7 @@ class _SignupScreenState extends State<SignupScreen> {
                     suffix: IconButton(
                       icon: Icon(
                         _obscure ? Icons.visibility_off_rounded : Icons.visibility_rounded,
-                        color: const Color(0xFF4A7A50),
+                        color: C.textFaint,
                       ),
                       onPressed: () => setState(() => _obscure = !_obscure),
                     ),
@@ -124,7 +125,7 @@ class _SignupScreenState extends State<SignupScreen> {
                       border: Border.all(color: const Color(0xFF8C2336)),
                     ),
                     child: Row(children: [
-                      const Icon(Icons.error_outline_rounded, color: Color(0xFFEF5350), size: 18),
+                      const Icon(Icons.error_outline_rounded, color: C.danger, size: 18),
                       const SizedBox(width: 8),
                       Expanded(child: Text(_error!,
                           style: const TextStyle(color: Color(0xFFFFCDD2), fontSize: 12))),
@@ -136,7 +137,7 @@ class _SignupScreenState extends State<SignupScreen> {
                 ElevatedButton(
                   onPressed: _busy ? null : _signUp,
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: const Color(0xFF2E7D32),
+                    backgroundColor: C.accentDim,
                     foregroundColor: Colors.white,
                     padding: const EdgeInsets.symmetric(vertical: 16),
                     shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
@@ -162,22 +163,22 @@ class _SignupScreenState extends State<SignupScreen> {
   InputDecoration _decoration(String label, IconData icon, {Widget? suffix}) {
     return InputDecoration(
       labelText: label,
-      labelStyle: const TextStyle(color: Color(0xFF81C784)),
-      prefixIcon: Icon(icon, color: const Color(0xFF4A7A50)),
+      labelStyle: const TextStyle(color: C.accent),
+      prefixIcon: Icon(icon, color: C.textFaint),
       suffixIcon: suffix,
       filled: true,
-      fillColor: const Color(0xFF111F16),
+      fillColor: C.surface,
       border: OutlineInputBorder(
         borderRadius: BorderRadius.circular(14),
-        borderSide: const BorderSide(color: Color(0xFF2A4A2F)),
+        borderSide: const BorderSide(color: C.line),
       ),
       enabledBorder: OutlineInputBorder(
         borderRadius: BorderRadius.circular(14),
-        borderSide: const BorderSide(color: Color(0xFF2A4A2F)),
+        borderSide: const BorderSide(color: C.line),
       ),
       focusedBorder: OutlineInputBorder(
         borderRadius: BorderRadius.circular(14),
-        borderSide: const BorderSide(color: Color(0xFF66BB6A), width: 1.5),
+        borderSide: const BorderSide(color: C.accent, width: 1.5),
       ),
     );
   }

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_map/flutter_map.dart';
 import 'package:latlong2/latlong.dart';
 import '../../services/navigation/nav_graph.dart';
+import '../../theme/tokens.dart';
 
 /// Renders a computed [NavRoute] door-to-door, MazeMap-style:
 ///   • outdoor segments → polyline on an OSM map
@@ -52,9 +53,9 @@ class _NavigationViewState extends State<NavigationView> {
     final seg = segments[_activeSegment];
 
     return Scaffold(
-      backgroundColor: const Color(0xFF0A1A0F),
+      backgroundColor: C.bg,
       appBar: AppBar(
-        backgroundColor: const Color(0xFF0D1F14),
+        backgroundColor: C.bg,
         title: Text('To: ${widget.destinationLabel}',
             overflow: TextOverflow.ellipsis),
         elevation: 0,
@@ -64,22 +65,22 @@ class _NavigationViewState extends State<NavigationView> {
           // ── Distance / time banner ──
           Container(
             width: double.infinity,
-            color: const Color(0xFF1A2E1E),
+            color: C.surface,
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
             child: Row(children: [
               const Icon(Icons.directions_walk_rounded,
-                  color: Color(0xFF66BB6A), size: 20),
+                  color: C.accent, size: 20),
               const SizedBox(width: 8),
               Text(
                 '${route.totalMeters.round()} m  ·  ~${route.walkMinutes} min',
                 style: const TextStyle(
-                    color: Color(0xFFE8F5E9),
+                    color: C.textHi,
                     fontSize: 15,
                     fontWeight: FontWeight.w700),
               ),
               const Spacer(),
               Text('Leg ${_activeSegment + 1}/${segments.length}',
-                  style: const TextStyle(color: Color(0xFF81C784), fontSize: 12)),
+                  style: const TextStyle(color: C.accent, fontSize: 12)),
             ]),
           ),
 
@@ -93,7 +94,7 @@ class _NavigationViewState extends State<NavigationView> {
           // ── Segment switcher (only when the route crosses a boundary) ──
           if (segments.length > 1)
             Container(
-              color: const Color(0xFF0D1F14),
+              color: C.bg,
               padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 12),
               child: Row(children: [
                 _legButton(
@@ -108,7 +109,7 @@ class _NavigationViewState extends State<NavigationView> {
                       ? '🏠 Inside ${_floorName(seg.floorplan)}'
                       : '🌳 Outdoors',
                   style: const TextStyle(
-                      color: Color(0xFFE8F5E9),
+                      color: C.textHi,
                       fontSize: 13,
                       fontWeight: FontWeight.w600),
                 ),
@@ -137,7 +138,7 @@ class _NavigationViewState extends State<NavigationView> {
     bool trailing = false,
     required VoidCallback onTap,
   }) {
-    final color = enabled ? const Color(0xFF66BB6A) : const Color(0xFF2A4A2F);
+    final color = enabled ? C.accent : C.line;
     return TextButton.icon(
       onPressed: enabled ? onTap : null,
       icon: trailing ? const SizedBox.shrink() : Icon(icon, color: color, size: 20),
@@ -152,9 +153,9 @@ class _NavigationViewState extends State<NavigationView> {
       f == 'romeo' ? 'Romeo greenhouse' : f == 'julia' ? 'Julia greenhouse' : 'greenhouse';
 
   Scaffold _emptyScaffold() => Scaffold(
-        backgroundColor: const Color(0xFF0A1A0F),
+        backgroundColor: C.bg,
         appBar: AppBar(
-          backgroundColor: const Color(0xFF0D1F14),
+          backgroundColor: C.bg,
           title: const Text('Directions'),
         ),
         body: const Center(
@@ -163,7 +164,7 @@ class _NavigationViewState extends State<NavigationView> {
             child: Text(
               "I couldn't find a route to that plant. It may not be mapped yet — ask a gardener for help finding it.",
               textAlign: TextAlign.center,
-              style: TextStyle(color: Color(0xFF81C784), fontSize: 15, height: 1.5),
+              style: TextStyle(color: C.accent, fontSize: 15, height: 1.5),
             ),
           ),
         ),
@@ -185,7 +186,7 @@ class _OutdoorSegment extends StatelessWidget {
     if (pts.isEmpty) {
       return const Center(
         child: Text('Outdoor leg — coordinates not set yet',
-            style: TextStyle(color: Color(0xFF81C784))),
+            style: TextStyle(color: C.accent)),
       );
     }
     final center = pts[pts.length ~/ 2];
@@ -202,7 +203,7 @@ class _OutdoorSegment extends StatelessWidget {
             Polyline(
               points: pts,
               strokeWidth: 5,
-              color: const Color(0xFF2E7D32),
+              color: C.accentDim,
               borderStrokeWidth: 2,
               borderColor: Colors.white,
             ),
@@ -302,7 +303,7 @@ class _CellDot extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final color = highlight ? const Color(0xFFE65100) : const Color(0xFF2E7D32);
+    final color = highlight ? const Color(0xFFE65100) : C.accentDim;
     return Tooltip(
       message: label,
       child: Container(
@@ -339,16 +340,16 @@ class _PlanPlaceholder extends StatelessWidget {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            const Icon(Icons.meeting_room_outlined, color: Color(0xFF4A7A50), size: 56),
+            const Icon(Icons.meeting_room_outlined, color: C.textFaint, size: 56),
             const SizedBox(height: 12),
             const Text('Greenhouse floor-plan image not added yet.',
                 textAlign: TextAlign.center,
-                style: TextStyle(color: Color(0xFF81C784), fontSize: 14)),
+                style: TextStyle(color: C.accent, fontSize: 14)),
             const SizedBox(height: 16),
             ...cells.asMap().entries.map((e) => Padding(
                   padding: const EdgeInsets.symmetric(vertical: 3),
                   child: Text('${e.key + 1}.  ${e.value.label}',
-                      style: const TextStyle(color: Color(0xFFE8F5E9), fontSize: 14)),
+                      style: const TextStyle(color: C.textHi, fontSize: 14)),
                 )),
           ],
         ),
@@ -368,8 +369,8 @@ class _StepList extends StatelessWidget {
     return Container(
       constraints: const BoxConstraints(maxHeight: 150),
       decoration: const BoxDecoration(
-        color: Color(0xFF0D1F14),
-        border: Border(top: BorderSide(color: Color(0xFF1E3D24))),
+        color: C.bg,
+        border: Border(top: BorderSide(color: C.line)),
       ),
       child: ListView.builder(
         padding: const EdgeInsets.symmetric(vertical: 8),
@@ -392,21 +393,21 @@ class _StepList extends StatelessWidget {
               color: isLast
                   ? const Color(0xFFE65100)
                   : isDoor
-                      ? const Color(0xFFFFB300)
-                      : const Color(0xFF66BB6A),
+                      ? C.gold
+                      : C.accent,
               size: 18,
             ),
             title: Text(
               isLast ? 'Arrive: ${n.label}' : n.label,
               style: TextStyle(
-                color: const Color(0xFFE8F5E9),
+                color: C.textHi,
                 fontSize: 13,
                 fontWeight: isLast || i == 0 ? FontWeight.w700 : FontWeight.w400,
               ),
             ),
             subtitle: isDoor
                 ? const Text('Enter the greenhouse here',
-                    style: TextStyle(color: Color(0xFFFFD54F), fontSize: 11))
+                    style: TextStyle(color: C.gold, fontSize: 11))
                 : null,
           );
         },

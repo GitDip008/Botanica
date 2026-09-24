@@ -4,6 +4,7 @@ import '../services/chat_service.dart';
 import '../services/gemini_proxy.dart';
 import '../services/language_service.dart';
 import '../services/usage_tracking_service.dart';
+import '../theme/tokens.dart';
 
 class BloomScreen extends StatefulWidget {
   const BloomScreen({super.key});
@@ -123,13 +124,13 @@ class _BloomScreenState extends State<BloomScreen> {
   Color _sectionColor(String section) {
     if (section.contains('Ornamental')) return const Color(0xFF880E4F);
     if (section.contains('Fennoscandian')) return const Color(0xFF546E7A);
-    if (section.contains('Woodland')) return const Color(0xFF1B5E20);
+    if (section.contains('Woodland')) return C.accentDim;
     if (section.contains('Grassland')) return const Color(0xFF558B2F);
     if (section.contains('Economic') || section.contains('Medicinal')) return const Color(0xFFE65100);
     if (section.contains('Systematic')) return const Color(0xFF00695C);
     if (section.contains('Romeo')) return const Color(0xFF795548);
-    if (section.contains('Julia')) return const Color(0xFF2E7D32);
-    return const Color(0xFF2E7D32);
+    if (section.contains('Julia')) return C.accentDim;
+    return C.accentDim;
   }
 
   @override
@@ -137,18 +138,18 @@ class _BloomScreenState extends State<BloomScreen> {
     final now = DateTime.now();
     final s = LanguageService.instance.strings;
     return Scaffold(
-      backgroundColor: const Color(0xFF0D1F14),
+      backgroundColor: C.bg,
       appBar: AppBar(
-        backgroundColor: const Color(0xFF1A2E1E),
+        backgroundColor: C.surface,
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back_rounded, color: Color(0xFF66BB6A)),
+          icon: const Icon(Icons.arrow_back_rounded, color: C.accent),
           onPressed: () => Navigator.pop(context),
         ),
         title: Text('🌸 ${s.inBloomTitle}',
-            style: const TextStyle(color: Color(0xFFE8F5E9), fontWeight: FontWeight.bold)),
+            style: const TextStyle(color: C.textHi, fontWeight: FontWeight.bold)),
         actions: [
           IconButton(
-            icon: const Icon(Icons.refresh, color: Color(0xFF66BB6A)),
+            icon: const Icon(Icons.refresh, color: C.accent),
             onPressed: _fetchBlooms,
           ),
         ],
@@ -157,14 +158,14 @@ class _BloomScreenState extends State<BloomScreen> {
         children: [
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
-            color: const Color(0xFF1A2E1E),
+            color: C.surface,
             child: Row(
               children: [
-                const Icon(Icons.calendar_today, color: Color(0xFF66BB6A), size: 16),
+                const Icon(Icons.calendar_today, color: C.accent, size: 16),
                 const SizedBox(width: 8),
                 Text(
                   '${_monthName(now.month)} ${now.year} · Oulu Botanical Garden',
-                  style: const TextStyle(color: Color(0xFF66BB6A), fontSize: 13),
+                  style: const TextStyle(color: C.accent, fontSize: 13),
                 ),
               ],
             ),
@@ -175,10 +176,10 @@ class _BloomScreenState extends State<BloomScreen> {
                     child: Column(
                       mainAxisSize: MainAxisSize.min,
                       children: [
-                        const CircularProgressIndicator(color: Color(0xFF66BB6A)),
+                        const CircularProgressIndicator(color: C.accent),
                         const SizedBox(height: 16),
                         Text(s.checkingBlooms,
-                            style: const TextStyle(color: Color(0xFF4CAF50))),
+                            style: const TextStyle(color: C.accent)),
                       ],
                     ),
                   )
@@ -190,19 +191,19 @@ class _BloomScreenState extends State<BloomScreen> {
                             mainAxisAlignment: MainAxisAlignment.center,
                             children: [
                               const Icon(Icons.local_florist_outlined,
-                                  color: Color(0xFF4A7A50), size: 56),
+                                  color: C.textFaint, size: 56),
                               const SizedBox(height: 14),
                               Text(s.noBloomsToday,
                                   textAlign: TextAlign.center,
                                   style: const TextStyle(
-                                      color: Color(0xFFE8F5E9),
+                                      color: C.textHi,
                                       fontSize: 16,
                                       fontWeight: FontWeight.w700)),
                               const SizedBox(height: 6),
                               Text(s.noBloomsBody,
                                   textAlign: TextAlign.center,
                                   style: const TextStyle(
-                                      color: Color(0xFF81C784), fontSize: 13)),
+                                      color: C.accent, fontSize: 13)),
                             ],
                           ),
                         ),
@@ -217,7 +218,7 @@ class _BloomScreenState extends State<BloomScreen> {
                         margin: const EdgeInsets.only(bottom: 10),
                         padding: const EdgeInsets.all(14),
                         decoration: BoxDecoration(
-                          color: const Color(0xFF1A2E1E),
+                          color: C.surface,
                           borderRadius: BorderRadius.circular(14),
                           border: Border.all(color: sColor.withOpacity(0.5)),
                         ),
@@ -242,7 +243,7 @@ class _BloomScreenState extends State<BloomScreen> {
                                       Expanded(
                                         child: Text(e.common,
                                             style: const TextStyle(
-                                                color: Color(0xFFE8F5E9),
+                                                color: C.textHi,
                                                 fontWeight: FontWeight.bold,
                                                 fontSize: 14)),
                                       ),
@@ -262,13 +263,13 @@ class _BloomScreenState extends State<BloomScreen> {
                                   ),
                                   Text(e.scientific,
                                       style: const TextStyle(
-                                          color: Color(0xFF66BB6A),
+                                          color: C.accent,
                                           fontSize: 12,
                                           fontStyle: FontStyle.italic)),
                                   const SizedBox(height: 4),
                                   Text(e.note,
                                       style: const TextStyle(
-                                          color: Color(0xFFE8F5E9),
+                                          color: C.textHi,
                                           fontSize: 12,
                                           height: 1.4)),
                                   const SizedBox(height: 4),

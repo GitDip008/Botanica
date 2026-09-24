@@ -13,12 +13,13 @@ import '../../models/contest.dart';
 import '../../services/auth_service.dart';
 import '../../services/contest_service.dart';
 import '../../services/hunt_submission_service.dart';
+import '../../theme/tokens.dart';
 
-const _bg = Color(0xFF0A1A0F);
-const _surface = Color(0xFF111F16);
-const _border = Color(0xFF2A4A2F);
-const _textPri = Color(0xFFE8F5E9);
-const _textDim = Color(0xFF6E8A72);
+const _bg = C.bg;
+const _surface = C.surface;
+const _border = C.line;
+const _textPri = C.textHi;
+const _textDim = C.textFaint;
 
 // ─── Review queue ─────────────────────────────────────────────────────────────
 
@@ -30,10 +31,10 @@ class HuntReviewsScreen extends StatelessWidget {
     return Scaffold(
       backgroundColor: _bg,
       appBar: AppBar(
-        backgroundColor: const Color(0xFF0D1F14),
+        backgroundColor: C.bg,
         title: const Text('Photo review requests',
             style: TextStyle(color: _textPri)),
-        iconTheme: const IconThemeData(color: Color(0xFF66BB6A)),
+        iconTheme: const IconThemeData(color: C.accent),
       ),
       body: StreamBuilder<List<ReviewRequest>>(
         stream: HuntSubmissionService.instance.watchPendingReviews(),
@@ -47,7 +48,7 @@ class HuntReviewsScreen extends StatelessWidget {
               child: Padding(
                 padding: EdgeInsets.all(32),
                 child: Text('Nothing waiting for review.',
-                    style: TextStyle(color: Color(0xFF9CCC9F))),
+                    style: TextStyle(color: C.textSoft)),
               ),
             );
           }
@@ -102,7 +103,7 @@ class _ReviewCardState extends State<_ReviewCard> {
       decoration: BoxDecoration(
         color: _surface,
         borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: const Color(0xFFEF5350)),
+        border: Border.all(color: C.danger),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -117,7 +118,7 @@ class _ReviewCardState extends State<_ReviewCard> {
                 aspectRatio: 4 / 3,
                 child: snap.data == null
                     ? Container(
-                        color: const Color(0xFF13301A),
+                        color: C.surfaceAlt,
                         child: const Center(
                           child: Text('No photo attached',
                               style: TextStyle(color: _textDim, fontSize: 12)),
@@ -153,7 +154,7 @@ class _ReviewCardState extends State<_ReviewCard> {
                 // which, so the answer they are judging against is right here.
                 Text('Should be: ${r.plantName}',
                     style: const TextStyle(
-                        color: Color(0xFF81C784), fontSize: 12.5)),
+                        color: C.accent, fontSize: 12.5)),
                 if (r.typedAnswer.isNotEmpty)
                   Text('They typed: "${r.typedAnswer}"',
                       style: const TextStyle(color: _textDim, fontSize: 12.5)),
@@ -172,8 +173,8 @@ class _ReviewCardState extends State<_ReviewCard> {
                       Expanded(
                         child: OutlinedButton.icon(
                           style: OutlinedButton.styleFrom(
-                            foregroundColor: const Color(0xFFEF5350),
-                            side: const BorderSide(color: Color(0xFFEF5350)),
+                            foregroundColor: C.danger,
+                            side: const BorderSide(color: C.danger),
                             padding: const EdgeInsets.symmetric(vertical: 12),
                           ),
                           icon: const Icon(Icons.close_rounded, size: 17),
@@ -185,7 +186,7 @@ class _ReviewCardState extends State<_ReviewCard> {
                       Expanded(
                         child: FilledButton.icon(
                           style: FilledButton.styleFrom(
-                            backgroundColor: const Color(0xFF2E7D32),
+                            backgroundColor: C.accentDim,
                             padding: const EdgeInsets.symmetric(vertical: 12),
                           ),
                           icon: const Icon(Icons.check_rounded, size: 17),
@@ -214,9 +215,9 @@ class ParticipantsScreen extends StatelessWidget {
     return Scaffold(
       backgroundColor: _bg,
       appBar: AppBar(
-        backgroundColor: const Color(0xFF0D1F14),
+        backgroundColor: C.bg,
         title: const Text('Participants', style: TextStyle(color: _textPri)),
-        iconTheme: const IconThemeData(color: Color(0xFF66BB6A)),
+        iconTheme: const IconThemeData(color: C.accent),
       ),
       body: StreamBuilder<List<Participant>>(
         stream: HuntSubmissionService.instance.watchParticipants(),
@@ -230,7 +231,7 @@ class ParticipantsScreen extends StatelessWidget {
               child: Padding(
                 padding: EdgeInsets.all(32),
                 child: Text('Nobody has submitted anything yet.',
-                    style: TextStyle(color: Color(0xFF9CCC9F))),
+                    style: TextStyle(color: C.textSoft)),
               ),
             );
           }
@@ -260,13 +261,13 @@ class ParticipantsScreen extends StatelessWidget {
                       children: [
                         CircleAvatar(
                           radius: 18,
-                          backgroundColor: const Color(0xFF1B4020),
+                          backgroundColor: C.surfaceAlt,
                           child: Text(
                             p.displayName.isEmpty
                                 ? '?'
                                 : p.displayName.characters.first.toUpperCase(),
                             style: const TextStyle(
-                                color: Color(0xFF81C784),
+                                color: C.accent,
                                 fontWeight: FontWeight.w700),
                           ),
                         ),
@@ -294,7 +295,7 @@ class ParticipantsScreen extends StatelessWidget {
                             ],
                           ),
                         ),
-                        const Icon(Icons.chevron_right, color: Color(0xFF4A7A50)),
+                        const Icon(Icons.chevron_right, color: C.textFaint),
                       ],
                     ),
                   ),
@@ -319,10 +320,10 @@ class ParticipantDetailScreen extends StatelessWidget {
     return Scaffold(
       backgroundColor: _bg,
       appBar: AppBar(
-        backgroundColor: const Color(0xFF0D1F14),
+        backgroundColor: C.bg,
         title: Text(participant.displayName,
             style: const TextStyle(color: _textPri)),
-        iconTheme: const IconThemeData(color: Color(0xFF66BB6A)),
+        iconTheme: const IconThemeData(color: C.accent),
       ),
       // Both challenges on one page: the admin is looking at a person, not at
       // a feature, and asking "what did they do today" should not mean opening
@@ -392,7 +393,7 @@ class _SubmissionCard extends StatelessWidget {
         color: _surface,
         borderRadius: BorderRadius.circular(12),
         border: Border.all(
-            color: s.correct ? const Color(0xFF2E7D32) : _border),
+            color: s.correct ? C.accentDim : _border),
       ),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -416,7 +417,7 @@ class _SubmissionCard extends StatelessWidget {
                 height: 66,
                 margin: const EdgeInsets.only(right: 12),
                 decoration: BoxDecoration(
-                  color: const Color(0xFF13301A),
+                  color: C.surfaceAlt,
                   borderRadius: BorderRadius.circular(8),
                   image: snap.data == null
                       ? null
@@ -425,7 +426,7 @@ class _SubmissionCard extends StatelessWidget {
                 ),
                 child: snap.data == null
                     ? const Icon(Icons.image_not_supported_outlined,
-                        size: 16, color: Color(0xFF4A7A50))
+                        size: 16, color: C.textFaint)
                     : null,
               ),
             ),
@@ -441,7 +442,7 @@ class _SubmissionCard extends StatelessWidget {
                       size: 15,
                       color: s.correct
                           ? Colors.greenAccent
-                          : const Color(0xFF6E8A72),
+                          : C.textFaint,
                     ),
                     const SizedBox(width: 6),
                     Expanded(
@@ -454,7 +455,7 @@ class _SubmissionCard extends StatelessWidget {
                     Text(s.correct ? '${s.points} pts' : '—',
                         style: TextStyle(
                             color: s.correct
-                                ? const Color(0xFFFFD54F)
+                                ? C.gold
                                 : _textDim,
                             fontSize: 12.5,
                             fontWeight: FontWeight.w700)),
@@ -462,7 +463,7 @@ class _SubmissionCard extends StatelessWidget {
                 ),
                 const SizedBox(height: 4),
                 Text('Typed: "${s.typedAnswer}"',
-                    style: const TextStyle(color: Color(0xFFCFE8D2), fontSize: 12.5)),
+                    style: const TextStyle(color: C.text, fontSize: 12.5)),
                 Text(
                   [
                     'photo: ${s.photoVerdict}',
@@ -476,7 +477,7 @@ class _SubmissionCard extends StatelessWidget {
                 ),
                 Text(_when,
                     style: const TextStyle(
-                        color: Color(0xFF4A7A50), fontSize: 11)),
+                        color: C.textFaint, fontSize: 11)),
               ],
             ),
           ),
@@ -495,7 +496,7 @@ class _SectionLabel extends StatelessWidget {
         padding: const EdgeInsets.only(bottom: 10),
         child: Text(text,
             style: const TextStyle(
-                color: Color(0xFF81C784),
+                color: C.accent,
                 fontSize: 11,
                 fontWeight: FontWeight.w700,
                 letterSpacing: 1.2)),
@@ -559,7 +560,7 @@ class _ContestEntryCard extends StatelessWidget {
                 height: 66,
                 margin: const EdgeInsets.only(right: 12),
                 decoration: BoxDecoration(
-                  color: const Color(0xFF13301A),
+                  color: C.surfaceAlt,
                   borderRadius: BorderRadius.circular(8),
                   image: snap.data == null
                       ? null
@@ -568,7 +569,7 @@ class _ContestEntryCard extends StatelessWidget {
                 ),
                 child: snap.data == null
                     ? const Icon(Icons.local_florist_rounded,
-                        size: 16, color: Color(0xFF4A7A50))
+                        size: 16, color: C.textFaint)
                     : null,
               ),
             ),
@@ -590,7 +591,7 @@ class _ContestEntryCard extends StatelessWidget {
                     // missing, which is the point of recording it.
                     if (!entry.fromIndex)
                       const Icon(Icons.edit_note_rounded,
-                          size: 15, color: Color(0xFFFFD54F)),
+                          size: 15, color: C.gold),
                   ],
                 ),
                 Text(
@@ -607,7 +608,7 @@ class _ContestEntryCard extends StatelessWidget {
                           '${r.key} ${r.value > 0 ? "+" : ""}${r.value}')
                       .join('   '),
                   style:
-                      const TextStyle(color: Color(0xFFCFE8D2), fontSize: 11),
+                      const TextStyle(color: C.text, fontSize: 11),
                 ),
                 Row(children: [
                   Icon(
@@ -616,8 +617,8 @@ class _ContestEntryCard extends StatelessWidget {
                         : Icons.location_off_rounded,
                     size: 12,
                     color: entry.hasLocation
-                        ? const Color(0xFF81C784)
-                        : const Color(0xFF4A7A50),
+                        ? C.accent
+                        : C.textFaint,
                   ),
                   const SizedBox(width: 4),
                   Expanded(
@@ -627,12 +628,12 @@ class _ContestEntryCard extends StatelessWidget {
                               '${entry.lng!.toStringAsFixed(5)}'
                           : 'no location',
                       style: const TextStyle(
-                          color: Color(0xFF4A7A50), fontSize: 11),
+                          color: C.textFaint, fontSize: 11),
                     ),
                   ),
                   Text(_when,
                       style: const TextStyle(
-                          color: Color(0xFF4A7A50), fontSize: 11)),
+                          color: C.textFaint, fontSize: 11)),
                 ]),
               ],
             ),

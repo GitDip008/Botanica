@@ -8,6 +8,7 @@ import '../services/chat_history_service.dart';
 import '../services/chat_service.dart';
 import '../services/language_service.dart';
 import '../services/user_state.dart';
+import '../theme/tokens.dart';
 
 /// Continue an existing chat session — load all past messages, allow new ones.
 class ChatContinuationScreen extends StatefulWidget {
@@ -131,18 +132,18 @@ class _ChatContinuationScreenState extends State<ChatContinuationScreen> {
     final newName = await showDialog<String>(
       context: context,
       builder: (ctx) => AlertDialog(
-        backgroundColor: const Color(0xFF111F16),
+        backgroundColor: C.surface,
         title: Text(s.renameChatTitle,
-            style: const TextStyle(color: Color(0xFFE8F5E9))),
+            style: const TextStyle(color: C.textHi)),
         content: TextField(
           controller: ctrl,
           autofocus: true,
           maxLength: 60,
-          style: const TextStyle(color: Color(0xFFE8F5E9)),
+          style: const TextStyle(color: C.textHi),
           decoration: InputDecoration(
             labelText: s.newName,
-            labelStyle: const TextStyle(color: Color(0xFF81C784)),
-            counterStyle: const TextStyle(color: Color(0xFF4A7A50)),
+            labelStyle: const TextStyle(color: C.accent),
+            counterStyle: const TextStyle(color: C.textFaint),
           ),
         ),
         actions: [
@@ -151,7 +152,7 @@ class _ChatContinuationScreenState extends State<ChatContinuationScreen> {
           TextButton(
               onPressed: () => Navigator.pop(ctx, ctrl.text.trim()),
               child: Text(s.save,
-                  style: const TextStyle(color: Color(0xFF66BB6A)))),
+                  style: const TextStyle(color: C.accent))),
         ],
       ),
     );
@@ -176,11 +177,11 @@ class _ChatContinuationScreenState extends State<ChatContinuationScreen> {
     final ok = await showDialog<bool>(
       context: context,
       builder: (ctx) => AlertDialog(
-        backgroundColor: const Color(0xFF111F16),
+        backgroundColor: C.surface,
         title: Text(s.deleteChatTitle,
-            style: const TextStyle(color: Color(0xFFE8F5E9))),
+            style: const TextStyle(color: C.textHi)),
         content: Text(s.deleteChatBody,
-            style: const TextStyle(color: Color(0xFF81C784))),
+            style: const TextStyle(color: C.accent)),
         actions: [
           TextButton(
               onPressed: () => Navigator.pop(ctx, false),
@@ -188,7 +189,7 @@ class _ChatContinuationScreenState extends State<ChatContinuationScreen> {
           TextButton(
               onPressed: () => Navigator.pop(ctx, true),
               child: Text(s.delete,
-                  style: const TextStyle(color: Color(0xFFEF5350)))),
+                  style: const TextStyle(color: C.danger))),
         ],
       ),
     );
@@ -203,7 +204,7 @@ class _ChatContinuationScreenState extends State<ChatContinuationScreen> {
     final msg = _session.messages[index];
     await showModalBottomSheet(
       context: context,
-      backgroundColor: const Color(0xFF111F16),
+      backgroundColor: C.surface,
       shape: const RoundedRectangleBorder(
           borderRadius: BorderRadius.vertical(top: Radius.circular(20))),
       builder: (ctx) => SafeArea(
@@ -214,18 +215,18 @@ class _ChatContinuationScreenState extends State<ChatContinuationScreen> {
               width: 36, height: 4,
               margin: const EdgeInsets.symmetric(vertical: 10),
               decoration: BoxDecoration(
-                  color: const Color(0xFF2A4A2F),
+                  color: C.line,
                   borderRadius: BorderRadius.circular(2)),
             ),
             ListTile(
-              leading: const Icon(Icons.copy_rounded, color: Color(0xFF66BB6A)),
+              leading: const Icon(Icons.copy_rounded, color: C.accent),
               title: Text(s.copy,
-                  style: const TextStyle(color: Color(0xFFE8F5E9))),
+                  style: const TextStyle(color: C.textHi)),
               onTap: () {
                 Clipboard.setData(ClipboardData(text: msg.text));
                 Navigator.pop(ctx);
                 ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-                  backgroundColor: const Color(0xFF2E7D32),
+                  backgroundColor: C.accentDim,
                   duration: const Duration(seconds: 1),
                   content: Text(s.copied),
                 ));
@@ -237,7 +238,7 @@ class _ChatContinuationScreenState extends State<ChatContinuationScreen> {
                 leading:
                     const Icon(Icons.edit_rounded, color: Color(0xFF64B5F6)),
                 title: Text(s.edit,
-                    style: const TextStyle(color: Color(0xFFE8F5E9))),
+                    style: const TextStyle(color: C.textHi)),
                 onTap: () {
                   Navigator.pop(ctx);
                   _editMessage(index, s);
@@ -245,9 +246,9 @@ class _ChatContinuationScreenState extends State<ChatContinuationScreen> {
               ),
             ListTile(
               leading: const Icon(Icons.delete_outline_rounded,
-                  color: Color(0xFFEF5350)),
+                  color: C.danger),
               title: Text(s.delete,
-                  style: const TextStyle(color: Color(0xFFEF5350))),
+                  style: const TextStyle(color: C.danger)),
               onTap: () {
                 Navigator.pop(ctx);
                 _deleteMessage(index);
@@ -265,14 +266,14 @@ class _ChatContinuationScreenState extends State<ChatContinuationScreen> {
     final newText = await showDialog<String>(
       context: context,
       builder: (ctx) => AlertDialog(
-        backgroundColor: const Color(0xFF111F16),
+        backgroundColor: C.surface,
         title: Text(s.editMessage,
-            style: const TextStyle(color: Color(0xFFE8F5E9))),
+            style: const TextStyle(color: C.textHi)),
         content: TextField(
           controller: ctrl,
           autofocus: true,
           maxLines: null,
-          style: const TextStyle(color: Color(0xFFE8F5E9)),
+          style: const TextStyle(color: C.textHi),
         ),
         actions: [
           TextButton(
@@ -280,7 +281,7 @@ class _ChatContinuationScreenState extends State<ChatContinuationScreen> {
           TextButton(
               onPressed: () => Navigator.pop(ctx, ctrl.text.trim()),
               child: Text(s.save,
-                  style: const TextStyle(color: Color(0xFF66BB6A)))),
+                  style: const TextStyle(color: C.accent))),
         ],
       ),
     );
@@ -303,9 +304,9 @@ class _ChatContinuationScreenState extends State<ChatContinuationScreen> {
   Widget build(BuildContext context) {
     final s = context.watch<LanguageService>().strings;
     return Scaffold(
-      backgroundColor: const Color(0xFF0A1A0F),
+      backgroundColor: C.bg,
       appBar: AppBar(
-        backgroundColor: const Color(0xFF0D1F14),
+        backgroundColor: C.bg,
         elevation: 0,
         title: Column(
           mainAxisSize: MainAxisSize.min,
@@ -313,12 +314,12 @@ class _ChatContinuationScreenState extends State<ChatContinuationScreen> {
           children: [
             Text(_session.plantCommonName,
                 style: const TextStyle(
-                    color: Color(0xFFE8F5E9),
+                    color: C.textHi,
                     fontSize: 15,
                     fontWeight: FontWeight.w700)),
             Text(_session.plantScientificName,
                 style: const TextStyle(
-                    color: Color(0xFF81C784),
+                    color: C.accent,
                     fontSize: 11,
                     fontStyle: FontStyle.italic)),
           ],
@@ -326,8 +327,8 @@ class _ChatContinuationScreenState extends State<ChatContinuationScreen> {
         actions: [
           _ChatsLeftChip(),
           PopupMenuButton<String>(
-            icon: const Icon(Icons.more_vert_rounded, color: Color(0xFFE8F5E9)),
-            color: const Color(0xFF111F16),
+            icon: const Icon(Icons.more_vert_rounded, color: C.textHi),
+            color: C.surface,
             onSelected: (v) {
               if (v == 'pin') {
                 ChatHistoryService.instance
@@ -348,10 +349,10 @@ class _ChatContinuationScreenState extends State<ChatContinuationScreen> {
                       _session.isPinned
                           ? Icons.push_pin_rounded
                           : Icons.push_pin_outlined,
-                      color: const Color(0xFFFFD54F), size: 18),
+                      color: C.gold, size: 18),
                   const SizedBox(width: 10),
                   Text(_session.isPinned ? s.unpin : s.pin,
-                      style: const TextStyle(color: Color(0xFFE8F5E9))),
+                      style: const TextStyle(color: C.textHi)),
                 ]),
               ),
               PopupMenuItem(
@@ -361,17 +362,17 @@ class _ChatContinuationScreenState extends State<ChatContinuationScreen> {
                       color: Color(0xFF64B5F6), size: 18),
                   const SizedBox(width: 10),
                   Text(s.rename,
-                      style: const TextStyle(color: Color(0xFFE8F5E9))),
+                      style: const TextStyle(color: C.textHi)),
                 ]),
               ),
               PopupMenuItem(
                 value: 'delete',
                 child: Row(children: [
                   const Icon(Icons.delete_outline_rounded,
-                      color: Color(0xFFEF5350), size: 18),
+                      color: C.danger, size: 18),
                   const SizedBox(width: 10),
                   Text(s.delete,
-                      style: const TextStyle(color: Color(0xFFEF5350))),
+                      style: const TextStyle(color: C.danger)),
                 ]),
               ),
             ],
@@ -398,7 +399,7 @@ class _ChatContinuationScreenState extends State<ChatContinuationScreen> {
             Expanded(
               child: _resuming
                   ? const Center(
-                      child: CircularProgressIndicator(color: Color(0xFF66BB6A)))
+                      child: CircularProgressIndicator(color: C.accent))
                   : ListView.builder(
                       controller: _scrollCtrl,
                       padding: const EdgeInsets.fromLTRB(16, 8, 16, 12),
@@ -420,7 +421,7 @@ class _ChatContinuationScreenState extends State<ChatContinuationScreen> {
                       width: 18,
                       height: 18,
                       child: CircularProgressIndicator(
-                          color: Color(0xFF66BB6A), strokeWidth: 2),
+                          color: C.accent, strokeWidth: 2),
                     ),
                   ),
                 ),
@@ -428,35 +429,35 @@ class _ChatContinuationScreenState extends State<ChatContinuationScreen> {
             Container(
               padding: const EdgeInsets.fromLTRB(12, 8, 12, 12),
               decoration: const BoxDecoration(
-                color: Color(0xFF0D1F14),
-                border: Border(top: BorderSide(color: Color(0xFF1E3D24))),
+                color: C.bg,
+                border: Border(top: BorderSide(color: C.line)),
               ),
               child: Row(
                 children: [
                   Expanded(
                     child: TextField(
                       controller: _inputCtrl,
-                      style: const TextStyle(color: Color(0xFFE8F5E9), fontSize: 14),
+                      style: const TextStyle(color: C.textHi, fontSize: 14),
                       decoration: InputDecoration(
                         hintText: s.askAboutThisPlant,
                         hintStyle: const TextStyle(
-                            color: Color(0xFF4A7A50), fontSize: 13),
+                            color: C.textFaint, fontSize: 13),
                         filled: true,
-                        fillColor: const Color(0xFF111F16),
+                        fillColor: C.surface,
                         contentPadding: const EdgeInsets.symmetric(
                             horizontal: 14, vertical: 12),
                         border: OutlineInputBorder(
                           borderRadius: BorderRadius.circular(22),
-                          borderSide: const BorderSide(color: Color(0xFF2A4A2F)),
+                          borderSide: const BorderSide(color: C.line),
                         ),
                         enabledBorder: OutlineInputBorder(
                           borderRadius: BorderRadius.circular(22),
-                          borderSide: const BorderSide(color: Color(0xFF2A4A2F)),
+                          borderSide: const BorderSide(color: C.line),
                         ),
                         focusedBorder: OutlineInputBorder(
                           borderRadius: BorderRadius.circular(22),
                           borderSide:
-                              const BorderSide(color: Color(0xFF66BB6A), width: 1.5),
+                              const BorderSide(color: C.accent, width: 1.5),
                         ),
                       ),
                       onSubmitted: (_) => _send(),
@@ -465,7 +466,7 @@ class _ChatContinuationScreenState extends State<ChatContinuationScreen> {
                   ),
                   const SizedBox(width: 8),
                   Material(
-                    color: const Color(0xFF2E7D32),
+                    color: C.accentDim,
                     shape: const CircleBorder(),
                     child: InkWell(
                       customBorder: const CircleBorder(),
@@ -495,45 +496,45 @@ class _ChatContinuationScreenState extends State<ChatContinuationScreen> {
         constraints: BoxConstraints(
             maxWidth: MediaQuery.of(context).size.width * 0.78),
         decoration: BoxDecoration(
-          color: m.isUser ? const Color(0xFF2E7D32) : const Color(0xFF111F16),
+          color: m.isUser ? C.accentDim : C.surface,
           borderRadius: BorderRadius.only(
             topLeft: const Radius.circular(16),
             topRight: const Radius.circular(16),
             bottomLeft: Radius.circular(m.isUser ? 16 : 4),
             bottomRight: Radius.circular(m.isUser ? 4 : 16),
           ),
-          border: m.isUser ? null : Border.all(color: const Color(0xFF2A4A2F)),
+          border: m.isUser ? null : Border.all(color: C.line),
         ),
         child: m.isUser
             ? Text(m.text,
                 style: const TextStyle(
-                    color: Color(0xFFE8F5E9), fontSize: 14, height: 1.45))
+                    color: C.textHi, fontSize: 14, height: 1.45))
             : MarkdownBody(
                 data: m.text,
                 shrinkWrap: true,
                 styleSheet: MarkdownStyleSheet(
                   p: const TextStyle(
-                      color: Color(0xFFE8F5E9), fontSize: 14, height: 1.45),
+                      color: C.textHi, fontSize: 14, height: 1.45),
                   strong: const TextStyle(
-                      color: Color(0xFFE8F5E9),
+                      color: C.textHi,
                       fontSize: 14,
                       fontWeight: FontWeight.w700),
                   em: const TextStyle(
-                      color: Color(0xFFE8F5E9),
+                      color: C.textHi,
                       fontSize: 14,
                       fontStyle: FontStyle.italic),
                   listBullet:
-                      const TextStyle(color: Color(0xFF81C784), fontSize: 14),
+                      const TextStyle(color: C.accent, fontSize: 14),
                   h1: const TextStyle(
-                      color: Color(0xFFE8F5E9),
+                      color: C.textHi,
                       fontSize: 17,
                       fontWeight: FontWeight.w700),
                   h2: const TextStyle(
-                      color: Color(0xFFE8F5E9),
+                      color: C.textHi,
                       fontSize: 16,
                       fontWeight: FontWeight.w700),
                   h3: const TextStyle(
-                      color: Color(0xFFE8F5E9),
+                      color: C.textHi,
                       fontSize: 15,
                       fontWeight: FontWeight.w700),
                   blockSpacing: 8,
@@ -557,7 +558,7 @@ class _ChatsLeftChip extends StatelessWidget {
     final isLow = left <= 2;
     final color = left == 0
         ? Colors.red[400]!
-        : (isLow ? const Color(0xFFFFB300) : const Color(0xFF66BB6A));
+        : (isLow ? C.gold : C.accent);
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 12),
       child: Container(

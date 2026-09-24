@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../../services/chat_service.dart';
 import '../../services/language_service.dart';
+import '../../theme/tokens.dart';
 
 /// Shows which chat engine is active and lets users optionally download
 /// the on-device Gemma model for offline fallback.
@@ -37,7 +38,7 @@ class _AIModelScreenState extends State<AIModelScreen> {
       if (mounted) {
         setState(() => _localInstalled = true);
         ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-          backgroundColor: const Color(0xFF2E7D32),
+          backgroundColor: C.accentDim,
           content: Text(LanguageService.instance.strings.offlineReady),
         ));
       }
@@ -55,10 +56,10 @@ class _AIModelScreenState extends State<AIModelScreen> {
     final cloudActive = chat.cloud.isConfigured;
 
     return Scaffold(
-      backgroundColor: const Color(0xFF0A1A0F),
+      backgroundColor: C.bg,
       appBar: AppBar(
         title: Text(LanguageService.instance.strings.chatEngine),
-        backgroundColor: const Color(0xFF0D1F14),
+        backgroundColor: C.bg,
         elevation: 0,
       ),
       body: ListView(
@@ -69,23 +70,23 @@ class _AIModelScreenState extends State<AIModelScreen> {
             padding: const EdgeInsets.all(18),
             decoration: BoxDecoration(
               gradient: const LinearGradient(
-                colors: [Color(0xFF1A3320), Color(0xFF0F2018)],
+                colors: [C.surfaceAlt, Color(0xFF0F2018)],
               ),
               borderRadius: BorderRadius.circular(16),
-              border: Border.all(color: const Color(0xFF66BB6A)),
+              border: Border.all(color: C.accent),
             ),
             child: Row(children: [
-              const Icon(Icons.bolt_rounded, color: Color(0xFF66BB6A), size: 28),
+              const Icon(Icons.bolt_rounded, color: C.accent, size: 28),
               const SizedBox(width: 14),
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(LanguageService.instance.strings.activeEngine,
-                        style: const TextStyle(color: Color(0xFF81C784), fontSize: 11)),
+                        style: const TextStyle(color: C.accent, fontSize: 11)),
                     Text(chat.activeEngine,
                         style: const TextStyle(
-                            color: Color(0xFFE8F5E9),
+                            color: C.textHi,
                             fontSize: 17,
                             fontWeight: FontWeight.w700)),
                   ],
@@ -104,8 +105,8 @@ class _AIModelScreenState extends State<AIModelScreen> {
             iconColor: const Color(0xFF64B5F6),
             status: cloudActive ? s.statusActive : s.statusOff,
             statusColor: cloudActive
-                ? const Color(0xFF66BB6A)
-                : const Color(0xFF4A7A50),
+                ? C.accent
+                : C.textFaint,
           ),
           const SizedBox(height: 8),
           _engineRow(
@@ -114,11 +115,11 @@ class _AIModelScreenState extends State<AIModelScreen> {
             subtitle: _localInstalled
                 ? s.engineGemmaInstalled
                 : s.engineGemmaNotInstalled,
-            iconColor: const Color(0xFF66BB6A),
+            iconColor: C.accent,
             status: _localInstalled ? s.statusInstalled : s.statusNotInstalled,
             statusColor: _localInstalled
-                ? const Color(0xFF66BB6A)
-                : const Color(0xFF4A7A50),
+                ? C.accent
+                : C.textFaint,
           ),
           const SizedBox(height: 8),
           _engineRow(
@@ -127,7 +128,7 @@ class _AIModelScreenState extends State<AIModelScreen> {
             subtitle: s.engineGeminiBody,
             iconColor: const Color(0xFFFFB74D),
             status: s.statusAvailable,
-            statusColor: const Color(0xFF81C784),
+            statusColor: C.accent,
           ),
 
           const SizedBox(height: 28),
@@ -136,7 +137,7 @@ class _AIModelScreenState extends State<AIModelScreen> {
             Text(
               s.offlineFallbackHeader,
               style: const TextStyle(
-                color: Color(0xFF4A7A50),
+                color: C.textFaint,
                 fontSize: 11,
                 fontWeight: FontWeight.w700,
                 letterSpacing: 1.4,
@@ -145,7 +146,7 @@ class _AIModelScreenState extends State<AIModelScreen> {
             const SizedBox(height: 8),
             Text(
               s.offlineFallbackBody,
-              style: const TextStyle(color: Color(0xFF81C784), fontSize: 12),
+              style: const TextStyle(color: C.accent, fontSize: 12),
             ),
             const SizedBox(height: 12),
             if (_error != null)
@@ -172,8 +173,8 @@ class _AIModelScreenState extends State<AIModelScreen> {
                 style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600),
               ),
               style: ElevatedButton.styleFrom(
-                backgroundColor: const Color(0xFF1E3D24),
-                foregroundColor: const Color(0xFFE8F5E9),
+                backgroundColor: C.line,
+                foregroundColor: C.textHi,
                 padding: const EdgeInsets.symmetric(vertical: 14),
                 shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
                 elevation: 0,
@@ -185,7 +186,7 @@ class _AIModelScreenState extends State<AIModelScreen> {
           Text(
             s.aiModelFooter,
             textAlign: TextAlign.center,
-            style: const TextStyle(color: Color(0xFF4A7A50), fontSize: 11),
+            style: const TextStyle(color: C.textFaint, fontSize: 11),
           ),
         ],
       ),
@@ -203,9 +204,9 @@ class _AIModelScreenState extends State<AIModelScreen> {
     return Container(
       padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
-        color: const Color(0xFF111F16),
+        color: C.surface,
         borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: const Color(0xFF2A4A2F)),
+        border: Border.all(color: C.line),
       ),
       child: Row(children: [
         Container(
@@ -223,11 +224,11 @@ class _AIModelScreenState extends State<AIModelScreen> {
             children: [
               Text(title,
                   style: const TextStyle(
-                      color: Color(0xFFE8F5E9),
+                      color: C.textHi,
                       fontSize: 13,
                       fontWeight: FontWeight.w600)),
               Text(subtitle,
-                  style: const TextStyle(color: Color(0xFF81C784), fontSize: 11)),
+                  style: const TextStyle(color: C.accent, fontSize: 11)),
             ],
           ),
         ),

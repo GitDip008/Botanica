@@ -9,6 +9,7 @@ import '../services/language_service.dart';
 import '../services/plant_identification_service.dart';
 import '../services/usage_tracking_service.dart';
 import 'plant_result_screen.dart';
+import '../theme/tokens.dart';
 
 class CameraScreen extends StatefulWidget {
   const CameraScreen({super.key});
@@ -150,7 +151,7 @@ class _CameraScreenState extends State<CameraScreen> {
             ZoomableCameraPreview(controller: _controller!)
           else
             const Center(
-              child: CircularProgressIndicator(color: Color(0xFF66BB6A)),
+              child: CircularProgressIndicator(color: C.accent),
             ),
 
           // Camera switch — only shown when the device actually has another
@@ -167,7 +168,7 @@ class _CameraScreenState extends State<CameraScreen> {
                   icon: Icon(
                     Icons.flip_camera_android_rounded,
                     color: _active != null && isFront(_active!)
-                        ? const Color(0xFFFFD54F)
+                        ? C.gold
                         : Colors.white,
                   ),
                   onPressed: _switchCamera,
@@ -197,7 +198,7 @@ class _CameraScreenState extends State<CameraScreen> {
                   const Text(
                     '📸 Botanica',
                     style: TextStyle(
-                      color: Color(0xFF66BB6A),
+                      color: C.accent,
                       fontSize: 26,
                       fontWeight: FontWeight.bold,
                       letterSpacing: 1.5,
@@ -208,7 +209,7 @@ class _CameraScreenState extends State<CameraScreen> {
                   Text(
                     LanguageService.instance.strings.identifyTagline,
                     style: const TextStyle(
-                      color: Color(0xFFE8F5E9),
+                      color: C.textHi,
                       fontSize: 13,
                       letterSpacing: 2,
                     ),
@@ -242,7 +243,7 @@ class _CameraScreenState extends State<CameraScreen> {
                   Text(
                     _isLoading ? 'Identifying plant...' : 'Point at a plant and capture',
                     style: const TextStyle(
-                      color: Color(0xFFE8F5E9),
+                      color: C.textHi,
                       fontSize: 14,
                       letterSpacing: 0.5,
                     ),
@@ -256,11 +257,11 @@ class _CameraScreenState extends State<CameraScreen> {
                       decoration: BoxDecoration(
                         shape: BoxShape.circle,
                         border: Border.all(
-                          color: const Color(0xFF66BB6A),
+                          color: C.accent,
                           width: 3,
                         ),
                         color: _isLoading
-                            ? const Color(0xFF2E7D32).withOpacity(0.4)
+                            ? C.accentDim.withOpacity(0.4)
                             : Colors.white.withOpacity(0.12),
                       ),
                       child: _isLoading
@@ -269,14 +270,14 @@ class _CameraScreenState extends State<CameraScreen> {
                                 width: 28,
                                 height: 28,
                                 child: CircularProgressIndicator(
-                                  color: Color(0xFF66BB6A),
+                                  color: C.accent,
                                   strokeWidth: 2.5,
                                 ),
                               ),
                             )
                           : const Icon(
                               Icons.eco_rounded,
-                              color: Color(0xFF66BB6A),
+                              color: C.accent,
                               size: 38,
                             ),
                     ),

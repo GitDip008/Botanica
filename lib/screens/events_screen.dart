@@ -7,6 +7,7 @@ import '../models/event_request.dart';
 import '../services/auth_service.dart';
 import '../services/event_service.dart';
 import '../services/language_service.dart';
+import '../theme/tokens.dart';
 
 class EventsScreen extends StatefulWidget {
   /// If provided, auto-opens the event detail sheet for this ID on first load.
@@ -179,7 +180,7 @@ class _EventsScreenState extends State<EventsScreen> {
     final s = context.read<LanguageService>().strings;
     showModalBottomSheet(
       context: context,
-      backgroundColor: const Color(0xFF0D1F14),
+      backgroundColor: C.bg,
       isScrollControlled: true,
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
@@ -192,23 +193,23 @@ class _EventsScreenState extends State<EventsScreen> {
   Widget build(BuildContext context) {
     final s = context.watch<LanguageService>().strings;
     return Scaffold(
-      backgroundColor: const Color(0xFF0D1F14),
+      backgroundColor: C.bg,
       appBar: AppBar(
-        backgroundColor: const Color(0xFF1A2E1E),
+        backgroundColor: C.surface,
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back_rounded, color: Color(0xFF66BB6A)),
+          icon: const Icon(Icons.arrow_back_rounded, color: C.accent),
           onPressed: () => Navigator.pop(context),
         ),
         title: Text('📅 ${s.upcomingEvents}',
             style: const TextStyle(
-                color: Color(0xFFE8F5E9), fontWeight: FontWeight.bold)),
+                color: C.textHi, fontWeight: FontWeight.bold)),
       ),
       body: StreamBuilder<List<EventRequest>>(
         stream: EventService.instance.watchPublicApproved(),
         builder: (context, snap) {
           if (snap.connectionState == ConnectionState.waiting) {
             return const Center(
-                child: CircularProgressIndicator(color: Color(0xFF66BB6A)));
+                child: CircularProgressIndicator(color: C.accent));
           }
           // Always include hardcoded fallback events so the page is never empty.
           // Firestore-scraped events (if any) take precedence by appearing first.
@@ -226,12 +227,12 @@ class _EventsScreenState extends State<EventsScreen> {
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
                     const Icon(Icons.event_busy_rounded,
-                        color: Color(0xFF4A7A50), size: 64),
+                        color: C.textFaint, size: 64),
                     const SizedBox(height: 14),
                     Text(s.noPendingEvents,
                         textAlign: TextAlign.center,
                         style: const TextStyle(
-                            color: Color(0xFFE8F5E9),
+                            color: C.textHi,
                             fontSize: 15,
                             fontWeight: FontWeight.w700)),
                   ],
@@ -282,13 +283,13 @@ class _EventCard extends StatelessWidget {
             padding: const EdgeInsets.all(14),
             decoration: BoxDecoration(
               color: highlight
-                  ? const Color(0xFF1A3320)
-                  : const Color(0xFF1A2E1E),
+                  ? C.surfaceAlt
+                  : C.surface,
               borderRadius: BorderRadius.circular(14),
               border: Border.all(
                 color: highlight
-                    ? const Color(0xFF66BB6A)
-                    : const Color(0xFF2A4A2F),
+                    ? C.accent
+                    : C.line,
                 width: highlight ? 1.5 : 1,
               ),
             ),
@@ -323,7 +324,7 @@ class _EventCard extends StatelessWidget {
                               maxLines: 1,
                               overflow: TextOverflow.ellipsis,
                               style: const TextStyle(
-                                  color: Color(0xFFE8F5E9),
+                                  color: C.textHi,
                                   fontWeight: FontWeight.bold,
                                   fontSize: 14)),
                         ),
@@ -331,17 +332,17 @@ class _EventCard extends StatelessWidget {
                           padding: const EdgeInsets.symmetric(
                               horizontal: 6, vertical: 2),
                           decoration: BoxDecoration(
-                            color: const Color(0xFF66BB6A)
+                            color: C.accent
                                 .withValues(alpha: 0.18),
                             borderRadius: BorderRadius.circular(6),
                           ),
                           child: Row(mainAxisSize: MainAxisSize.min, children: [
                             const Icon(Icons.public_rounded,
-                                color: Color(0xFF66BB6A), size: 11),
+                                color: C.accent, size: 11),
                             const SizedBox(width: 3),
                             Text(openLabel,
                                 style: const TextStyle(
-                                    color: Color(0xFF66BB6A),
+                                    color: C.accent,
                                     fontSize: 9,
                                     fontWeight: FontWeight.w700)),
                           ]),
@@ -353,14 +354,14 @@ class _EventCard extends StatelessWidget {
                         return Text(
                             '${event.startTime} – ${event.endTime}  ·  ${s2.attendingCount(event.attendees)}',
                             style: const TextStyle(
-                                color: Color(0xFF4A7A50), fontSize: 11));
+                                color: C.textFaint, fontSize: 11));
                       }),
                       const SizedBox(height: 6),
                       Text(event.description,
                           maxLines: 2,
                           overflow: TextOverflow.ellipsis,
                           style: const TextStyle(
-                              color: Color(0xFF81C784),
+                              color: C.accent,
                               fontSize: 12.5,
                               height: 1.45)),
                     ],
@@ -398,25 +399,25 @@ class _EventDetailsSheet extends StatelessWidget {
               width: 40, height: 4,
               margin: const EdgeInsets.only(bottom: 16),
               decoration: BoxDecoration(
-                color: const Color(0xFF2A4A2F),
+                color: C.line,
                 borderRadius: BorderRadius.circular(2),
               ),
             ),
           ),
           Text(event.name,
               style: const TextStyle(
-                  color: Color(0xFFE8F5E9),
+                  color: C.textHi,
                   fontSize: 22,
                   fontWeight: FontWeight.w800,
                   height: 1.2)),
           const SizedBox(height: 10),
           Row(children: [
             const Icon(Icons.public_rounded,
-                color: Color(0xFF66BB6A), size: 16),
+                color: C.accent, size: 16),
             const SizedBox(width: 6),
             Text(s.openToAll,
                 style: const TextStyle(
-                    color: Color(0xFF66BB6A),
+                    color: C.accent,
                     fontSize: 12,
                     fontWeight: FontWeight.w700)),
           ]),
@@ -433,14 +434,14 @@ class _EventDetailsSheet extends StatelessWidget {
           const SizedBox(height: 18),
           Text(s.eventDescription,
               style: const TextStyle(
-                  color: Color(0xFF4A7A50),
+                  color: C.textFaint,
                   fontSize: 11,
                   fontWeight: FontWeight.w700,
                   letterSpacing: 1.4)),
           const SizedBox(height: 8),
           Text(event.description,
               style: const TextStyle(
-                  color: Color(0xFFE8F5E9), fontSize: 14, height: 1.55)),
+                  color: C.textHi, fontSize: 14, height: 1.55)),
           if (event.sourceUrl != null) ...[
             const SizedBox(height: 14),
             InkWell(
@@ -452,11 +453,11 @@ class _EventDetailsSheet extends StatelessWidget {
               },
               child: Row(children: [
                 const Icon(Icons.open_in_new_rounded,
-                    color: Color(0xFF66BB6A), size: 16),
+                    color: C.accent, size: 16),
                 const SizedBox(width: 6),
                 Text(s.viewOnOuluFi,
                     style: const TextStyle(
-                        color: Color(0xFF66BB6A),
+                        color: C.accent,
                         fontSize: 13,
                         fontWeight: FontWeight.w700,
                         decoration: TextDecoration.underline)),
@@ -471,8 +472,8 @@ class _EventDetailsSheet extends StatelessWidget {
             icon: const Icon(Icons.close_rounded, size: 18),
             label: Text(s.close),
             style: OutlinedButton.styleFrom(
-              foregroundColor: const Color(0xFF81C784),
-              side: const BorderSide(color: Color(0xFF2A4A2F)),
+              foregroundColor: C.accent,
+              side: const BorderSide(color: C.line),
               padding: const EdgeInsets.symmetric(vertical: 13),
               shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(12)),
@@ -489,18 +490,18 @@ class _EventDetailsSheet extends StatelessWidget {
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Icon(icon, color: const Color(0xFF66BB6A), size: 16),
+          Icon(icon, color: C.accent, size: 16),
           const SizedBox(width: 10),
           SizedBox(
             width: 110,
             child: Text(label,
                 style: const TextStyle(
-                    color: Color(0xFF81C784), fontSize: 12)),
+                    color: C.accent, fontSize: 12)),
           ),
           Expanded(
             child: Text(value,
                 style: const TextStyle(
-                    color: Color(0xFFE8F5E9),
+                    color: C.textHi,
                     fontSize: 13,
                     fontWeight: FontWeight.w600)),
           ),
@@ -577,15 +578,15 @@ class _RsvpButtonState extends State<_RsvpButton> {
     if (going) {
       label = s.cancelRsvp;
       icon = Icons.check_circle_rounded;
-      color = const Color(0xFF66BB6A);
+      color = C.accent;
     } else if (full) {
       label = s.eventFull;
       icon = Icons.lock_rounded;
-      color = const Color(0xFFEF5350);
+      color = C.danger;
     } else {
       label = left > 0 ? '${s.rsvp}  ·  ${s.spotsLeft(left)}' : s.rsvp;
       icon = Icons.event_available_rounded;
-      color = const Color(0xFF2E7D32);
+      color = C.accentDim;
     }
 
     return ElevatedButton.icon(

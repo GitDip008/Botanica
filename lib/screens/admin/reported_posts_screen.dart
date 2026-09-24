@@ -15,6 +15,7 @@ import 'package:flutter/material.dart';
 
 import '../../models/gallery_post.dart';
 import '../../services/gallery_service.dart';
+import '../../theme/tokens.dart';
 
 class ReportedPostsScreen extends StatelessWidget {
   const ReportedPostsScreen({super.key});
@@ -22,9 +23,9 @@ class ReportedPostsScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFF0A1A0F),
+      backgroundColor: C.bg,
       appBar: AppBar(
-        backgroundColor: const Color(0xFF0D1F14),
+        backgroundColor: C.bg,
         elevation: 0,
         title: const Text('Reported posts'),
       ),
@@ -43,10 +44,10 @@ class ReportedPostsScreen extends StatelessWidget {
                   mainAxisSize: MainAxisSize.min,
                   children: [
                     Icon(Icons.check_circle_outline,
-                        size: 40, color: Color(0xFF2E7D32)),
+                        size: 40, color: C.accentDim),
                     SizedBox(height: 12),
                     Text('Nothing to review.',
-                        style: TextStyle(color: Color(0xFF9CCC9F))),
+                        style: TextStyle(color: C.textSoft)),
                   ],
                 ),
               ),
@@ -83,9 +84,9 @@ class _ReportCardState extends State<_ReportCard> {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            backgroundColor: const Color(0xFF1B4020),
+            backgroundColor: C.surfaceAlt,
             content: Text(snack,
-                style: const TextStyle(color: Color(0xFFE8F5E9))),
+                style: const TextStyle(color: C.textHi)),
           ),
         );
       }
@@ -113,19 +114,19 @@ class _ReportCardState extends State<_ReportCard> {
     final ok = await showDialog<bool>(
       context: context,
       builder: (_) => AlertDialog(
-        backgroundColor: const Color(0xFF0D1F14),
+        backgroundColor: C.bg,
         title: const Text('Delete permanently?',
-            style: TextStyle(color: Color(0xFFE8F5E9), fontSize: 17)),
+            style: TextStyle(color: C.textHi, fontSize: 17)),
         content: const Text(
           'The post and its photo are removed for good. Hiding is reversible; '
           'this is not. Use it only when the content must not remain stored.',
-          style: TextStyle(color: Color(0xFF9CCC9F), fontSize: 13.5, height: 1.4),
+          style: TextStyle(color: C.textSoft, fontSize: 13.5, height: 1.4),
         ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context, false),
             child: const Text('Cancel',
-                style: TextStyle(color: Color(0xFF81C784))),
+                style: TextStyle(color: C.accent)),
           ),
           FilledButton(
             onPressed: () => Navigator.pop(context, true),
@@ -150,7 +151,7 @@ class _ReportCardState extends State<_ReportCard> {
     return Container(
       margin: const EdgeInsets.only(bottom: 14),
       decoration: BoxDecoration(
-        color: const Color(0xFF111F16),
+        color: C.surface,
         borderRadius: BorderRadius.circular(12),
         border: Border.all(color: const Color(0xFF5A2A2A)),
       ),
@@ -176,12 +177,12 @@ class _ReportCardState extends State<_ReportCard> {
                   child: Row(
                     children: [
                       const Icon(Icons.info_outline,
-                          color: Color(0xFF6E8A72), size: 18),
+                          color: C.textFaint, size: 18),
                       const SizedBox(width: 10),
                       const Expanded(
                         child: Text('This post no longer exists.',
                             style: TextStyle(
-                                color: Color(0xFF9CCC9F), fontSize: 13.5)),
+                                color: C.textSoft, fontSize: 13.5)),
                       ),
                       TextButton(
                         onPressed: _busy
@@ -192,7 +193,7 @@ class _ReportCardState extends State<_ReportCard> {
                                   'Report closed.',
                                 ),
                         child: const Text('Close',
-                            style: TextStyle(color: Color(0xFF81C784))),
+                            style: TextStyle(color: C.accent)),
                       ),
                     ],
                   ),
@@ -207,10 +208,10 @@ class _ReportCardState extends State<_ReportCard> {
                       aspectRatio: 4 / 3,
                       child: s.data == null
                           ? Container(
-                              color: const Color(0xFF13301A),
+                              color: C.surfaceAlt,
                               child: const Center(
                                 child: Icon(Icons.image_outlined,
-                                    color: Color(0xFF4A7A50)),
+                                    color: C.textFaint),
                               ),
                             )
                           : Image.network(s.data!, fit: BoxFit.cover),
@@ -225,13 +226,13 @@ class _ReportCardState extends State<_ReportCard> {
                       if (post.caption.isNotEmpty)
                         Text(post.caption,
                             style: const TextStyle(
-                                color: Color(0xFFE8F5E9),
+                                color: C.textHi,
                                 fontSize: 14,
                                 height: 1.4)),
                       const SizedBox(height: 6),
                       Text('by ${post.displayName}',
                           style: const TextStyle(
-                              color: Color(0xFF4A7A50), fontSize: 12)),
+                              color: C.textFaint, fontSize: 12)),
                       const SizedBox(height: 10),
                       Container(
                         padding: const EdgeInsets.symmetric(
@@ -243,7 +244,7 @@ class _ReportCardState extends State<_ReportCard> {
                         child: Row(
                           children: [
                             const Icon(Icons.flag_rounded,
-                                size: 15, color: Color(0xFFEF5350)),
+                                size: 15, color: C.danger),
                             const SizedBox(width: 8),
                             Expanded(
                               child: Text(
@@ -255,7 +256,7 @@ class _ReportCardState extends State<_ReportCard> {
                             if (post.hidden)
                               const Text('HIDDEN',
                                   style: TextStyle(
-                                      color: Color(0xFFFFD54F),
+                                      color: C.gold,
                                       fontSize: 10.5,
                                       fontWeight: FontWeight.w700,
                                       letterSpacing: 1)),
@@ -315,9 +316,9 @@ class _ReportCardState extends State<_ReportCard> {
                               icon: const Icon(Icons.done_rounded, size: 17),
                               label: const Text('Looks fine'),
                               style: OutlinedButton.styleFrom(
-                                foregroundColor: const Color(0xFF81C784),
+                                foregroundColor: C.accent,
                                 side: const BorderSide(
-                                    color: Color(0xFF2E7D32)),
+                                    color: C.accentDim),
                                 visualDensity: VisualDensity.compact,
                               ),
                             ),
@@ -326,7 +327,7 @@ class _ReportCardState extends State<_ReportCard> {
                               icon: const Icon(Icons.delete_outline, size: 17),
                               label: const Text('Delete'),
                               style: TextButton.styleFrom(
-                                foregroundColor: const Color(0xFFEF9A9A),
+                                foregroundColor: C.danger,
                                 visualDensity: VisualDensity.compact,
                               ),
                             ),

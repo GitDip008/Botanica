@@ -4,6 +4,7 @@ import 'package:firebase_app_check/firebase_app_check.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'theme/app_theme.dart';
 import 'package:provider/provider.dart';
 import 'firebase_options.dart';
 import 'screens/auth/auth_gate.dart';
@@ -14,6 +15,7 @@ import 'services/language_service.dart';
 import 'services/notification_service.dart';
 import 'services/user_state.dart';
 import 'widgets/offline_banner.dart';
+import 'theme/tokens.dart';
 
 void main() async {
   // A failure during startup used to leave the splash on screen forever — a
@@ -91,22 +93,7 @@ class BotanicaApp extends StatelessWidget {
         navigatorKey: NotificationService.navigatorKey,
         title: 'Botanica',
         debugShowCheckedModeBanner: false,
-        theme: ThemeData(
-          colorScheme: const ColorScheme.dark(
-            primary: Color(0xFF2E7D32),
-            secondary: Color(0xFF66BB6A),
-            surface: Color(0xFF1A2E1E),
-            onPrimary: Colors.white,
-            onSecondary: Colors.white,
-            onSurface: Color(0xFFE8F5E9),
-          ),
-          scaffoldBackgroundColor: const Color(0xFF0A1A0F),
-          appBarTheme: const AppBarTheme(
-            backgroundColor: Color(0xFF0D1F14),
-            foregroundColor: Color(0xFFE8F5E9),
-            elevation: 0,
-          ),
-        ),
+        theme: buildAppTheme(),
         builder: (context, child) =>
             OfflineBannerOverlay(child: child ?? const SizedBox.shrink()),
         home: const AuthGate(),
@@ -126,7 +113,7 @@ class _StartupError extends StatelessWidget {
     return MaterialApp(
       debugShowCheckedModeBanner: false,
       home: Scaffold(
-        backgroundColor: const Color(0xFF0A1A0F),
+        backgroundColor: C.bg,
         body: Center(
           child: Padding(
             padding: const EdgeInsets.all(28),
@@ -134,12 +121,12 @@ class _StartupError extends StatelessWidget {
               mainAxisSize: MainAxisSize.min,
               children: [
                 const Icon(Icons.error_outline,
-                    color: Color(0xFFEF5350), size: 40),
+                    color: C.danger, size: 40),
                 const SizedBox(height: 16),
                 const Text(
                   "Botanica couldn't start",
                   style: TextStyle(
-                      color: Color(0xFFE8F5E9),
+                      color: C.textHi,
                       fontSize: 18,
                       fontWeight: FontWeight.w700),
                 ),
@@ -148,7 +135,7 @@ class _StartupError extends StatelessWidget {
                   error,
                   textAlign: TextAlign.center,
                   style: const TextStyle(
-                      color: Color(0xFF9CCC9F), fontSize: 12.5, height: 1.45),
+                      color: C.textSoft, fontSize: 12.5, height: 1.45),
                 ),
               ],
             ),

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../i18n/app_strings.dart';
 import '../services/language_service.dart';
+import '../theme/tokens.dart';
 
 /// Dedicated settings screen. Currently just language — more settings can
 /// be added here in the future.
@@ -12,10 +13,10 @@ class SettingsScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     final s = context.watch<LanguageService>().strings;
     return Scaffold(
-      backgroundColor: const Color(0xFF0A1A0F),
+      backgroundColor: C.bg,
       appBar: AppBar(
         title: Text(s.settings),
-        backgroundColor: const Color(0xFF0D1F14),
+        backgroundColor: C.bg,
         elevation: 0,
       ),
       body: ListView(
@@ -32,7 +33,7 @@ class SettingsScreen extends StatelessWidget {
   Widget _sectionLabel(String text) => Text(
         text,
         style: const TextStyle(
-            color: Color(0xFF4A7A50),
+            color: C.textFaint,
             fontSize: 11,
             fontWeight: FontWeight.w700,
             letterSpacing: 1.4),
@@ -52,14 +53,14 @@ class _LanguageTile extends StatelessWidget {
         child: Container(
           padding: const EdgeInsets.all(14),
           decoration: BoxDecoration(
-            color: const Color(0xFF111F16),
+            color: C.surface,
             borderRadius: BorderRadius.circular(14),
-            border: Border.all(color: const Color(0xFF2A4A2F)),
+            border: Border.all(color: C.line),
           ),
           child: Row(
             children: [
               const Icon(Icons.language_rounded,
-                  color: Color(0xFF66BB6A), size: 20),
+                  color: C.accent, size: 20),
               const SizedBox(width: 12),
               Expanded(
                 child: Column(
@@ -67,17 +68,17 @@ class _LanguageTile extends StatelessWidget {
                   children: [
                     Text(s.language,
                         style: const TextStyle(
-                            color: Color(0xFFE8F5E9),
+                            color: C.textHi,
                             fontSize: 14,
                             fontWeight: FontWeight.w600)),
                     Text(lang.current.displayName,
                         style: const TextStyle(
-                            color: Color(0xFF81C784), fontSize: 12)),
+                            color: C.accent, fontSize: 12)),
                   ],
                 ),
               ),
               const Icon(Icons.arrow_forward_ios_rounded,
-                  color: Color(0xFF4A7A50), size: 14),
+                  color: C.textFaint, size: 14),
             ],
           ),
         ),
@@ -90,9 +91,9 @@ class _LanguageTile extends StatelessWidget {
     showDialog(
       context: context,
       builder: (ctx) => AlertDialog(
-        backgroundColor: const Color(0xFF111F16),
+        backgroundColor: C.surface,
         title: Text(s.selectLanguage,
-            style: const TextStyle(color: Color(0xFFE8F5E9))),
+            style: const TextStyle(color: C.textHi)),
         content: Column(
           mainAxisSize: MainAxisSize.min,
           children: AppLanguage.values.map((option) {
@@ -104,11 +105,11 @@ class _LanguageTile extends StatelessWidget {
                     ? Icons.radio_button_checked_rounded
                     : Icons.radio_button_unchecked_rounded,
                 color: selected
-                    ? const Color(0xFF66BB6A)
-                    : const Color(0xFF4A7A50),
+                    ? C.accent
+                    : C.textFaint,
               ),
               title: Text(option.displayName,
-                  style: const TextStyle(color: Color(0xFFE8F5E9))),
+                  style: const TextStyle(color: C.textHi)),
               onTap: () async {
                 await lang.setLanguage(option);
                 if (ctx.mounted) Navigator.pop(ctx);

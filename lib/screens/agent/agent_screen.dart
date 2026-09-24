@@ -7,6 +7,7 @@ import '../../services/auth_service.dart';
 import '../../services/language_service.dart';
 import '../../services/navigation/nav_graph.dart';
 import '../navigation/navigation_view.dart';
+import '../../theme/tokens.dart';
 
 /// Single chat-style screen the gardener / visitor uses to talk to the agent.
 ///
@@ -392,9 +393,9 @@ class _AgentScreenState extends State<AgentScreen> {
     setState(() => _editingPending = p);
     _input.text = '';
     ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-      backgroundColor: const Color(0xFF1B4020),
+      backgroundColor: C.surfaceAlt,
       content: Text('Editing draft — describe what to change.',
-          style: const TextStyle(color: Color(0xFFE8F5E9))),
+          style: const TextStyle(color: C.textHi)),
       duration: const Duration(seconds: 2),
     ));
   }
@@ -402,9 +403,9 @@ class _AgentScreenState extends State<AgentScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFF0A1A0F),
+      backgroundColor: C.bg,
       appBar: AppBar(
-        backgroundColor: const Color(0xFF0D1F14),
+        backgroundColor: C.bg,
         title: const Text('Botanica Agent'),
         elevation: 0,
         actions: [
@@ -422,8 +423,8 @@ class _AgentScreenState extends State<AgentScreen> {
                 label: Text(_updateMode ? 'Done' : 'Update'),
                 style: FilledButton.styleFrom(
                   backgroundColor:
-                      _updateMode ? const Color(0xFF2E7D32) : const Color(0xFF1B4020),
-                  foregroundColor: const Color(0xFFE8F5E9),
+                      _updateMode ? C.accentDim : C.surfaceAlt,
+                  foregroundColor: C.textHi,
                   padding: const EdgeInsets.symmetric(horizontal: 12),
                   visualDensity: VisualDensity.compact,
                 ),
@@ -431,12 +432,12 @@ class _AgentScreenState extends State<AgentScreen> {
             ),
           IconButton(
             tooltip: 'Demo: route to greenhouse',
-            icon: const Icon(Icons.directions_rounded, color: Color(0xFF66BB6A)),
+            icon: const Icon(Icons.directions_rounded, color: C.accent),
             onPressed: _openDemoRoute,
           ),
           IconButton(
             tooltip: 'Undo last saved action',
-            icon: const Icon(Icons.undo_rounded, color: Color(0xFF81C784)),
+            icon: const Icon(Icons.undo_rounded, color: C.accent),
             onPressed: _busy ? null : _undoLast,
           ),
         ],
@@ -467,8 +468,8 @@ class _AgentScreenState extends State<AgentScreen> {
               const Padding(
                 padding: EdgeInsets.symmetric(vertical: 6),
                 child: LinearProgressIndicator(
-                  backgroundColor: Color(0xFF111F16),
-                  color: Color(0xFF66BB6A),
+                  backgroundColor: C.surface,
+                  color: C.accent,
                   minHeight: 2,
                 ),
               ),
@@ -485,9 +486,9 @@ class _AgentScreenState extends State<AgentScreen> {
                         child: ActionChip(
                           label: Text(s),
                           labelStyle: const TextStyle(
-                              color: Color(0xFFE8F5E9), fontSize: 12.5),
+                              color: C.textHi, fontSize: 12.5),
                           backgroundColor: const Color(0xFF173024),
-                          side: const BorderSide(color: Color(0xFF2E7D32)),
+                          side: const BorderSide(color: C.accentDim),
                           materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
                           visualDensity: VisualDensity.compact,
                           onPressed: () {
@@ -562,12 +563,12 @@ class _EmptyHint extends StatelessWidget {
                   mainAxisSize: MainAxisSize.min,
                   children: [
                     const Icon(Icons.eco_rounded,
-                        color: Color(0xFF66BB6A), size: 56),
+                        color: C.accent, size: 56),
                     const SizedBox(height: 16),
                     const Text(
                       'Ask me about a plant, log an update, or plan a tour.',
                       textAlign: TextAlign.center,
-                      style: TextStyle(color: Color(0xFFE8F5E9), fontSize: 16),
+                      style: TextStyle(color: C.textHi, fontSize: 16),
                     ),
                     const SizedBox(height: 20),
                     Wrap(
@@ -579,9 +580,9 @@ class _EmptyHint extends StatelessWidget {
                           ActionChip(
                             label: Text(s),
                             labelStyle: const TextStyle(
-                                color: Color(0xFFE8F5E9), fontSize: 13),
+                                color: C.textHi, fontSize: 13),
                             backgroundColor: const Color(0xFF173024),
-                            side: const BorderSide(color: Color(0xFF2E7D32)),
+                            side: const BorderSide(color: C.accentDim),
                             materialTapTargetSize:
                                 MaterialTapTargetSize.shrinkWrap,
                             visualDensity: VisualDensity.compact,
@@ -658,7 +659,7 @@ class _ClarifyCard extends StatelessWidget {
         decoration: BoxDecoration(
           color: const Color(0xFF13251A),
           borderRadius: BorderRadius.circular(14),
-          border: Border.all(color: const Color(0xFF2E7D32)),
+          border: Border.all(color: C.accentDim),
         ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -670,9 +671,9 @@ class _ClarifyCard extends StatelessWidget {
                   .map((o) => ActionChip(
                         label: Text(o.label),
                         labelStyle: const TextStyle(
-                            color: Color(0xFFE8F5E9), fontSize: 13),
-                        backgroundColor: const Color(0xFF1E3D24),
-                        side: const BorderSide(color: Color(0xFF66BB6A)),
+                            color: C.textHi, fontSize: 13),
+                        backgroundColor: C.line,
+                        side: const BorderSide(color: C.accent),
                         onPressed: () => onSelect(o),
                       ))
                   .toList(),
@@ -684,7 +685,7 @@ class _ClarifyCard extends StatelessWidget {
                     ? '…or type the correct name.'
                     : '…or type the section / plant id.',
                 style: const TextStyle(
-                    color: Color(0xFF81C784),
+                    color: C.accent,
                     fontSize: 11,
                     fontStyle: FontStyle.italic),
               ),
@@ -708,7 +709,7 @@ class _UserBubble extends StatelessWidget {
         margin: const EdgeInsets.only(bottom: 10, left: 40),
         padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
         decoration: BoxDecoration(
-          color: const Color(0xFF2E7D32),
+          color: C.accentDim,
           borderRadius: BorderRadius.circular(14),
         ),
         child: Text(
@@ -732,13 +733,13 @@ class _AgentBubble extends StatelessWidget {
         margin: const EdgeInsets.only(bottom: 10, right: 40),
         padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
         decoration: BoxDecoration(
-          color: const Color(0xFF1A2E1E),
+          color: C.surface,
           borderRadius: BorderRadius.circular(14),
-          border: Border.all(color: const Color(0xFF2A4A2F)),
+          border: Border.all(color: C.line),
         ),
         child: Text(
           text,
-          style: const TextStyle(color: Color(0xFFE8F5E9), fontSize: 14, height: 1.45),
+          style: const TextStyle(color: C.textHi, fontSize: 14, height: 1.45),
         ),
       ),
     );
@@ -764,20 +765,20 @@ class _PendingCard extends StatelessWidget {
       margin: const EdgeInsets.symmetric(vertical: 8),
       padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
-        color: const Color(0xFF111F16),
+        color: C.surface,
         borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: const Color(0xFFFFB300), width: 1.4),
+        border: Border.all(color: C.gold, width: 1.4),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Row(children: [
             const Icon(Icons.fact_check_outlined,
-                color: Color(0xFFFFD54F), size: 18),
+                color: C.gold, size: 18),
             const SizedBox(width: 8),
             Text('CONFIRM CHANGE',
                 style: TextStyle(
-                    color: const Color(0xFFFFD54F),
+                    color: C.gold,
                     fontSize: 11,
                     fontWeight: FontWeight.w700,
                     letterSpacing: 1.5)),
@@ -793,14 +794,14 @@ class _PendingCard extends StatelessWidget {
               width: double.infinity,
               padding: const EdgeInsets.all(10),
               decoration: BoxDecoration(
-                color: const Color(0xFF13301A),
+                color: C.surfaceAlt,
                 borderRadius: BorderRadius.circular(8),
-                border: Border.all(color: const Color(0xFF2E7D32), width: 1),
+                border: Border.all(color: C.accentDim, width: 1),
               ),
               child: Text(
                 action.plainSummary!,
                 style: const TextStyle(
-                    color: Color(0xFFE8F5E9), fontSize: 14, height: 1.45),
+                    color: C.textHi, fontSize: 14, height: 1.45),
               ),
             ),
           if (action.plainSummary != null) const SizedBox(height: 10),
@@ -808,8 +809,8 @@ class _PendingCard extends StatelessWidget {
           Text(action.preview,
               style: TextStyle(
                   color: action.plainSummary != null
-                      ? const Color(0xFF9CCC9F)
-                      : const Color(0xFFE8F5E9),
+                      ? C.textSoft
+                      : C.textHi,
                   fontSize: action.plainSummary != null ? 12 : 14,
                   height: 1.45)),
 
@@ -818,7 +819,7 @@ class _PendingCard extends StatelessWidget {
             const SizedBox(height: 12),
             const Text('WHAT WILL CHANGE',
                 style: TextStyle(
-                    color: Color(0xFF81C784),
+                    color: C.accent,
                     fontSize: 10,
                     fontWeight: FontWeight.w700,
                     letterSpacing: 1.2)),
@@ -840,9 +841,9 @@ class _PendingCard extends StatelessWidget {
               width: double.infinity,
               padding: const EdgeInsets.all(10),
               decoration: BoxDecoration(
-                color: const Color(0xFF0A1A0F),
+                color: C.bg,
                 borderRadius: BorderRadius.circular(8),
-                border: Border.all(color: const Color(0xFF1E3D24)),
+                border: Border.all(color: C.line),
               ),
               child: SelectableText(
                 action.sqlDisplay!,
@@ -860,7 +861,7 @@ class _PendingCard extends StatelessWidget {
             TextButton(
               onPressed: () => onCancel(action),
               child: const Text('Cancel',
-                  style: TextStyle(color: Color(0xFFEF5350))),
+                  style: TextStyle(color: C.danger)),
             ),
             const SizedBox(width: 4),
             TextButton(
@@ -873,7 +874,7 @@ class _PendingCard extends StatelessWidget {
               icon: const Icon(Icons.check_rounded, size: 18),
               label: const Text('Make changes'),
               style: ElevatedButton.styleFrom(
-                backgroundColor: const Color(0xFF2E7D32),
+                backgroundColor: C.accentDim,
                 foregroundColor: Colors.white,
               ),
               onPressed: () => onConfirm(action),
@@ -902,8 +903,8 @@ class _ChangeRow extends StatelessWidget {
             Icon(isNewRow ? Icons.add_circle_outline : Icons.edit_outlined,
                 size: 12,
                 color: isNewRow
-                    ? const Color(0xFF66BB6A)
-                    : const Color(0xFFFFB300)),
+                    ? C.accent
+                    : C.gold),
             const SizedBox(width: 6),
             Expanded(
               child: RichText(
@@ -911,7 +912,7 @@ class _ChangeRow extends StatelessWidget {
                   TextSpan(
                     text: '${change.table}.${change.column}  ',
                     style: const TextStyle(
-                        color: Color(0xFF81C784),
+                        color: C.accent,
                         fontSize: 11.5,
                         fontFamily: 'monospace',
                         fontWeight: FontWeight.w600),
@@ -920,14 +921,14 @@ class _ChangeRow extends StatelessWidget {
                     TextSpan(
                       text: '${change.current}  →  ',
                       style: const TextStyle(
-                          color: Color(0xFFEF9A9A),
+                          color: C.danger,
                           fontSize: 11.5,
                           fontFamily: 'monospace'),
                     ),
                   TextSpan(
                     text: change.next,
                     style: const TextStyle(
-                        color: Color(0xFFE8F5E9),
+                        color: C.textHi,
                         fontSize: 11.5,
                         fontFamily: 'monospace',
                         fontWeight: FontWeight.w600),
@@ -961,11 +962,11 @@ class _ConfirmedCard extends StatelessWidget {
       decoration: BoxDecoration(
         color: const Color(0xFF15281A),
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: const Color(0xFF2E7D32)),
+        border: Border.all(color: C.accentDim),
       ),
       child: Row(children: [
         const Icon(Icons.check_circle_outline,
-            color: Color(0xFF66BB6A), size: 18),
+            color: C.accent, size: 18),
         const SizedBox(width: 10),
         Expanded(
           child: Text('Saved: ${action.preview}',
@@ -1001,8 +1002,8 @@ class _InputBar extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.fromLTRB(10, 8, 10, 10),
       decoration: const BoxDecoration(
-        color: Color(0xFF0D1F14),
-        border: Border(top: BorderSide(color: Color(0xFF1E3D24))),
+        color: C.bg,
+        border: Border(top: BorderSide(color: C.line)),
       ),
       child: Row(children: [
         // Mic — tap to start/stop dictation. Pulses red while listening.
@@ -1010,7 +1011,7 @@ class _InputBar extends StatelessWidget {
           tooltip: listening ? 'Stop listening' : 'Speak',
           icon: Icon(
             listening ? Icons.mic_rounded : Icons.mic_none_rounded,
-            color: listening ? const Color(0xFFEF5350) : const Color(0xFF66BB6A),
+            color: listening ? C.danger : C.accent,
           ),
           style: listening
               ? IconButton.styleFrom(
@@ -1022,7 +1023,7 @@ class _InputBar extends StatelessWidget {
           child: TextField(
             controller: controller,
             enabled: !busy,
-            style: const TextStyle(color: Color(0xFFE8F5E9)),
+            style: const TextStyle(color: C.textHi),
             minLines: 1,
             maxLines: 4,
             textInputAction: TextInputAction.send,
@@ -1035,12 +1036,12 @@ class _InputBar extends StatelessWidget {
                       : 'Type a message…',
               hintStyle: TextStyle(
                   color: listening
-                      ? const Color(0xFFEF9A9A)
+                      ? C.danger
                       : editing
-                          ? const Color(0xFFFFD54F)
-                          : const Color(0xFF4A7A50)),
+                          ? C.gold
+                          : C.textFaint),
               filled: true,
-              fillColor: const Color(0xFF111F16),
+              fillColor: C.surface,
               border: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(20),
                 borderSide: BorderSide.none,
@@ -1054,7 +1055,7 @@ class _InputBar extends StatelessWidget {
         const SizedBox(width: 6),
         IconButton.filled(
           style: IconButton.styleFrom(
-            backgroundColor: const Color(0xFF2E7D32),
+            backgroundColor: C.accentDim,
             foregroundColor: Colors.white,
           ),
           icon: const Icon(Icons.send_rounded),

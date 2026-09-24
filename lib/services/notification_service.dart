@@ -4,6 +4,7 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import '../screens/events_screen.dart';
 import 'auth_service.dart';
+import '../theme/tokens.dart';
 
 /// Push-notification setup.
 ///
@@ -91,7 +92,7 @@ class NotificationService {
     final title = msg.notification?.title ?? '🌿 Botanica';
     final body = msg.notification?.body ?? '';
     ScaffoldMessenger.of(ctx).showSnackBar(SnackBar(
-      backgroundColor: const Color(0xFF1B4020),
+      backgroundColor: C.surfaceAlt,
       duration: const Duration(seconds: 4),
       content: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -99,7 +100,7 @@ class NotificationService {
         children: [
           Text(title,
               style: const TextStyle(
-                  color: Color(0xFFE8F5E9),
+                  color: C.textHi,
                   fontSize: 14,
                   fontWeight: FontWeight.w700)),
           if (body.isNotEmpty)

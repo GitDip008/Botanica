@@ -3,6 +3,7 @@ import 'package:provider/provider.dart';
 import '../services/garden_schedule.dart';
 import '../services/holiday_hours_service.dart';
 import '../services/language_service.dart';
+import '../theme/tokens.dart';
 
 /// Minimal page shown when the Open/Closed chip is tapped.
 /// Only schedule info — full garden info lives in About Us.
@@ -14,10 +15,10 @@ class ScheduleScreen extends StatelessWidget {
     final s = context.watch<LanguageService>().strings;
     final isOpen = GardenSchedule.isOpen();
     return Scaffold(
-      backgroundColor: const Color(0xFF0A1A0F),
+      backgroundColor: C.bg,
       appBar: AppBar(
         title: Text(s.openingHours),
-        backgroundColor: const Color(0xFF0D1F14),
+        backgroundColor: C.bg,
         elevation: 0,
       ),
       body: SafeArea(
@@ -30,7 +31,7 @@ class ScheduleScreen extends StatelessWidget {
               decoration: BoxDecoration(
                 gradient: LinearGradient(
                   colors: isOpen
-                      ? [const Color(0xFF1B4D20), const Color(0xFF2E7D32)]
+                      ? [const Color(0xFF1B4D20), C.accentDim]
                       : [const Color(0xFF3B0B14), const Color(0xFF8C2336)],
                 ),
                 borderRadius: BorderRadius.circular(18),
@@ -103,16 +104,16 @@ class ScheduleScreen extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: const Color(0xFF111F16),
+        color: C.surface,
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: const Color(0xFF2A4A2F)),
+        border: Border.all(color: C.line),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(title,
               style: const TextStyle(
-                  color: Color(0xFFE8F5E9),
+                  color: C.textHi,
                   fontSize: 15,
                   fontWeight: FontWeight.w700)),
           const SizedBox(height: 12),
@@ -126,7 +127,7 @@ class ScheduleScreen extends StatelessWidget {
                     flex: 3,
                     child: Text(r[0],
                         style: const TextStyle(
-                            color: Color(0xFFE8F5E9), fontSize: 13)),
+                            color: C.textHi, fontSize: 13)),
                   ),
                   Expanded(
                     flex: 2,
@@ -135,8 +136,8 @@ class ScheduleScreen extends StatelessWidget {
                       textAlign: TextAlign.end,
                       style: TextStyle(
                         color: closed
-                            ? const Color(0xFFEF5350)
-                            : const Color(0xFF81C784),
+                            ? C.danger
+                            : C.accent,
                         fontSize: 13,
                         fontWeight: FontWeight.w600,
                         fontFeatures: const [FontFeature.tabularFigures()],

@@ -20,13 +20,14 @@ import 'package:flutter_animate/flutter_animate.dart';
 import '../data/plant_index.dart';
 import '../data/trails.dart';
 import '../services/usage_tracking_service.dart';
+import '../theme/tokens.dart';
 
-const _bg = Color(0xFF0A1A0F);
-const _surface = Color(0xFF111F16);
-const _border = Color(0xFF2A4A2F);
-const _green = Color(0xFF4CAF50);
-const _textPri = Color(0xFFE8F5E9);
-const _textDim = Color(0xFF6E8A72);
+const _bg = C.bg;
+const _surface = C.surface;
+const _border = C.line;
+const _green = C.accent;
+const _textPri = C.textHi;
+const _textDim = C.textFaint;
 
 class TrailScreen extends StatefulWidget {
   const TrailScreen({super.key});
@@ -63,11 +64,11 @@ class _TrailScreenState extends State<TrailScreen> {
     return Scaffold(
       backgroundColor: _bg,
       appBar: AppBar(
-        backgroundColor: const Color(0xFF0D1F14),
+        backgroundColor: C.bg,
         elevation: 0,
         title: const Text('Garden trails',
             style: TextStyle(color: _textPri, fontWeight: FontWeight.bold)),
-        iconTheme: const IconThemeData(color: Color(0xFF66BB6A)),
+        iconTheme: const IconThemeData(color: C.accent),
       ),
       body: _loading
           ? const Center(child: CircularProgressIndicator(color: _green))
@@ -79,7 +80,7 @@ class _TrailScreenState extends State<TrailScreen> {
                   'records in that section, described in the garden’s own '
                   'words.',
                   style: TextStyle(
-                      color: Color(0xFF9CCC9F), fontSize: 13.5, height: 1.5),
+                      color: C.textSoft, fontSize: 13.5, height: 1.5),
                 ),
                 const SizedBox(height: 18),
                 for (var i = 0; i < _trails.length; i++)
@@ -130,7 +131,7 @@ class _TrailCard extends StatelessWidget {
                       const SizedBox(height: 2),
                       Text(trail.subtitle,
                           style: const TextStyle(
-                              color: Color(0xFF9CCC9F),
+                              color: C.textSoft,
                               fontSize: 12.5,
                               height: 1.35)),
                       const SizedBox(height: 6),
@@ -143,7 +144,7 @@ class _TrailCard extends StatelessWidget {
                     ],
                   ),
                 ),
-                const Icon(Icons.chevron_right, color: Color(0xFF4A7A50)),
+                const Icon(Icons.chevron_right, color: C.textFaint),
               ],
             ),
           ),
@@ -184,18 +185,18 @@ class _TrailDetailScreenState extends State<TrailDetailScreen> {
     return Scaffold(
       backgroundColor: _bg,
       appBar: AppBar(
-        backgroundColor: const Color(0xFF0D1F14),
+        backgroundColor: C.bg,
         elevation: 0,
         title: Text('${t.emoji}  ${t.title}',
             style: const TextStyle(color: _textPri, fontSize: 17)),
-        iconTheme: const IconThemeData(color: Color(0xFF66BB6A)),
+        iconTheme: const IconThemeData(color: C.accent),
       ),
       body: ListView(
         padding: const EdgeInsets.fromLTRB(16, 16, 16, 32),
         children: [
           Text(t.subtitle,
               style: const TextStyle(
-                  color: Color(0xFF9CCC9F), fontSize: 13.5, height: 1.5)),
+                  color: C.textSoft, fontSize: 13.5, height: 1.5)),
           const SizedBox(height: 12),
           _Progress(found: _found.length, total: t.stops.length),
           const SizedBox(height: 14),
@@ -215,7 +216,7 @@ class _TrailDetailScreenState extends State<TrailDetailScreen> {
                   child: Text(
                     'Your route: ${t.sections.join("  →  ")}',
                     style: const TextStyle(
-                        color: Color(0xFFCFE8D2), fontSize: 12.5, height: 1.4),
+                        color: C.text, fontSize: 12.5, height: 1.4),
                   ),
                 ),
               ],
@@ -258,7 +259,7 @@ class _TrailDetailScreenState extends State<TrailDetailScreen> {
                 child: Text(
                   'signed “${entry.value.first.sectionRoom}”',
                   style: const TextStyle(
-                      color: Color(0xFF4A7A50),
+                      color: C.textFaint,
                       fontSize: 11,
                       fontStyle: FontStyle.italic),
                 ),
@@ -280,7 +281,7 @@ class _TrailDetailScreenState extends State<TrailDetailScreen> {
           const Text(
             'Sections are where the garden’s records place each plant. Ask at '
             'the info desk if you cannot find one — plants do get moved.',
-            style: TextStyle(color: Color(0xFF4A7A50), fontSize: 11.5, height: 1.4),
+            style: TextStyle(color: C.textFaint, fontSize: 11.5, height: 1.4),
           ),
         ],
       ),
@@ -303,14 +304,14 @@ class _Progress extends StatelessWidget {
             child: LinearProgressIndicator(
               value: total == 0 ? 0 : found / total,
               minHeight: 7,
-              backgroundColor: const Color(0xFF13301A),
+              backgroundColor: C.surfaceAlt,
               valueColor: const AlwaysStoppedAnimation(Colors.greenAccent),
             ),
           ),
         ),
         const SizedBox(width: 10),
         Text('$found / $total found',
-            style: const TextStyle(color: Color(0xFF9CCC9F), fontSize: 12)),
+            style: const TextStyle(color: C.textSoft, fontSize: 12)),
       ],
     );
   }
@@ -339,10 +340,10 @@ class _StopTile extends StatelessWidget {
           child: Container(
             padding: const EdgeInsets.all(13),
             decoration: BoxDecoration(
-              color: found ? const Color(0xFF16301D) : _surface,
+              color: found ? C.surfaceAlt : _surface,
               borderRadius: BorderRadius.circular(12),
               border: Border.all(
-                  color: found ? const Color(0xFF66BB6A) : _border),
+                  color: found ? C.accent : _border),
             ),
             child: Row(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -352,7 +353,7 @@ class _StopTile extends StatelessWidget {
                       ? Icons.check_circle_rounded
                       : Icons.radio_button_unchecked,
                   size: 19,
-                  color: found ? Colors.greenAccent : const Color(0xFF4A7A50),
+                  color: found ? Colors.greenAccent : C.textFaint,
                 ),
                 const SizedBox(width: 11),
                 Expanded(
@@ -367,7 +368,7 @@ class _StopTile extends StatelessWidget {
                               decoration: found
                                   ? TextDecoration.lineThrough
                                   : TextDecoration.none,
-                              decorationColor: const Color(0xFF66BB6A))),
+                              decorationColor: C.accent)),
                       Text(
                         [
                           stop.scientificName,
@@ -383,12 +384,12 @@ class _StopTile extends StatelessWidget {
                       Row(
                         children: [
                           const Icon(Icons.place_outlined,
-                              size: 12, color: Color(0xFF81C784)),
+                              size: 12, color: C.accent),
                           const SizedBox(width: 4),
                           Expanded(
                             child: Text(stop.locationLine,
                                 style: const TextStyle(
-                                    color: Color(0xFF81C784), fontSize: 11.5)),
+                                    color: C.accent, fontSize: 11.5)),
                           ),
                         ],
                       ),
@@ -396,7 +397,7 @@ class _StopTile extends StatelessWidget {
                       // The garden's own words about this plant.
                       Text(stop.why,
                           style: const TextStyle(
-                              color: Color(0xFFCFE8D2),
+                              color: C.text,
                               fontSize: 12.5,
                               height: 1.45)),
                     ],

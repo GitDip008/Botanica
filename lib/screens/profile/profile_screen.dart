@@ -8,6 +8,7 @@ import '../../widgets/developed_by_card.dart';
 import '../main_nav_screen.dart';
 import '../settings_screen.dart';
 import '../subscription/paywall_screen.dart';
+import '../../theme/tokens.dart';
 
 class ProfileScreen extends StatelessWidget {
   const ProfileScreen({super.key});
@@ -19,21 +20,21 @@ class ProfileScreen extends StatelessWidget {
     final user = userState.user;
     if (user == null) {
       return Scaffold(
-        backgroundColor: const Color(0xFF0A1A0F),
+        backgroundColor: C.bg,
         body: Center(child: Text(LanguageService.instance.strings.notSignedIn, style: const TextStyle(color: Colors.white))),
       );
     }
 
     return Scaffold(
-      backgroundColor: const Color(0xFF0A1A0F),
+      backgroundColor: C.bg,
       appBar: AppBar(
         leading: IconButton(
-          icon: const Icon(Icons.menu_rounded, color: Color(0xFFE8F5E9)),
+          icon: const Icon(Icons.menu_rounded, color: C.textHi),
           onPressed: () =>
               MainNavScreen.scaffoldKey.currentState?.openDrawer(),
         ),
         title: Text(s.profile),
-        backgroundColor: const Color(0xFF0D1F14),
+        backgroundColor: C.bg,
         elevation: 0,
       ),
       body: ListView(
@@ -49,13 +50,13 @@ class ProfileScreen extends StatelessWidget {
                 begin: Alignment.topLeft,
                 end: Alignment.bottomRight,
               ),
-              border: Border.all(color: const Color(0xFF2A4A2F)),
+              border: Border.all(color: C.line),
             ),
             child: Column(
               children: [
                 CircleAvatar(
                   radius: 36,
-                  backgroundColor: const Color(0xFF2E7D32),
+                  backgroundColor: C.accentDim,
                   backgroundImage: user.photoUrl != null ? NetworkImage(user.photoUrl!) : null,
                   child: user.photoUrl == null
                       ? Text(
@@ -68,16 +69,16 @@ class ProfileScreen extends StatelessWidget {
                 const SizedBox(height: 12),
                 Text(user.displayName,
                     style: const TextStyle(
-                        color: Color(0xFFE8F5E9), fontSize: 18, fontWeight: FontWeight.w700)),
+                        color: C.textHi, fontSize: 18, fontWeight: FontWeight.w700)),
                 Text(user.email,
-                    style: const TextStyle(color: Color(0xFF81C784), fontSize: 12)),
+                    style: const TextStyle(color: C.accent, fontSize: 12)),
                 const SizedBox(height: 12),
                 Container(
                   padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 5),
                   decoration: BoxDecoration(
                     color: user.tier.isPremium
                         ? const Color(0xFFB8860B)
-                        : const Color(0xFF1E3D24),
+                        : C.line,
                     borderRadius: BorderRadius.circular(20),
                   ),
                   child: Row(
@@ -143,7 +144,7 @@ class ProfileScreen extends StatelessWidget {
           _actionTile(
             icon: Icons.settings_rounded,
             label: s.settings,
-            color: const Color(0xFF66BB6A),
+            color: C.accent,
             onTap: () => Navigator.push(context,
                 MaterialPageRoute(builder: (_) => const SettingsScreen())),
           ),
@@ -158,16 +159,16 @@ class ProfileScreen extends StatelessWidget {
           _actionTile(
             icon: Icons.logout_rounded,
             label: s.signOut,
-            color: const Color(0xFFEF5350),
+            color: C.danger,
             onTap: () async {
               final confirm = await showDialog<bool>(
                 context: context,
                 builder: (ctx) => AlertDialog(
-                  backgroundColor: const Color(0xFF111F16),
+                  backgroundColor: C.surface,
                   title: Text(s.signOutConfirmTitle,
-                      style: const TextStyle(color: Color(0xFFE8F5E9))),
+                      style: const TextStyle(color: C.textHi)),
                   content: Text(s.signOutConfirmBody,
-                      style: const TextStyle(color: Color(0xFF81C784))),
+                      style: const TextStyle(color: C.accent)),
                   actions: [
                     TextButton(
                         onPressed: () => Navigator.pop(ctx, false),
@@ -175,7 +176,7 @@ class ProfileScreen extends StatelessWidget {
                     TextButton(
                         onPressed: () => Navigator.pop(ctx, true),
                         child: Text(s.signOut,
-                            style: const TextStyle(color: Color(0xFFEF5350)))),
+                            style: const TextStyle(color: C.danger))),
                   ],
                 ),
               );
@@ -195,7 +196,7 @@ class ProfileScreen extends StatelessWidget {
   Widget _sectionLabel(String text) => Text(
         text.toUpperCase(),
         style: const TextStyle(
-            color: Color(0xFF4A7A50),
+            color: C.textFaint,
             fontSize: 11,
             fontWeight: FontWeight.w600,
             letterSpacing: 1.4),
@@ -213,34 +214,34 @@ class ProfileScreen extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
-        color: const Color(0xFF111F16),
+        color: C.surface,
         borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: const Color(0xFF2A4A2F)),
+        border: Border.all(color: C.line),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Row(
             children: [
-              Icon(icon, color: const Color(0xFF66BB6A), size: 18),
+              Icon(icon, color: C.accent, size: 18),
               const SizedBox(width: 8),
               Text(label,
                   style: const TextStyle(
-                      color: Color(0xFFE8F5E9), fontWeight: FontWeight.w600, fontSize: 13)),
+                      color: C.textHi, fontWeight: FontWeight.w600, fontSize: 13)),
               const Spacer(),
               if (unlimited) ...[
                 const Icon(Icons.all_inclusive_rounded,
-                    size: 14, color: Color(0xFFFFD54F)),
+                    size: 14, color: C.gold),
                 const SizedBox(width: 4),
                 Text('$used $todayLabel',
                     style: const TextStyle(
-                        color: Color(0xFFFFD54F),
+                        color: C.gold,
                         fontSize: 12,
                         fontWeight: FontWeight.w700)),
               ] else
                 Text('$used / $limit',
                     style: const TextStyle(
-                        color: Color(0xFF81C784),
+                        color: C.accent,
                         fontSize: 12,
                         fontWeight: FontWeight.w600)),
             ],
@@ -253,18 +254,18 @@ class ProfileScreen extends StatelessWidget {
                     height: 6,
                     decoration: const BoxDecoration(
                       gradient: LinearGradient(
-                        colors: [Color(0xFFFFD54F), Color(0xFFB8860B)],
+                        colors: [C.gold, Color(0xFFB8860B)],
                       ),
                     ),
                   )
                 : LinearProgressIndicator(
                     value: pct,
                     minHeight: 6,
-                    backgroundColor: const Color(0xFF1A2E1E),
+                    backgroundColor: C.surface,
                     valueColor: AlwaysStoppedAnimation(
                       pct >= 1.0
-                          ? const Color(0xFFEF5350)
-                          : const Color(0xFF66BB6A),
+                          ? C.danger
+                          : C.accent,
                     ),
                   ),
           ),
@@ -287,9 +288,9 @@ class ProfileScreen extends StatelessWidget {
         child: Container(
           padding: const EdgeInsets.all(14),
           decoration: BoxDecoration(
-            color: const Color(0xFF111F16),
+            color: C.surface,
             borderRadius: BorderRadius.circular(14),
-            border: Border.all(color: const Color(0xFF2A4A2F)),
+            border: Border.all(color: C.line),
           ),
           child: Row(children: [
             Icon(icon, color: color, size: 20),

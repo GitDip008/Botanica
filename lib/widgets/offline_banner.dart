@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../services/connectivity_service.dart';
 import '../services/language_service.dart';
+import '../theme/tokens.dart';
 
 /// Overlays the child with an offline banner that slides down from the top
 /// when the device loses internet. Hidden completely (offstage) when online —
@@ -58,11 +59,11 @@ class _OfflineBannerOverlayState extends State<OfflineBannerOverlay> {
                     decoration: BoxDecoration(
                       color: const Color(0xFF3B2A0B),
                       borderRadius: BorderRadius.circular(12),
-                      border: Border.all(color: const Color(0xFFFFB300)),
+                      border: Border.all(color: C.gold),
                     ),
                     child: Row(children: [
                       const Icon(Icons.cloud_off_rounded,
-                          color: Color(0xFFFFD54F), size: 18),
+                          color: C.gold, size: 18),
                       const SizedBox(width: 10),
                       Expanded(
                         child: Text(s.youAreOffline,
@@ -72,7 +73,7 @@ class _OfflineBannerOverlayState extends State<OfflineBannerOverlay> {
                                 fontWeight: FontWeight.w600)),
                       ),
                       const Icon(Icons.refresh_rounded,
-                          color: Color(0xFFFFD54F), size: 16),
+                          color: C.gold, size: 16),
                     ]),
                   ),
                 ),

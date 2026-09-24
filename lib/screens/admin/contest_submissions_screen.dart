@@ -16,6 +16,7 @@ import 'package:url_launcher/url_launcher.dart';
 
 import '../../models/contest.dart';
 import '../../services/contest_service.dart';
+import '../../theme/tokens.dart';
 
 class ContestSubmissionsScreen extends StatelessWidget {
   const ContestSubmissionsScreen({super.key, required this.contest});
@@ -24,9 +25,9 @@ class ContestSubmissionsScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFF0A1A0F),
+      backgroundColor: C.bg,
       appBar: AppBar(
-        backgroundColor: const Color(0xFF0D1F14),
+        backgroundColor: C.bg,
         elevation: 0,
         title: const Text('Contest submissions'),
       ),
@@ -41,7 +42,7 @@ class ContestSubmissionsScreen extends StatelessWidget {
           if (all.isEmpty) {
             return const Center(
               child: Text('No submissions yet.',
-                  style: TextStyle(color: Color(0xFF9CCC9F))),
+                  style: TextStyle(color: C.textSoft)),
             );
           }
 
@@ -71,7 +72,7 @@ class ContestSubmissionsScreen extends StatelessWidget {
                 const SizedBox(height: 20),
                 const Text('TYPED BY HAND — MISSING FROM THE PLANT INDEX',
                     style: TextStyle(
-                        color: Color(0xFFFFD54F),
+                        color: C.gold,
                         fontSize: 11,
                         fontWeight: FontWeight.w700,
                         letterSpacing: 1.1)),
@@ -107,7 +108,7 @@ class ContestSubmissionsScreen extends StatelessWidget {
               const SizedBox(height: 22),
               const Text('ALL SUBMISSIONS',
                   style: TextStyle(
-                      color: Color(0xFF81C784),
+                      color: C.accent,
                       fontSize: 11,
                       fontWeight: FontWeight.w700,
                       letterSpacing: 1.1)),
@@ -133,25 +134,25 @@ class _Stat extends StatelessWidget {
       child: Container(
         padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 8),
         decoration: BoxDecoration(
-          color: const Color(0xFF111F16),
+          color: C.surface,
           borderRadius: BorderRadius.circular(12),
           border: Border.all(
-              color: warn ? const Color(0xFF8D6E00) : const Color(0xFF2A4A2F)),
+              color: warn ? const Color(0xFF8D6E00) : C.line),
         ),
         child: Column(
           children: [
             Text(value,
                 style: TextStyle(
                     color: warn
-                        ? const Color(0xFFFFD54F)
-                        : const Color(0xFF81C784),
+                        ? C.gold
+                        : C.accent,
                     fontSize: 22,
                     fontWeight: FontWeight.w800)),
             const SizedBox(height: 2),
             Text(label,
                 textAlign: TextAlign.center,
                 style: const TextStyle(
-                    color: Color(0xFF6E8A72), fontSize: 11)),
+                    color: C.textFaint, fontSize: 11)),
           ],
         ),
       ),
@@ -175,9 +176,9 @@ class _SubmissionCard extends StatelessWidget {
       margin: const EdgeInsets.only(bottom: 8),
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
-        color: const Color(0xFF111F16),
+        color: C.surface,
         borderRadius: BorderRadius.circular(10),
-        border: Border.all(color: const Color(0xFF2A4A2F)),
+        border: Border.all(color: C.line),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -209,7 +210,7 @@ class _SubmissionCard extends StatelessWidget {
                       height: 64,
                       margin: const EdgeInsets.only(right: 12),
                       decoration: BoxDecoration(
-                        color: const Color(0xFF13301A),
+                        color: C.surfaceAlt,
                         borderRadius: BorderRadius.circular(8),
                         image: s.data == null
                             ? null
@@ -219,7 +220,7 @@ class _SubmissionCard extends StatelessWidget {
                       ),
                       child: s.data == null
                           ? const Icon(Icons.hourglass_empty_rounded,
-                              size: 16, color: Color(0xFF4A7A50))
+                              size: 16, color: C.textFaint)
                           : null,
                     ),
                   ),
@@ -233,7 +234,7 @@ class _SubmissionCard extends StatelessWidget {
                         Flexible(
                           child: Text(entry.plantName,
                               style: const TextStyle(
-                                  color: Color(0xFFE8F5E9),
+                                  color: C.textHi,
                                   fontSize: 14.5,
                                   fontWeight: FontWeight.w600)),
                         ),
@@ -241,7 +242,7 @@ class _SubmissionCard extends StatelessWidget {
                           const Padding(
                             padding: EdgeInsets.only(left: 6),
                             child: Icon(Icons.edit_note_rounded,
-                                size: 15, color: Color(0xFFFFD54F)),
+                                size: 15, color: C.gold),
                           ),
                       ],
                     ),
@@ -254,14 +255,14 @@ class _SubmissionCard extends StatelessWidget {
                         if (entry.plantSection.isNotEmpty) entry.plantSection,
                       ].join('  ·  '),
                       style: const TextStyle(
-                          color: Color(0xFF6E8A72), fontSize: 11.5),
+                          color: C.textFaint, fontSize: 11.5),
                     ),
                   ],
                 ),
               ),
               Text(_when,
                   style: const TextStyle(
-                      color: Color(0xFF4A7A50), fontSize: 11)),
+                      color: C.textFaint, fontSize: 11)),
             ],
           ),
           const SizedBox(height: 8),
@@ -273,8 +274,8 @@ class _SubmissionCard extends StatelessWidget {
                     : Icons.location_off_rounded,
                 size: 14,
                 color: entry.hasLocation
-                    ? const Color(0xFF81C784)
-                    : const Color(0xFF4A7A50),
+                    ? C.accent
+                    : C.textFaint,
               ),
               const SizedBox(width: 5),
               if (entry.hasLocation)
@@ -285,7 +286,7 @@ class _SubmissionCard extends StatelessWidget {
                     '${entry.lat!.toStringAsFixed(5)}, '
                     '${entry.lng!.toStringAsFixed(5)}  ·  open in Maps',
                     style: const TextStyle(
-                        color: Color(0xFF81C784),
+                        color: C.accent,
                         fontSize: 11.5,
                         decoration: TextDecoration.underline),
                   ),
@@ -293,15 +294,15 @@ class _SubmissionCard extends StatelessWidget {
               else
                 const Text('no location',
                     style:
-                        TextStyle(color: Color(0xFF4A7A50), fontSize: 11.5)),
+                        TextStyle(color: C.textFaint, fontSize: 11.5)),
               if (entry.photoPath == null) ...[
                 const SizedBox(width: 12),
                 const Icon(Icons.no_photography_rounded,
-                    size: 14, color: Color(0xFF4A7A50)),
+                    size: 14, color: C.textFaint),
                 const SizedBox(width: 4),
                 const Text('no photo',
                     style:
-                        TextStyle(color: Color(0xFF4A7A50), fontSize: 11.5)),
+                        TextStyle(color: C.textFaint, fontSize: 11.5)),
               ],
             ],
           ),

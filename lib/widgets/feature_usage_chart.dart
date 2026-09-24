@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../services/language_service.dart';
 import '../services/usage_tracking_service.dart';
+import '../theme/tokens.dart';
 
 /// Horizontal bar chart of how often each feature has been used.
 class FeatureUsageChart extends StatelessWidget {
@@ -17,7 +18,7 @@ class FeatureUsageChart extends StatelessWidget {
           return const Padding(
             padding: EdgeInsets.all(20),
             child: Center(
-                child: CircularProgressIndicator(color: Color(0xFF66BB6A))),
+                child: CircularProgressIndicator(color: C.accent)),
           );
         }
         final counts = snap.data ?? const <String, int>{};
@@ -26,13 +27,13 @@ class FeatureUsageChart extends StatelessWidget {
           return Container(
             padding: const EdgeInsets.all(20),
             decoration: BoxDecoration(
-              color: const Color(0xFF111F16),
+              color: C.surface,
               borderRadius: BorderRadius.circular(14),
-              border: Border.all(color: const Color(0xFF2A4A2F)),
+              border: Border.all(color: C.line),
             ),
             child: Center(
               child: Text(s.noDataYet,
-                  style: const TextStyle(color: Color(0xFF81C784))),
+                  style: const TextStyle(color: C.accent)),
             ),
           );
         }
@@ -45,9 +46,9 @@ class FeatureUsageChart extends StatelessWidget {
         return Container(
           padding: const EdgeInsets.all(16),
           decoration: BoxDecoration(
-            color: const Color(0xFF111F16),
+            color: C.surface,
             borderRadius: BorderRadius.circular(14),
-            border: Border.all(color: const Color(0xFF2A4A2F)),
+            border: Border.all(color: C.line),
           ),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
@@ -56,17 +57,17 @@ class FeatureUsageChart extends StatelessWidget {
               Row(
                 children: [
                   const Icon(Icons.insights_rounded,
-                      color: Color(0xFF66BB6A), size: 18),
+                      color: C.accent, size: 18),
                   const SizedBox(width: 8),
                   Text(s.totalUses,
                       style: const TextStyle(
-                          color: Color(0xFF81C784),
+                          color: C.accent,
                           fontSize: 13,
                           fontWeight: FontWeight.w600)),
                   const Spacer(),
                   Text('$total',
                       style: const TextStyle(
-                          color: Color(0xFFE8F5E9),
+                          color: C.textHi,
                           fontSize: 22,
                           fontWeight: FontWeight.w800)),
                 ],
@@ -115,7 +116,7 @@ class FeatureUsageChart extends StatelessWidget {
   Color _colorFor(String key) {
     switch (key) {
       case UsageTrackingService.featurePlantId:
-        return const Color(0xFF66BB6A);
+        return C.accent;
       case UsageTrackingService.featurePlantHunt:
         return const Color(0xFFB39DDB);
       case UsageTrackingService.featureChat:
@@ -129,13 +130,13 @@ class FeatureUsageChart extends StatelessWidget {
       case UsageTrackingService.featureSoundscape:
         return const Color(0xFF4DB6AC);
       case UsageTrackingService.featureSearch:
-        return const Color(0xFFFFD54F);
+        return C.gold;
       case UsageTrackingService.featureReport:
         return const Color(0xFFF48FB1);
       case UsageTrackingService.featureEvent:
         return const Color(0xFF9CCC65);
       default:
-        return const Color(0xFF81C784);
+        return C.accent;
     }
   }
 }
@@ -170,7 +171,7 @@ class _BarRow extends StatelessWidget {
               Expanded(
                 child: Text(label,
                     style: const TextStyle(
-                        color: Color(0xFFE8F5E9),
+                        color: C.textHi,
                         fontSize: 13,
                         fontWeight: FontWeight.w600)),
               ),
@@ -185,7 +186,7 @@ class _BarRow extends StatelessWidget {
             child: LinearProgressIndicator(
               value: fraction,
               minHeight: 6,
-              backgroundColor: const Color(0xFF1A2E1E),
+              backgroundColor: C.surface,
               valueColor: AlwaysStoppedAnimation(color),
             ),
           ),

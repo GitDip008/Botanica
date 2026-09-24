@@ -9,6 +9,7 @@ import 'package:flutter/material.dart';
 import '../../models/contest.dart';
 import '../../services/auth_service.dart';
 import '../../services/contest_service.dart';
+import '../../theme/tokens.dart';
 
 class ContestTeamsTab extends StatefulWidget {
   const ContestTeamsTab({super.key, required this.contest});
@@ -32,30 +33,30 @@ class _ContestTeamsTabState extends State<ContestTeamsTab> {
     final name = await showDialog<String>(
       context: context,
       builder: (_) => AlertDialog(
-        backgroundColor: const Color(0xFF0D1F14),
+        backgroundColor: C.bg,
         title: const Text('Name your team',
-            style: TextStyle(color: Color(0xFFE8F5E9), fontSize: 17)),
+            style: TextStyle(color: C.textHi, fontSize: 17)),
         content: TextField(
           controller: ctrl,
           autofocus: true,
           maxLength: 30,
-          style: const TextStyle(color: Color(0xFFE8F5E9)),
+          style: const TextStyle(color: C.textHi),
           decoration: const InputDecoration(
             hintText: 'e.g. The Creepy Crawlies',
-            hintStyle: TextStyle(color: Color(0xFF6E8A72)),
-            counterStyle: TextStyle(color: Color(0xFF4A7A50)),
+            hintStyle: TextStyle(color: C.textFaint),
+            counterStyle: TextStyle(color: C.textFaint),
           ),
         ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context),
             child: const Text('Cancel',
-                style: TextStyle(color: Color(0xFF81C784))),
+                style: TextStyle(color: C.accent)),
           ),
           FilledButton(
             onPressed: () => Navigator.pop(context, ctrl.text.trim()),
             style: FilledButton.styleFrom(
-                backgroundColor: const Color(0xFFFFB300),
+                backgroundColor: C.gold,
                 foregroundColor: const Color(0xFF231A00)),
             child: const Text('Create'),
           ),
@@ -82,7 +83,7 @@ class _ContestTeamsTabState extends State<ContestTeamsTab> {
     if (_uid.isEmpty) {
       return const Center(
         child: Text('Sign in to join a team.',
-            style: TextStyle(color: Color(0xFF9CCC9F))),
+            style: TextStyle(color: C.textSoft)),
       );
     }
 
@@ -104,7 +105,7 @@ class _ContestTeamsTabState extends State<ContestTeamsTab> {
               'Play alone, or team up with whoever is around. '
               'Your picks count for your team.',
               style: TextStyle(
-                  color: Color(0xFF9CCC9F), fontSize: 13, height: 1.45),
+                  color: C.textSoft, fontSize: 13, height: 1.45),
             ),
             const SizedBox(height: 16),
 
@@ -114,7 +115,7 @@ class _ContestTeamsTabState extends State<ContestTeamsTab> {
                 icon: const Icon(Icons.group_add_rounded),
                 label: const Text('Create a team'),
                 style: FilledButton.styleFrom(
-                  backgroundColor: const Color(0xFF2E7D32),
+                  backgroundColor: C.accentDim,
                   foregroundColor: Colors.white,
                   padding: const EdgeInsets.symmetric(vertical: 13),
                 ),
@@ -123,22 +124,22 @@ class _ContestTeamsTabState extends State<ContestTeamsTab> {
               Container(
                 padding: const EdgeInsets.all(14),
                 decoration: BoxDecoration(
-                  color: const Color(0xFF1B4020),
+                  color: C.surfaceAlt,
                   borderRadius: BorderRadius.circular(10),
-                  border: Border.all(color: const Color(0xFFFFB300)),
+                  border: Border.all(color: C.gold),
                 ),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text('Your team: ${mine.name}',
                         style: const TextStyle(
-                            color: Color(0xFFFFD54F),
+                            color: C.gold,
                             fontSize: 15,
                             fontWeight: FontWeight.w700)),
                     const SizedBox(height: 4),
                     Text(mine.memberNames.join(', '),
                         style: const TextStyle(
-                            color: Color(0xFFCFE8D2), fontSize: 12.5)),
+                            color: C.text, fontSize: 12.5)),
                     const SizedBox(height: 8),
                     TextButton(
                       onPressed: _busy
@@ -161,7 +162,7 @@ class _ContestTeamsTabState extends State<ContestTeamsTab> {
                           tapTargetSize: MaterialTapTargetSize.shrinkWrap),
                       child: const Text('Leave team',
                           style: TextStyle(
-                              color: Color(0xFFEF9A9A), fontSize: 12.5)),
+                              color: C.danger, fontSize: 12.5)),
                     ),
                   ],
                 ),
@@ -170,7 +171,7 @@ class _ContestTeamsTabState extends State<ContestTeamsTab> {
             const SizedBox(height: 22),
             const Text('OPEN TEAMS',
                 style: TextStyle(
-                    color: Color(0xFF81C784),
+                    color: C.accent,
                     fontSize: 11,
                     fontWeight: FontWeight.w700,
                     letterSpacing: 1.2)),
@@ -178,19 +179,19 @@ class _ContestTeamsTabState extends State<ContestTeamsTab> {
 
             if (teams.isEmpty)
               const Text('No teams yet. Create the first one.',
-                  style: TextStyle(color: Color(0xFF6E8A72), fontSize: 13)),
+                  style: TextStyle(color: C.textFaint, fontSize: 13)),
 
             for (final t in teams)
               Container(
                 margin: const EdgeInsets.only(bottom: 8),
                 padding: const EdgeInsets.all(12),
                 decoration: BoxDecoration(
-                  color: const Color(0xFF111F16),
+                  color: C.surface,
                   borderRadius: BorderRadius.circular(10),
                   border: Border.all(
                     color: t.memberUids.contains(_uid)
-                        ? const Color(0xFFFFB300)
-                        : const Color(0xFF2A4A2F),
+                        ? C.gold
+                        : C.line,
                   ),
                 ),
                 child: Row(
@@ -201,20 +202,20 @@ class _ContestTeamsTabState extends State<ContestTeamsTab> {
                         children: [
                           Text(t.name,
                               style: const TextStyle(
-                                  color: Color(0xFFE8F5E9),
+                                  color: C.textHi,
                                   fontSize: 14.5,
                                   fontWeight: FontWeight.w600)),
                           Text(
                               '${t.size} ${t.size == 1 ? "player" : "players"}  ·  ${t.memberNames.take(3).join(", ")}'
                               '${t.memberNames.length > 3 ? "…" : ""}',
                               style: const TextStyle(
-                                  color: Color(0xFF6E8A72), fontSize: 11.5)),
+                                  color: C.textFaint, fontSize: 11.5)),
                         ],
                       ),
                     ),
                     if (t.memberUids.contains(_uid))
                       const Icon(Icons.check_circle_rounded,
-                          color: Color(0xFFFFB300), size: 20)
+                          color: C.gold, size: 20)
                     else if (mine == null)
                       TextButton(
                         onPressed: _busy
@@ -232,7 +233,7 @@ class _ContestTeamsTabState extends State<ContestTeamsTab> {
                                 }
                               },
                         child: const Text('Join',
-                            style: TextStyle(color: Color(0xFF81C784))),
+                            style: TextStyle(color: C.accent)),
                       ),
                   ],
                 ),

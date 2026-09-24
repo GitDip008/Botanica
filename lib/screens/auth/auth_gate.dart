@@ -5,6 +5,7 @@ import '../../services/version_check_service.dart';
 import '../main_nav_screen.dart';
 import '../update_required_screen.dart';
 import 'login_screen.dart';
+import '../../theme/tokens.dart';
 
 /// Decides which screen to show based on auth state + version check.
 class AuthGate extends StatefulWidget {
@@ -42,9 +43,9 @@ class _AuthGateState extends State<AuthGate> {
   Widget build(BuildContext context) {
     if (_checking) {
       return const Scaffold(
-        backgroundColor: Color(0xFF0A1A0F),
+        backgroundColor: C.bg,
         body: Center(
-          child: CircularProgressIndicator(color: Color(0xFF66BB6A)),
+          child: CircularProgressIndicator(color: C.accent),
         ),
       );
     }
@@ -59,9 +60,9 @@ class _AuthGateState extends State<AuthGate> {
     final userState = context.watch<UserState>();
     if (userState.isLoading) {
       return const Scaffold(
-        backgroundColor: Color(0xFF0A1A0F),
+        backgroundColor: C.bg,
         body: Center(
-          child: CircularProgressIndicator(color: Color(0xFF66BB6A)),
+          child: CircularProgressIndicator(color: C.accent),
         ),
       );
     }

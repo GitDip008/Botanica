@@ -15,6 +15,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart' show rootBundle;
 import '../data/greenhouse_cells.dart';
+import '../theme/tokens.dart';
 
 // Re-exported so a caller needs only this one import to use the picker AND the
 // GreenhouseCell type it returns. Dart extensions (Greenhouse.label) resolve
@@ -42,7 +43,7 @@ Future<GreenhouseCell?> pickGreenhouseCell(
   return showModalBottomSheet<GreenhouseCell>(
     context: context,
     isScrollControlled: true,
-    backgroundColor: const Color(0xFF0D1F14),
+    backgroundColor: C.bg,
     shape: const RoundedRectangleBorder(
       borderRadius: BorderRadius.vertical(top: Radius.circular(18)),
     ),
@@ -97,7 +98,7 @@ class _CellPickerSheetState extends State<_CellPickerSheet> {
               Text(
                 isStart ? 'Where are you now?' : 'Where do you want to go?',
                 style: const TextStyle(
-                  color: Color(0xFFE8F5E9),
+                  color: C.textHi,
                   fontSize: 18,
                   fontWeight: FontWeight.w700,
                 ),
@@ -105,19 +106,19 @@ class _CellPickerSheetState extends State<_CellPickerSheet> {
               const SizedBox(height: 4),
               const Text(
                 'Tap the cell marked on the greenhouse bench nearest to you.',
-                style: TextStyle(color: Color(0xFF9CCC9F), fontSize: 12.5),
+                style: TextStyle(color: C.textSoft, fontSize: 12.5),
               ),
               const SizedBox(height: 12),
               TextField(
                 autofocus: false,
-                style: const TextStyle(color: Color(0xFFE8F5E9)),
+                style: const TextStyle(color: C.textHi),
                 onChanged: (v) => setState(() => _query = v.trim().toUpperCase()),
                 decoration: InputDecoration(
                   hintText: 'Search a cell, e.g. A12',
-                  hintStyle: const TextStyle(color: Color(0xFF6E8A72)),
-                  prefixIcon: const Icon(Icons.search, color: Color(0xFF81C784)),
+                  hintStyle: const TextStyle(color: C.textFaint),
+                  prefixIcon: const Icon(Icons.search, color: C.accent),
                   filled: true,
-                  fillColor: const Color(0xFF13301A),
+                  fillColor: C.surfaceAlt,
                   border: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(10),
                     borderSide: BorderSide.none,
@@ -141,7 +142,7 @@ class _CellPickerSheetState extends State<_CellPickerSheet> {
                         padding: EdgeInsets.all(24),
                         child: Text(
                           "Couldn't load the greenhouse plan.",
-                          style: TextStyle(color: Color(0xFFEF9A9A)),
+                          style: TextStyle(color: C.danger),
                         ),
                       );
                     }
@@ -154,7 +155,7 @@ class _CellPickerSheetState extends State<_CellPickerSheet> {
                         padding: EdgeInsets.all(24),
                         child: Text(
                           'No cell with that name.',
-                          style: TextStyle(color: Color(0xFF9CCC9F)),
+                          style: TextStyle(color: C.textSoft),
                         ),
                       );
                     }
@@ -184,7 +185,7 @@ class _CellPickerSheetState extends State<_CellPickerSheet> {
         child: Text(
           '${house.label} greenhouse  ·  ${cells.length} cells',
           style: const TextStyle(
-            color: Color(0xFF81C784),
+            color: C.accent,
             fontSize: 11,
             fontWeight: FontWeight.w700,
             letterSpacing: 1.2,
@@ -199,11 +200,11 @@ class _CellPickerSheetState extends State<_CellPickerSheet> {
             ActionChip(
               label: Text(c.name),
               labelStyle: const TextStyle(
-                color: Color(0xFFE8F5E9),
+                color: C.textHi,
                 fontWeight: FontWeight.w600,
               ),
-              backgroundColor: const Color(0xFF1B4020),
-              side: const BorderSide(color: Color(0xFF2E7D32)),
+              backgroundColor: C.surfaceAlt,
+              side: const BorderSide(color: C.accentDim),
               onPressed: () => Navigator.of(context).pop(c),
             ),
         ],

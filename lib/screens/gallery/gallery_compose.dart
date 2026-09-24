@@ -17,6 +17,7 @@ import '../../services/camera_utils.dart';
 import '../../models/gallery_post.dart';
 import '../../services/auth_service.dart';
 import '../../services/gallery_service.dart';
+import '../../theme/tokens.dart';
 
 class GalleryCompose extends StatefulWidget {
   const GalleryCompose({super.key});
@@ -159,9 +160,9 @@ class _GalleryComposeState extends State<GalleryCompose> {
     final suggestions = _plantSuggestions();
 
     return Scaffold(
-      backgroundColor: const Color(0xFF0A1A0F),
+      backgroundColor: C.bg,
       appBar: AppBar(
-        backgroundColor: const Color(0xFF0D1F14),
+        backgroundColor: C.bg,
         elevation: 0,
         title: const Text('New photo'),
       ),
@@ -173,9 +174,9 @@ class _GalleryComposeState extends State<GalleryCompose> {
             child: Container(
               height: _photo == null ? 150 : 260,
               decoration: BoxDecoration(
-                color: const Color(0xFF13301A),
+                color: C.surfaceAlt,
                 borderRadius: BorderRadius.circular(12),
-                border: Border.all(color: const Color(0xFF2E7D32)),
+                border: Border.all(color: C.accentDim),
                 image: _photo == null
                     ? null
                     : DecorationImage(
@@ -188,11 +189,11 @@ class _GalleryComposeState extends State<GalleryCompose> {
                         mainAxisSize: MainAxisSize.min,
                         children: [
                           Icon(Icons.add_a_photo_rounded,
-                              color: Color(0xFF81C784), size: 30),
+                              color: C.accent, size: 30),
                           SizedBox(height: 8),
                           Text('Tap to take a photo',
                               style: TextStyle(
-                                  color: Color(0xFF81C784), fontSize: 14)),
+                                  color: C.accent, fontSize: 14)),
                         ],
                       ),
                     ),
@@ -204,13 +205,13 @@ class _GalleryComposeState extends State<GalleryCompose> {
             controller: _captionCtrl,
             maxLines: 3,
             maxLength: 300,
-            style: const TextStyle(color: Color(0xFFE8F5E9)),
+            style: const TextStyle(color: C.textHi),
             decoration: InputDecoration(
               hintText: 'Say something about it…',
-              hintStyle: const TextStyle(color: Color(0xFF6E8A72)),
-              counterStyle: const TextStyle(color: Color(0xFF4A7A50)),
+              hintStyle: const TextStyle(color: C.textFaint),
+              counterStyle: const TextStyle(color: C.textFaint),
               filled: true,
-              fillColor: const Color(0xFF13301A),
+              fillColor: C.surfaceAlt,
               border: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(10),
                 borderSide: BorderSide.none,
@@ -220,15 +221,15 @@ class _GalleryComposeState extends State<GalleryCompose> {
 
           TextField(
             controller: _plantCtrl,
-            style: const TextStyle(color: Color(0xFFE8F5E9)),
+            style: const TextStyle(color: C.textHi),
             onChanged: (_) => setState(() {}),
             decoration: InputDecoration(
               hintText: 'Which plant? (optional)',
-              hintStyle: const TextStyle(color: Color(0xFF6E8A72)),
+              hintStyle: const TextStyle(color: C.textFaint),
               prefixIcon:
-                  const Icon(Icons.local_florist_outlined, color: Color(0xFF81C784)),
+                  const Icon(Icons.local_florist_outlined, color: C.accent),
               filled: true,
-              fillColor: const Color(0xFF13301A),
+              fillColor: C.surfaceAlt,
               border: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(10),
                 borderSide: BorderSide.none,
@@ -240,9 +241,9 @@ class _GalleryComposeState extends State<GalleryCompose> {
             Container(
               margin: const EdgeInsets.only(top: 8),
               decoration: BoxDecoration(
-                color: const Color(0xFF111F16),
+                color: C.surface,
                 borderRadius: BorderRadius.circular(10),
-                border: Border.all(color: const Color(0xFF2A4A2F)),
+                border: Border.all(color: C.line),
               ),
               child: Column(
                 children: [
@@ -251,7 +252,7 @@ class _GalleryComposeState extends State<GalleryCompose> {
                       dense: true,
                       title: Text(p.scientificName,
                           style: const TextStyle(
-                              color: Color(0xFFE8F5E9),
+                              color: C.textHi,
                               fontSize: 13.5,
                               fontStyle: FontStyle.italic)),
                       onTap: () {
@@ -267,21 +268,21 @@ class _GalleryComposeState extends State<GalleryCompose> {
           Container(
             padding: const EdgeInsets.all(14),
             decoration: BoxDecoration(
-              color: const Color(0xFF111F16),
+              color: C.surface,
               borderRadius: BorderRadius.circular(10),
-              border: Border.all(color: const Color(0xFF2A4A2F)),
+              border: Border.all(color: C.line),
             ),
             child: Column(
               children: [
                 SwitchListTile(
                   contentPadding: EdgeInsets.zero,
                   value: _makePublic,
-                  activeThumbColor: const Color(0xFF81C784),
+                  activeThumbColor: C.accent,
                   onChanged: (v) => setState(() => _makePublic = v),
                   title: Text(
                     _makePublic ? 'Share with everyone' : 'Only you',
                     style: const TextStyle(
-                        color: Color(0xFFE8F5E9),
+                        color: C.textHi,
                         fontSize: 14.5,
                         fontWeight: FontWeight.w600),
                   ),
@@ -290,7 +291,7 @@ class _GalleryComposeState extends State<GalleryCompose> {
                         ? 'Anyone using the app will see this photo and can react to it.'
                         : 'Stays on this phone. Nothing is uploaded — you can share it later.',
                     style: const TextStyle(
-                        color: Color(0xFF9CCC9F), fontSize: 12, height: 1.35),
+                        color: C.textSoft, fontSize: 12, height: 1.35),
                   ),
                 ),
               ],
@@ -300,7 +301,7 @@ class _GalleryComposeState extends State<GalleryCompose> {
           if (_error != null) ...[
             const SizedBox(height: 12),
             Text(_error!,
-                style: const TextStyle(color: Color(0xFFEF9A9A), fontSize: 13)),
+                style: const TextStyle(color: C.danger, fontSize: 13)),
           ],
 
           const SizedBox(height: 20),
@@ -314,7 +315,7 @@ class _GalleryComposeState extends State<GalleryCompose> {
                 : const Icon(Icons.check_rounded),
             label: Text(_saving ? 'Saving…' : 'Save'),
             style: FilledButton.styleFrom(
-              backgroundColor: const Color(0xFF2E7D32),
+              backgroundColor: C.accentDim,
               foregroundColor: Colors.white,
               padding: const EdgeInsets.symmetric(vertical: 14),
               textStyle:
@@ -389,7 +390,7 @@ class _GalleryCameraState extends State<_GalleryCamera> {
                         tooltip: 'Switch camera',
                         icon: Icon(Icons.flip_camera_android_rounded,
                             color: isFront(_active)
-                                ? const Color(0xFFFFD54F)
+                                ? C.gold
                                 : Colors.white),
                         onPressed: _switch,
                       ),
@@ -413,7 +414,7 @@ class _GalleryCameraState extends State<_GalleryCamera> {
                         shape: BoxShape.circle,
                         color: Colors.white,
                         border: Border.all(
-                            color: const Color(0xFF81C784), width: 4),
+                            color: C.accent, width: 4),
                       ),
                     ),
                   ),

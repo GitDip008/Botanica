@@ -6,6 +6,7 @@ import '../services/chat_history_service.dart';
 import '../services/language_service.dart';
 import 'chat_continuation_screen.dart';
 import 'main_nav_screen.dart';
+import '../theme/tokens.dart';
 
 /// All-tier accessible list of past plant conversations. Tap one to continue.
 class ChatHistoryScreen extends StatefulWidget {
@@ -23,7 +24,7 @@ class _ChatHistoryScreenState extends State<ChatHistoryScreen> {
   Widget _sectionLabel(String text) => Text(
         text.toUpperCase(),
         style: const TextStyle(
-            color: Color(0xFF4A7A50),
+            color: C.textFaint,
             fontSize: 11,
             fontWeight: FontWeight.w700,
             letterSpacing: 1.4),
@@ -61,11 +62,11 @@ class _ChatHistoryScreenState extends State<ChatHistoryScreen> {
     final ok = await showDialog<bool>(
       context: context,
       builder: (ctx) => AlertDialog(
-        backgroundColor: const Color(0xFF111F16),
+        backgroundColor: C.surface,
         title: Text(s.deleteSelectedTitle,
-            style: const TextStyle(color: Color(0xFFE8F5E9))),
+            style: const TextStyle(color: C.textHi)),
         content: Text(s.deleteChatBody,
-            style: const TextStyle(color: Color(0xFF81C784))),
+            style: const TextStyle(color: C.accent)),
         actions: [
           TextButton(
               onPressed: () => Navigator.pop(ctx, false),
@@ -73,7 +74,7 @@ class _ChatHistoryScreenState extends State<ChatHistoryScreen> {
           TextButton(
               onPressed: () => Navigator.pop(ctx, true),
               child: Text(s.delete,
-                  style: const TextStyle(color: Color(0xFFEF5350)))),
+                  style: const TextStyle(color: C.danger))),
         ],
       ),
     );
@@ -111,18 +112,18 @@ class _ChatHistoryScreenState extends State<ChatHistoryScreen> {
     final newName = await showDialog<String>(
       context: context,
       builder: (ctx) => AlertDialog(
-        backgroundColor: const Color(0xFF111F16),
+        backgroundColor: C.surface,
         title: Text(s.renameChatTitle,
-            style: const TextStyle(color: Color(0xFFE8F5E9))),
+            style: const TextStyle(color: C.textHi)),
         content: TextField(
           controller: ctrl,
           autofocus: true,
           maxLength: 60,
-          style: const TextStyle(color: Color(0xFFE8F5E9)),
+          style: const TextStyle(color: C.textHi),
           decoration: InputDecoration(
             labelText: s.newName,
-            labelStyle: const TextStyle(color: Color(0xFF81C784)),
-            counterStyle: const TextStyle(color: Color(0xFF4A7A50)),
+            labelStyle: const TextStyle(color: C.accent),
+            counterStyle: const TextStyle(color: C.textFaint),
           ),
         ),
         actions: [
@@ -131,7 +132,7 @@ class _ChatHistoryScreenState extends State<ChatHistoryScreen> {
           TextButton(
               onPressed: () => Navigator.pop(ctx, ctrl.text.trim()),
               child: Text(s.save,
-                  style: const TextStyle(color: Color(0xFF66BB6A)))),
+                  style: const TextStyle(color: C.accent))),
         ],
       ),
     );
@@ -149,17 +150,17 @@ class _ChatHistoryScreenState extends State<ChatHistoryScreen> {
     final single = _singleSelected;
 
     return Scaffold(
-      backgroundColor: const Color(0xFF0A1A0F),
+      backgroundColor: C.bg,
       appBar: _selectionMode
           ? AppBar(
-              backgroundColor: const Color(0xFF0D1F14),
+              backgroundColor: C.bg,
               elevation: 0,
               leading: IconButton(
-                icon: const Icon(Icons.close_rounded, color: Color(0xFFE8F5E9)),
+                icon: const Icon(Icons.close_rounded, color: C.textHi),
                 onPressed: _clearSelection,
               ),
               title: Text(s.selectedCount(_selected.length),
-                  style: const TextStyle(color: Color(0xFFE8F5E9))),
+                  style: const TextStyle(color: C.textHi)),
               actions: [
                 // When exactly one chat is selected → Pin + Rename
                 if (single != null) ...[
@@ -169,7 +170,7 @@ class _ChatHistoryScreenState extends State<ChatHistoryScreen> {
                       single.isPinned
                           ? Icons.push_pin_rounded
                           : Icons.push_pin_outlined,
-                      color: const Color(0xFFFFD54F),
+                      color: C.gold,
                     ),
                     onPressed: _pinSingle,
                   ),
@@ -186,26 +187,26 @@ class _ChatHistoryScreenState extends State<ChatHistoryScreen> {
                     allSelected
                         ? Icons.deselect_rounded
                         : Icons.select_all_rounded,
-                    color: const Color(0xFF66BB6A),
+                    color: C.accent,
                   ),
                   onPressed: _toggleSelectAll,
                 ),
                 IconButton(
                   tooltip: s.delete,
                   icon: const Icon(Icons.delete_outline_rounded,
-                      color: Color(0xFFEF5350)),
+                      color: C.danger),
                   onPressed: () => _deleteSelected(s),
                 ),
               ],
             )
           : AppBar(
               leading: IconButton(
-                icon: const Icon(Icons.menu_rounded, color: Color(0xFFE8F5E9)),
+                icon: const Icon(Icons.menu_rounded, color: C.textHi),
                 onPressed: () =>
                     MainNavScreen.scaffoldKey.currentState?.openDrawer(),
               ),
               title: Text(s.chatsTitle),
-              backgroundColor: const Color(0xFF0D1F14),
+              backgroundColor: C.bg,
               elevation: 0,
               automaticallyImplyLeading: false,
             ),
@@ -214,7 +215,7 @@ class _ChatHistoryScreenState extends State<ChatHistoryScreen> {
         builder: (context, snap) {
           if (snap.connectionState == ConnectionState.waiting) {
             return const Center(
-                child: CircularProgressIndicator(color: Color(0xFF66BB6A)));
+                child: CircularProgressIndicator(color: C.accent));
           }
           final sessions = snap.data ?? const [];
           _allSessions = sessions;
@@ -225,19 +226,19 @@ class _ChatHistoryScreenState extends State<ChatHistoryScreen> {
                 _NewChatCard(s: s),
                 const SizedBox(height: 32),
                 const Icon(Icons.forum_outlined,
-                    color: Color(0xFF4A7A50), size: 64),
+                    color: C.textFaint, size: 64),
                 const SizedBox(height: 14),
                 Text(s.noChatsYet,
                     textAlign: TextAlign.center,
                     style: const TextStyle(
-                        color: Color(0xFFE8F5E9),
+                        color: C.textHi,
                         fontSize: 17,
                         fontWeight: FontWeight.w700)),
                 const SizedBox(height: 6),
                 Text(
                   s.noChatsYetBody,
                   textAlign: TextAlign.center,
-                  style: const TextStyle(color: Color(0xFF81C784), fontSize: 13),
+                  style: const TextStyle(color: C.accent, fontSize: 13),
                 ),
               ],
             );
@@ -342,13 +343,13 @@ class _SessionTile extends StatelessWidget {
           padding: const EdgeInsets.all(14),
           decoration: BoxDecoration(
             color: selected
-                ? const Color(0xFF1A3320)
-                : const Color(0xFF111F16),
+                ? C.surfaceAlt
+                : C.surface,
             borderRadius: BorderRadius.circular(14),
             border: Border.all(
               color: selected
-                  ? const Color(0xFF66BB6A)
-                  : const Color(0xFF2A4A2F),
+                  ? C.accent
+                  : C.line,
               width: selected ? 1.5 : 1,
             ),
           ),
@@ -360,8 +361,8 @@ class _SessionTile extends StatelessWidget {
                       ? Icons.check_circle_rounded
                       : Icons.radio_button_unchecked_rounded,
                   color: selected
-                      ? const Color(0xFF66BB6A)
-                      : const Color(0xFF4A7A50),
+                      ? C.accent
+                      : C.textFaint,
                   size: 24,
                 ),
                 const SizedBox(width: 12),
@@ -388,7 +389,7 @@ class _SessionTile extends StatelessWidget {
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
                       style: const TextStyle(
-                          color: Color(0xFFE8F5E9),
+                          color: C.textHi,
                           fontSize: 14,
                           fontWeight: FontWeight.w700),
                     ),
@@ -397,14 +398,14 @@ class _SessionTile extends StatelessWidget {
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
                       style: const TextStyle(
-                          color: Color(0xFF81C784),
+                          color: C.accent,
                           fontSize: 12,
                           fontStyle: FontStyle.italic),
                     ),
                     const SizedBox(height: 4),
                     Text(
                       '$msgCount ${msgCount == 1 ? s.message : s.messages} · ${formatter.format(session.updatedAt)}',
-                      style: const TextStyle(color: Color(0xFF4A7A50), fontSize: 11),
+                      style: const TextStyle(color: C.textFaint, fontSize: 11),
                     ),
                   ],
                 ),
@@ -413,10 +414,10 @@ class _SessionTile extends StatelessWidget {
                 const Padding(
                   padding: EdgeInsets.only(right: 6),
                   child: Icon(Icons.push_pin_rounded,
-                      color: Color(0xFFFFD54F), size: 14),
+                      color: C.gold, size: 14),
                 ),
               const Icon(Icons.arrow_forward_ios_rounded,
-                  color: Color(0xFF4A7A50), size: 14),
+                  color: C.textFaint, size: 14),
             ],
           ),
         ),
@@ -430,7 +431,7 @@ class _SessionTile extends StatelessWidget {
     return Container(
       width: 56,
       height: 56,
-      color: const Color(0xFF1A2E1E),
+      color: C.surface,
       child: Center(
         child: isGeneral
             ? const Text('🌱', style: TextStyle(fontSize: 26))
@@ -467,7 +468,7 @@ class _NewChatCard extends StatelessWidget {
           padding: const EdgeInsets.all(16),
           decoration: BoxDecoration(
             gradient: const LinearGradient(
-              colors: [Color(0xFF1B4020), Color(0xFF2E7D32)],
+              colors: [C.surfaceAlt, C.accentDim],
               begin: Alignment.topLeft,
               end: Alignment.bottomRight,
             ),

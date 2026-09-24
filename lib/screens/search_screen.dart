@@ -9,6 +9,7 @@ import '../services/plant_identification_service.dart';
 import '../services/usage_tracking_service.dart';
 import 'main_nav_screen.dart';
 import 'plant_result_screen.dart';
+import '../theme/tokens.dart';
 
 class SearchScreen extends StatefulWidget {
   const SearchScreen({super.key});
@@ -144,16 +145,16 @@ class _SearchScreenState extends State<SearchScreen> {
   Widget build(BuildContext context) {
     final s = context.watch<LanguageService>().strings;
     return Scaffold(
-      backgroundColor: const Color(0xFF0D1F14),
+      backgroundColor: C.bg,
       appBar: AppBar(
-        backgroundColor: const Color(0xFF1A2E1E),
+        backgroundColor: C.surface,
         leading: IconButton(
-          icon: const Icon(Icons.menu_rounded, color: Color(0xFFE8F5E9)),
+          icon: const Icon(Icons.menu_rounded, color: C.textHi),
           onPressed: () =>
               MainNavScreen.scaffoldKey.currentState?.openDrawer(),
         ),
         title: Text('🕵️‍♂️ ${s.searchPlants}',
-            style: const TextStyle(color: Color(0xFFE8F5E9), fontWeight: FontWeight.bold)),
+            style: const TextStyle(color: C.textHi, fontWeight: FontWeight.bold)),
       ),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(16),
@@ -167,10 +168,10 @@ class _SearchScreenState extends State<SearchScreen> {
                 Expanded(
                   child: TextField(
                     controller: _ctrl,
-                    style: const TextStyle(color: Color(0xFFE8F5E9)),
+                    style: const TextStyle(color: C.textHi),
                     decoration: InputDecoration(
                       hintText: s.searchHint,
-                      prefixIcon: const Icon(Icons.search, color: Color(0xFF4CAF50)),
+                      prefixIcon: const Icon(Icons.search, color: C.accent),
                       contentPadding: const EdgeInsets.symmetric(vertical: 12),
                     ),
                     onSubmitted: _search,
@@ -183,7 +184,7 @@ class _SearchScreenState extends State<SearchScreen> {
                   child: Container(
                     width: 48, height: 48,
                     decoration: const BoxDecoration(
-                      color: Color(0xFF2E7D32),
+                      color: C.accentDim,
                       shape: BoxShape.circle,
                     ),
                     child: _searching
@@ -211,7 +212,7 @@ class _SearchScreenState extends State<SearchScreen> {
             const SizedBox(height: 24),
 
             Text(s.quickSearches,
-                style: const TextStyle(color: Color(0xFF66BB6A), fontWeight: FontWeight.bold, fontSize: 14)),
+                style: const TextStyle(color: C.accent, fontWeight: FontWeight.bold, fontSize: 14)),
             const SizedBox(height: 10),
             Wrap(
               spacing: 8, runSpacing: 8,
@@ -220,11 +221,11 @@ class _SearchScreenState extends State<SearchScreen> {
                 child: Container(
                   padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
                   decoration: BoxDecoration(
-                    color: const Color(0xFF1A2E1E),
+                    color: C.surface,
                     borderRadius: BorderRadius.circular(20),
-                    border: Border.all(color: const Color(0xFF2E7D32)),
+                    border: Border.all(color: C.accentDim),
                   ),
-                  child: Text(s, style: const TextStyle(color: Color(0xFF66BB6A), fontSize: 13)),
+                  child: Text(s, style: const TextStyle(color: C.accent, fontSize: 13)),
                 ),
               )).toList(),
             ),

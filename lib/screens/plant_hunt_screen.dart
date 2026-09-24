@@ -36,6 +36,7 @@ import '../services/plant_identification_service.dart';
 import '../services/usage_tracking_service.dart';
 import '../services/wikipedia_image_service.dart';
 import '../widgets/zoomable_camera_preview.dart';
+import '../theme/tokens.dart';
 
 // ─── Scoring ──────────────────────────────────────────────────────────────────
 
@@ -421,24 +422,24 @@ class _PlantHuntScreenState extends State<PlantHuntScreen> {
     final ok = await showDialog<bool>(
       context: context,
       builder: (_) => AlertDialog(
-        backgroundColor: const Color(0xFF1A2E1E),
+        backgroundColor: C.surface,
         title: const Text('Use a hint?',
-            style: TextStyle(color: Color(0xFFE8F5E9), fontSize: 17)),
+            style: TextStyle(color: C.textHi, fontSize: 17)),
         content: Text(
           '$what costs you $cost points on this plant.\n\n'
           'You can still finish the quest and stay on the leaderboard — you '
           'will just score less for this one.',
-          style: const TextStyle(color: Color(0xFF9CCC9F), height: 1.5),
+          style: const TextStyle(color: C.textSoft, height: 1.5),
         ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context, false),
             child: const Text('Keep trying',
-                style: TextStyle(color: Color(0xFF81C784))),
+                style: TextStyle(color: C.accent)),
           ),
           FilledButton(
             style: FilledButton.styleFrom(
-              backgroundColor: const Color(0xFFFFB300),
+              backgroundColor: C.gold,
               foregroundColor: const Color(0xFF231A00),
             ),
             onPressed: () => Navigator.pop(context, true),
@@ -606,7 +607,7 @@ class _PlantHuntScreenState extends State<PlantHuntScreen> {
           margin: const EdgeInsets.symmetric(horizontal: 40),
           padding: const EdgeInsets.fromLTRB(22, 20, 22, 20),
           decoration: BoxDecoration(
-            color: const Color(0xFF0D1F14),
+            color: C.bg,
             borderRadius: BorderRadius.circular(16),
             border: Border.all(color: Colors.greenAccent, width: 1.5),
           ),
@@ -631,7 +632,7 @@ class _PlantHuntScreenState extends State<PlantHuntScreen> {
               Text(
                 '+$banked pts committed',
                 style: const TextStyle(
-                    color: Color(0xFFFFD54F),
+                    color: C.gold,
                     fontSize: 13.5,
                     fontWeight: FontWeight.w700),
               ),
@@ -642,7 +643,7 @@ class _PlantHuntScreenState extends State<PlantHuntScreen> {
                     : 'Record logged · loading quest $next of ${_kChallenges.length}…',
                 textAlign: TextAlign.center,
                 style: const TextStyle(
-                    color: Color(0xFF9CCC9F), fontSize: 12, height: 1.4),
+                    color: C.textSoft, fontSize: 12, height: 1.4),
               ),
             ],
           ),
@@ -753,21 +754,21 @@ class _PlantHuntScreenState extends State<PlantHuntScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFF0D1F14),
+      backgroundColor: C.bg,
       appBar: AppBar(
-        backgroundColor: const Color(0xFF1A2E1E),
+        backgroundColor: C.surface,
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back_rounded, color: Color(0xFF66BB6A)),
+          icon: const Icon(Icons.arrow_back_rounded, color: C.accent),
           onPressed: () => Navigator.pop(context),
         ),
         title: const Text('🔍 Plant Hunt',
             style: TextStyle(
-                color: Color(0xFFE8F5E9), fontWeight: FontWeight.bold)),
+                color: C.textHi, fontWeight: FontWeight.bold)),
         actions: [
           IconButton(
             tooltip: 'Leaderboard',
             icon: const Icon(Icons.leaderboard_rounded,
-                color: Color(0xFF66BB6A)),
+                color: C.accent),
             onPressed: () => Navigator.push(
                 context,
                 MaterialPageRoute(
@@ -796,7 +797,7 @@ class _PlantHuntScreenState extends State<PlantHuntScreen> {
             '5 mystery plants. Each quest gives you a clue, but no plant name. '
             'Can you figure it out?',
             style: TextStyle(
-                color: Color(0xFFE8F5E9), fontSize: 14.5, height: 1.55),
+                color: C.textHi, fontSize: 14.5, height: 1.55),
           ),
           const SizedBox(height: 18),
 
@@ -819,7 +820,7 @@ class _PlantHuntScreenState extends State<PlantHuntScreen> {
             'Keep your eyes open. The clues may point to unusual features, '
             'surprising uses, or fascinating plant stories.',
             style: TextStyle(
-                color: Color(0xFF9CCC9F),
+                color: C.textSoft,
                 fontSize: 13,
                 height: 1.5,
                 fontStyle: FontStyle.italic),
@@ -831,7 +832,7 @@ class _PlantHuntScreenState extends State<PlantHuntScreen> {
           const SizedBox(height: 24),
           FilledButton.icon(
             style: FilledButton.styleFrom(
-              backgroundColor: const Color(0xFF2E7D32),
+              backgroundColor: C.accentDim,
               foregroundColor: Colors.white,
               minimumSize: const Size(double.infinity, 52),
               shape: RoundedRectangleBorder(
@@ -854,12 +855,12 @@ class _PlantHuntScreenState extends State<PlantHuntScreen> {
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Icon(icon, size: 17, color: const Color(0xFF66BB6A)),
+          Icon(icon, size: 17, color: C.accent),
           const SizedBox(width: 12),
           Expanded(
             child: Text(text,
                 style: const TextStyle(
-                    color: Color(0xFFCFE8D2), fontSize: 13.5, height: 1.5)),
+                    color: C.text, fontSize: 13.5, height: 1.5)),
           ),
         ],
       ),
@@ -871,19 +872,19 @@ class _PlantHuntScreenState extends State<PlantHuntScreen> {
     return Container(
       padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
-        color: const Color(0xFF1A2E1E),
+        color: C.surface,
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: const Color(0xFF2E7D32)),
+        border: Border.all(color: C.accentDim),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           const Row(children: [
-            Icon(Icons.stars_rounded, size: 16, color: Color(0xFFFFD54F)),
+            Icon(Icons.stars_rounded, size: 16, color: C.gold),
             SizedBox(width: 6),
             Text('HOW POINTS WORK',
                 style: TextStyle(
-                    color: Color(0xFFFFD54F),
+                    color: C.gold,
                     fontSize: 11,
                     fontWeight: FontWeight.w700,
                     letterSpacing: 1.1)),
@@ -896,12 +897,12 @@ class _PlantHuntScreenState extends State<PlantHuntScreen> {
           _pointRow('Hint 2 — photo of the plant', '−$kPhotoHintCost pts'),
           _pointRow('Photo we cannot confirm', '−$kUncheckedPhotoCost pts'),
           _pointRow('Being told the answer', '0 pts'),
-          const Divider(color: Color(0xFF2E7D32), height: 18),
+          const Divider(color: C.accentDim, height: 18),
           const Text(
             'Wrong answers cost nothing. Your photo has to be the right plant '
             '— if we cannot confirm it, you can still submit, but it costs.',
             style: TextStyle(
-                color: Color(0xFF9CCC9F), fontSize: 12, height: 1.45),
+                color: C.textSoft, fontSize: 12, height: 1.45),
           ),
         ],
       ),
@@ -916,11 +917,11 @@ class _PlantHuntScreenState extends State<PlantHuntScreen> {
           Expanded(
             child: Text(label,
                 style: const TextStyle(
-                    color: Color(0xFFCFE8D2), fontSize: 12.5)),
+                    color: C.text, fontSize: 12.5)),
           ),
           Text(value,
               style: const TextStyle(
-                  color: Color(0xFFFFD54F),
+                  color: C.gold,
                   fontSize: 12.5,
                   fontWeight: FontWeight.w700)),
         ],
@@ -945,9 +946,9 @@ class _PlantHuntScreenState extends State<PlantHuntScreen> {
           Container(
             padding: const EdgeInsets.all(16),
             decoration: BoxDecoration(
-              color: const Color(0xFF1A2E1E),
+              color: C.surface,
               borderRadius: BorderRadius.circular(16),
-              border: Border.all(color: const Color(0xFF2E7D32)),
+              border: Border.all(color: C.accentDim),
             ),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -960,7 +961,7 @@ class _PlantHuntScreenState extends State<PlantHuntScreen> {
                       height: 34,
                       alignment: Alignment.center,
                       decoration: BoxDecoration(
-                        color: const Color(0xFF2E7D32),
+                        color: C.accentDim,
                         borderRadius: BorderRadius.circular(10),
                       ),
                       child: Text(challenge.questNumber,
@@ -974,14 +975,14 @@ class _PlantHuntScreenState extends State<PlantHuntScreen> {
                       child: Text(
                         'Quest ${challenge.questNumber} of ${_kChallenges.length}',
                         style: const TextStyle(
-                            color: Color(0xFFE8F5E9),
+                            color: C.textHi,
                             fontSize: 16,
                             fontWeight: FontWeight.bold),
                       ),
                     ),
                     Text('$_total pts',
                         style: const TextStyle(
-                            color: Color(0xFFFFD54F),
+                            color: C.gold,
                             fontSize: 13,
                             fontWeight: FontWeight.w700)),
                   ],
@@ -990,11 +991,11 @@ class _PlantHuntScreenState extends State<PlantHuntScreen> {
 
                 Row(children: [
                   const Icon(Icons.format_quote,
-                      color: Color(0xFF2E7D32), size: 16),
+                      color: C.accentDim, size: 16),
                   const SizedBox(width: 4),
                   Text(LanguageService.instance.strings.yourClue,
                       style: const TextStyle(
-                          color: Color(0xFF66BB6A),
+                          color: C.accent,
                           fontWeight: FontWeight.bold,
                           fontSize: 12)),
                 ]),
@@ -1010,14 +1011,14 @@ class _PlantHuntScreenState extends State<PlantHuntScreen> {
                           width: 20,
                           child: Text('${i + 1}.',
                               style: const TextStyle(
-                                  color: Color(0xFF4CAF50),
+                                  color: C.accent,
                                   fontSize: 13,
                                   fontWeight: FontWeight.w700)),
                         ),
                         Expanded(
                           child: Text(challenge.clues[i],
                               style: const TextStyle(
-                                  color: Color(0xFFE8F5E9),
+                                  color: C.textHi,
                                   fontSize: 13,
                                   height: 1.55)),
                         ),
@@ -1084,7 +1085,7 @@ class _PlantHuntScreenState extends State<PlantHuntScreen> {
       children: [
         const Text('YOUR ANSWER',
             style: TextStyle(
-                color: Color(0xFF81C784),
+                color: C.accent,
                 fontSize: 11,
                 fontWeight: FontWeight.w700,
                 letterSpacing: 1.2)),
@@ -1093,7 +1094,7 @@ class _PlantHuntScreenState extends State<PlantHuntScreen> {
           'Both are needed: a photo you take here, and the name from the '
           'plant’s tag. Finnish, Latin or the everyday name all count, and '
           'close spelling is fine.',
-          style: TextStyle(color: Color(0xFF6E8A72), fontSize: 12, height: 1.4),
+          style: TextStyle(color: C.textFaint, fontSize: 12, height: 1.4),
         ),
         const SizedBox(height: 12),
 
@@ -1103,14 +1104,14 @@ class _PlantHuntScreenState extends State<PlantHuntScreen> {
           child: Container(
             height: _photo == null ? 92 : 200,
             decoration: BoxDecoration(
-              color: const Color(0xFF13301A),
+              color: C.surfaceAlt,
               borderRadius: BorderRadius.circular(12),
               border: Border.all(
                   color: _photo == null
-                      ? const Color(0xFF2E7D32)
+                      ? C.accentDim
                       : _photoRejection != null
-                          ? const Color(0xFFEF5350)
-                          : const Color(0xFF66BB6A),
+                          ? C.danger
+                          : C.accent,
                   width: _photoRejection != null ? 1.5 : 1),
               image: _photo == null
                   ? null
@@ -1124,15 +1125,15 @@ class _PlantHuntScreenState extends State<PlantHuntScreen> {
                       mainAxisSize: MainAxisSize.min,
                       children: [
                         Icon(Icons.photo_camera_rounded,
-                            color: Color(0xFF81C784), size: 26),
+                            color: C.accent, size: 26),
                         SizedBox(height: 6),
                         Text('1 · Take a photo of the plant',
                             style: TextStyle(
-                                color: Color(0xFF81C784), fontSize: 13.5)),
+                                color: C.accent, fontSize: 13.5)),
                         SizedBox(height: 2),
                         Text('Camera only — saved pictures are not accepted',
                             style: TextStyle(
-                                color: Color(0xFF4A7A50), fontSize: 11)),
+                                color: C.textFaint, fontSize: 11)),
                       ],
                     ),
                   ),
@@ -1143,9 +1144,9 @@ class _PlantHuntScreenState extends State<PlantHuntScreen> {
             alignment: Alignment.centerRight,
             child: TextButton.icon(
               onPressed: _takePhoto,
-              icon: const Icon(Icons.refresh, size: 14, color: Color(0xFF66BB6A)),
+              icon: const Icon(Icons.refresh, size: 14, color: C.accent),
               label: const Text('Retake',
-                  style: TextStyle(color: Color(0xFF66BB6A), fontSize: 12)),
+                  style: TextStyle(color: C.accent, fontSize: 12)),
             ),
           ),
 
@@ -1156,13 +1157,13 @@ class _PlantHuntScreenState extends State<PlantHuntScreen> {
             decoration: BoxDecoration(
               color: const Color(0xFF2A1414),
               borderRadius: BorderRadius.circular(10),
-              border: Border.all(color: const Color(0xFFEF5350)),
+              border: Border.all(color: C.danger),
             ),
             child: Row(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 const Icon(Icons.report_gmailerrorred_rounded,
-                    size: 16, color: Color(0xFFEF5350)),
+                    size: 16, color: C.danger),
                 const SizedBox(width: 8),
                 Expanded(
                   child: Column(
@@ -1187,7 +1188,7 @@ class _PlantHuntScreenState extends State<PlantHuntScreen> {
                                       height: 13,
                                       child: CircularProgressIndicator(
                                           strokeWidth: 2,
-                                          color: Color(0xFFFFD54F))),
+                                          color: C.gold)),
                                   SizedBox(width: 8),
                                   Expanded(
                                     child: Text(
@@ -1195,7 +1196,7 @@ class _PlantHuntScreenState extends State<PlantHuntScreen> {
                                         'screen open — you will hear back in a '
                                         'moment.',
                                         style: TextStyle(
-                                            color: Color(0xFFFFD54F),
+                                            color: C.gold,
                                             fontSize: 12,
                                             height: 1.35)),
                                   ),
@@ -1206,11 +1207,11 @@ class _PlantHuntScreenState extends State<PlantHuntScreen> {
                                     'Sure there is a plant here? '
                                     'Ask a garden staff member to check →',
                                     style: TextStyle(
-                                      color: Color(0xFFFFD54F),
+                                      color: C.gold,
                                       fontSize: 12.5,
                                       fontWeight: FontWeight.w700,
                                       decoration: TextDecoration.underline,
-                                      decorationColor: Color(0xFFFFD54F),
+                                      decorationColor: C.gold,
                                     ),
                                   ),
                                 ),
@@ -1245,11 +1246,11 @@ class _PlantHuntScreenState extends State<PlantHuntScreen> {
                                   : 'Sure this is the right plant? '
                                       'Submit unchecked (−$_uncheckedCost pts) →',
                               style: const TextStyle(
-                                color: Color(0xFFFFD54F),
+                                color: C.gold,
                                 fontSize: 12.5,
                                 fontWeight: FontWeight.w700,
                                 decoration: TextDecoration.underline,
-                                decorationColor: Color(0xFFFFD54F),
+                                decorationColor: C.gold,
                               ),
                             ),
                           ),
@@ -1262,7 +1263,7 @@ class _PlantHuntScreenState extends State<PlantHuntScreen> {
                             'not confirm, you will be able to submit it '
                             'anyway.',
                             style: TextStyle(
-                                color: Color(0xFF9CCC9F),
+                                color: C.textSoft,
                                 fontSize: 11.5,
                                 height: 1.35),
                           ),
@@ -1279,7 +1280,7 @@ class _PlantHuntScreenState extends State<PlantHuntScreen> {
             padding: const EdgeInsets.only(top: 8),
             child: Row(children: [
               const Icon(Icons.info_outline_rounded,
-                  size: 15, color: Color(0xFFFFD54F)),
+                  size: 15, color: C.gold),
               const SizedBox(width: 6),
               Expanded(
                 child: Text(
@@ -1288,7 +1289,7 @@ class _PlantHuntScreenState extends State<PlantHuntScreen> {
                         : 'Submitting unchecked — '
                             '−$_uncheckedCost pts on this plant.',
                     style: const TextStyle(
-                        color: Color(0xFFFFD54F), fontSize: 12)),
+                        color: C.gold, fontSize: 12)),
               ),
             ]),
           ),
@@ -1312,10 +1313,10 @@ class _PlantHuntScreenState extends State<PlantHuntScreen> {
                   width: 13,
                   height: 13,
                   child: CircularProgressIndicator(
-                      strokeWidth: 2, color: Color(0xFF81C784))),
+                      strokeWidth: 2, color: C.accent)),
               SizedBox(width: 8),
               Text('Checking your photo…',
-                  style: TextStyle(color: Color(0xFF6E8A72), fontSize: 12)),
+                  style: TextStyle(color: C.textFaint, fontSize: 12)),
             ]),
           ),
 
@@ -1324,20 +1325,20 @@ class _PlantHuntScreenState extends State<PlantHuntScreen> {
             margin: const EdgeInsets.only(top: 10),
             padding: const EdgeInsets.all(12),
             decoration: BoxDecoration(
-              color: const Color(0xFF13301A),
+              color: C.surfaceAlt,
               borderRadius: BorderRadius.circular(10),
-              border: Border.all(color: const Color(0xFF2E7D32)),
+              border: Border.all(color: C.accentDim),
             ),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 const Row(children: [
                   Icon(Icons.auto_awesome_rounded,
-                      size: 14, color: Color(0xFF81C784)),
+                      size: 14, color: C.accent),
                   SizedBox(width: 6),
                   Text('PROBABLY',
                       style: TextStyle(
-                          color: Color(0xFF81C784),
+                          color: C.accent,
                           fontSize: 10.5,
                           fontWeight: FontWeight.w700,
                           letterSpacing: 1.1)),
@@ -1345,7 +1346,7 @@ class _PlantHuntScreenState extends State<PlantHuntScreen> {
                 const SizedBox(height: 6),
                 SelectableText(_suggestion!,
                     style: const TextStyle(
-                        color: Color(0xFFE8F5E9),
+                        color: C.textHi,
                         fontSize: 15,
                         fontStyle: FontStyle.italic,
                         fontWeight: FontWeight.w600)),
@@ -1354,7 +1355,7 @@ class _PlantHuntScreenState extends State<PlantHuntScreen> {
                   'A guess from your photo, not the answer. Check it against '
                   'the plant’s tag, then type what the tag says.',
                   style: TextStyle(
-                      color: Color(0xFF6E8A72), fontSize: 11.5, height: 1.4),
+                      color: C.textFaint, fontSize: 11.5, height: 1.4),
                 ),
               ],
             ),
@@ -1365,14 +1366,14 @@ class _PlantHuntScreenState extends State<PlantHuntScreen> {
         // ── 2. Name ────────────────────────────────────────────────────────
         TextField(
           controller: _textCtrl,
-          style: const TextStyle(color: Color(0xFFE8F5E9)),
+          style: const TextStyle(color: C.textHi),
           enabled: !done,
           onChanged: (_) => setState(() {}),
           onSubmitted: (_) => _submit(),
           decoration: const InputDecoration(
             hintText: '2 · Type the name from the tag…',
             prefixIcon:
-                Icon(Icons.local_offer_outlined, color: Color(0xFF4CAF50)),
+                Icon(Icons.local_offer_outlined, color: C.accent),
           ),
           textInputAction: TextInputAction.done,
         ),
@@ -1390,16 +1391,16 @@ class _PlantHuntScreenState extends State<PlantHuntScreen> {
     return Container(
       padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
-        color: const Color(0xFF111F16),
+        color: C.surface,
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: const Color(0xFF2A4A2F)),
+        border: Border.all(color: C.line),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           const Text('HINTS — EACH ONE COSTS POINTS',
               style: TextStyle(
-                  color: Color(0xFF81C784),
+                  color: C.accent,
                   fontSize: 11,
                   fontWeight: FontWeight.w700,
                   letterSpacing: 1.1)),
@@ -1412,12 +1413,12 @@ class _PlantHuntScreenState extends State<PlantHuntScreen> {
               padding: const EdgeInsets.all(11),
               margin: const EdgeInsets.only(bottom: 10),
               decoration: BoxDecoration(
-                color: const Color(0xFF0D1F14),
+                color: C.bg,
                 borderRadius: BorderRadius.circular(10),
               ),
               child: Text('📍 ${challenge.whereToLook}',
                   style: const TextStyle(
-                      color: Color(0xFF66BB6A), fontSize: 12.5, height: 1.5)),
+                      color: C.accent, fontSize: 12.5, height: 1.5)),
             )
           else
             _hintButton(
@@ -1457,7 +1458,7 @@ class _PlantHuntScreenState extends State<PlantHuntScreen> {
               child: Text(
                 'A photo of the plant unlocks as a second hint after your '
                 'first attempt.',
-                style: TextStyle(color: Color(0xFF4A7A50), fontSize: 11.5),
+                style: TextStyle(color: C.textFaint, fontSize: 11.5),
               ),
             ),
         ],
@@ -1473,7 +1474,7 @@ class _PlantHuntScreenState extends State<PlantHuntScreen> {
   }) {
     return OutlinedButton.icon(
       style: OutlinedButton.styleFrom(
-        foregroundColor: const Color(0xFFFFD54F),
+        foregroundColor: C.gold,
         side: const BorderSide(color: Color(0xFF8D6E00)),
         padding: const EdgeInsets.symmetric(vertical: 11),
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
@@ -1495,8 +1496,8 @@ class _PlantHuntScreenState extends State<PlantHuntScreen> {
         final color = done
             ? Colors.greenAccent
             : isActive
-                ? const Color(0xFF66BB6A)
-                : const Color(0xFF2E7D32).withOpacity(0.3);
+                ? C.accent
+                : C.accentDim.withOpacity(0.3);
         return AnimatedContainer(
           duration: 300.ms,
           margin: const EdgeInsets.symmetric(horizontal: 5),
@@ -1553,20 +1554,20 @@ class _PlantHuntScreenState extends State<PlantHuntScreen> {
                 margin: const EdgeInsets.only(bottom: 10),
                 padding: const EdgeInsets.all(14),
                 decoration: BoxDecoration(
-                  color: const Color(0xFF1A2E1E),
+                  color: C.surface,
                   borderRadius: BorderRadius.circular(12),
-                  border: Border.all(color: const Color(0xFFFFD54F)),
+                  border: Border.all(color: C.gold),
                 ),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Row(children: [
                       const Icon(Icons.lightbulb_rounded,
-                          color: Color(0xFFFFD54F), size: 16),
+                          color: C.gold, size: 16),
                       const SizedBox(width: 6),
                       Text(LanguageService.instance.strings.theAnswerIs,
                           style: const TextStyle(
-                              color: Color(0xFFFFD54F),
+                              color: C.gold,
                               fontSize: 12,
                               fontWeight: FontWeight.w700)),
                     ]),
@@ -1574,13 +1575,13 @@ class _PlantHuntScreenState extends State<PlantHuntScreen> {
                     Text(
                         '${challenge.targetName} (${challenge.targetScientific})',
                         style: const TextStyle(
-                            color: Color(0xFFE8F5E9),
+                            color: C.textHi,
                             fontSize: 15,
                             fontWeight: FontWeight.w700)),
                     const SizedBox(height: 4),
                     Text(LanguageService.instance.strings.goFindItToContinue,
                         style: const TextStyle(
-                            color: Color(0xFF81C784), fontSize: 12)),
+                            color: C.accent, fontSize: 12)),
                   ],
                 ),
               )
@@ -1590,8 +1591,8 @@ class _PlantHuntScreenState extends State<PlantHuntScreen> {
                 margin: const EdgeInsets.only(bottom: 10),
                 child: OutlinedButton.icon(
                   style: OutlinedButton.styleFrom(
-                    foregroundColor: const Color(0xFFFFD54F),
-                    side: const BorderSide(color: Color(0xFFFFD54F)),
+                    foregroundColor: C.gold,
+                    side: const BorderSide(color: C.gold),
                     padding: const EdgeInsets.symmetric(vertical: 13),
                     shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(12)),
@@ -1627,7 +1628,7 @@ class _PlantHuntScreenState extends State<PlantHuntScreen> {
             TextButton(
               onPressed: _skipChallenge,
               child: const Text('Skip this plant',
-                  style: TextStyle(color: Color(0xFF6E8A72), fontSize: 12)),
+                  style: TextStyle(color: C.textFaint, fontSize: 12)),
             ),
         ],
       );
@@ -1649,13 +1650,13 @@ class _PlantHuntScreenState extends State<PlantHuntScreen> {
                       : !hasPhoto
                           ? 'Take a photo of the plant to submit.'
                           : 'Type the name from the tag to submit.',
-              style: const TextStyle(color: Color(0xFF6E8A72), fontSize: 12),
+              style: const TextStyle(color: C.textFaint, fontSize: 12),
             ),
           ),
         ElevatedButton.icon(
           style: ElevatedButton.styleFrom(
             backgroundColor:
-                canSubmit ? const Color(0xFF2E7D32) : const Color(0xFF1A2E1E),
+                canSubmit ? C.accentDim : C.surface,
             foregroundColor: Colors.white,
             padding: const EdgeInsets.symmetric(vertical: 14),
             minimumSize: const Size(double.infinity, 0),
@@ -1686,9 +1687,9 @@ class _PlantHuntScreenState extends State<PlantHuntScreen> {
                   begin: Alignment.topLeft,
                   end: Alignment.bottomRight,
                   colors: [
-                    Color(0xFF1B5E20),
-                    Color(0xFF2E7D32),
-                    Color(0xFF1A2E1E),
+                    C.accentDim,
+                    C.accentDim,
+                    C.surface,
                   ],
                 ),
                 borderRadius: BorderRadius.circular(24),
@@ -1720,14 +1721,14 @@ class _PlantHuntScreenState extends State<PlantHuntScreen> {
                   const SizedBox(height: 14),
                   Text('$_total',
                       style: const TextStyle(
-                          color: Color(0xFFFFD54F),
+                          color: C.gold,
                           fontSize: 40,
                           fontWeight: FontWeight.w900)),
                   Text('points · $_solved of ${_kChallenges.length} found',
                       style: const TextStyle(
-                          color: Color(0xFF9CCC9F), fontSize: 12.5)),
+                          color: C.textSoft, fontSize: 12.5)),
                   const SizedBox(height: 18),
-                  const Divider(color: Color(0xFF2E7D32)),
+                  const Divider(color: C.accentDim),
                   const SizedBox(height: 12),
                   // Names are safe here: the hunt is over.
                   for (var i = 0; i < _kChallenges.length; i++)
@@ -1742,17 +1743,17 @@ class _PlantHuntScreenState extends State<PlantHuntScreen> {
                             size: 15,
                             color: _states[i] == _StopState.correct
                                 ? Colors.greenAccent
-                                : const Color(0xFF4A7A50),
+                                : C.textFaint,
                           ),
                           const SizedBox(width: 8),
                           Expanded(
                             child: Text(_kChallenges[i].targetName,
                                 style: const TextStyle(
-                                    color: Color(0xFFE8F5E9), fontSize: 13)),
+                                    color: C.textHi, fontSize: 13)),
                           ),
                           Text('${_points[i]}',
                               style: const TextStyle(
-                                  color: Color(0xFFFFD54F),
+                                  color: C.gold,
                                   fontSize: 12.5,
                                   fontWeight: FontWeight.w700)),
                         ],
@@ -1767,7 +1768,7 @@ class _PlantHuntScreenState extends State<PlantHuntScreen> {
             Container(
               padding: const EdgeInsets.all(16),
               decoration: BoxDecoration(
-                color: const Color(0xFF1A2E1E),
+                color: C.surface,
                 borderRadius: BorderRadius.circular(14),
                 border: Border.all(color: Colors.greenAccent.withOpacity(0.5)),
               ),
@@ -1779,7 +1780,7 @@ class _PlantHuntScreenState extends State<PlantHuntScreen> {
                     'Show this badge to a garden staff member\nat the info desk for a small surprise! 🎁',
                     textAlign: TextAlign.center,
                     style: TextStyle(
-                        color: Color(0xFFE8F5E9), fontSize: 14, height: 1.6),
+                        color: C.textHi, fontSize: 14, height: 1.6),
                   ),
                 ],
               ),
@@ -1789,7 +1790,7 @@ class _PlantHuntScreenState extends State<PlantHuntScreen> {
 
             ElevatedButton.icon(
               style: ElevatedButton.styleFrom(
-                backgroundColor: const Color(0xFFFFB300),
+                backgroundColor: C.gold,
                 foregroundColor: const Color(0xFF231A00),
                 padding:
                     const EdgeInsets.symmetric(horizontal: 24, vertical: 13),
@@ -1806,9 +1807,9 @@ class _PlantHuntScreenState extends State<PlantHuntScreen> {
             ),
             const SizedBox(height: 10),
             TextButton.icon(
-              icon: const Icon(Icons.home, color: Color(0xFF66BB6A), size: 18),
+              icon: const Icon(Icons.home, color: C.accent, size: 18),
               label: Text(LanguageService.instance.strings.backToHome,
-                  style: const TextStyle(color: Color(0xFF66BB6A))),
+                  style: const TextStyle(color: C.accent)),
               onPressed: () => Navigator.pop(context),
             ),
           ],
@@ -1873,9 +1874,9 @@ class _HuntCameraState extends State<_HuntCamera> {
       backgroundColor: Colors.black,
       appBar: AppBar(
         backgroundColor: Colors.black,
-        iconTheme: const IconThemeData(color: Color(0xFF66BB6A)),
+        iconTheme: const IconThemeData(color: C.accent),
         title: const Text('Photograph the plant',
-            style: TextStyle(color: Color(0xFFE8F5E9), fontSize: 16)),
+            style: TextStyle(color: C.textHi, fontSize: 16)),
       ),
       body: c == null || !c.value.isInitialized
           ? const Center(child: CircularProgressIndicator())
@@ -1894,7 +1895,7 @@ class _HuntCameraState extends State<_HuntCamera> {
                         tooltip: 'Switch camera',
                         icon: Icon(Icons.flip_camera_android_rounded,
                             color: isFront(_active)
-                                ? const Color(0xFFFFD54F)
+                                ? C.gold
                                 : Colors.white),
                         onPressed: _switch,
                       ),
@@ -1918,7 +1919,7 @@ class _HuntCameraState extends State<_HuntCamera> {
                         shape: BoxShape.circle,
                         color: Colors.white,
                         border:
-                            Border.all(color: const Color(0xFF66BB6A), width: 4),
+                            Border.all(color: C.accent, width: 4),
                       ),
                     ),
                   ),
@@ -1938,12 +1939,12 @@ class HuntLeaderboardScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     final myUid = AuthService.instance.currentUser?.id;
     return Scaffold(
-      backgroundColor: const Color(0xFF0D1F14),
+      backgroundColor: C.bg,
       appBar: AppBar(
-        backgroundColor: const Color(0xFF1A2E1E),
+        backgroundColor: C.surface,
         title: const Text('Plant Hunt leaderboard',
-            style: TextStyle(color: Color(0xFFE8F5E9))),
-        iconTheme: const IconThemeData(color: Color(0xFF66BB6A)),
+            style: TextStyle(color: C.textHi)),
+        iconTheme: const IconThemeData(color: C.accent),
       ),
       body: StreamBuilder<List<HuntScore>>(
         stream: HuntScoreService.instance.watchTop(),
@@ -1959,7 +1960,7 @@ class HuntLeaderboardScreen extends StatelessWidget {
                 child: Text(
                   'Nobody has finished the hunt yet.\nBe the first.',
                   textAlign: TextAlign.center,
-                  style: TextStyle(color: Color(0xFF9CCC9F), height: 1.5),
+                  style: TextStyle(color: C.textSoft, height: 1.5),
                 ),
               ),
             );
@@ -1973,7 +1974,7 @@ class HuntLeaderboardScreen extends StatelessWidget {
                   padding: EdgeInsets.fromLTRB(2, 8, 2, 14),
                   child: Text(
                     'Ranked by plants found. Points break a tie.',
-                    style: TextStyle(color: Color(0xFF6E8A72), fontSize: 12),
+                    style: TextStyle(color: C.textFaint, fontSize: 12),
                   ),
                 );
               }
@@ -1981,23 +1982,23 @@ class HuntLeaderboardScreen extends StatelessWidget {
               final r = rows[i];
               final mine = r.uid == myUid;
               final medal = i == 0
-                  ? const Color(0xFFFFD54F)
+                  ? C.gold
                   : i == 1
                       ? const Color(0xFFCFD8DC)
                       : i == 2
                           ? const Color(0xFFBCAAA4)
-                          : const Color(0xFF2A4A2F);
+                          : C.line;
               return Container(
                 margin: const EdgeInsets.only(bottom: 8),
                 padding: const EdgeInsets.all(12),
                 decoration: BoxDecoration(
                   color:
-                      mine ? const Color(0xFF16301D) : const Color(0xFF111F16),
+                      mine ? C.surfaceAlt : C.surface,
                   borderRadius: BorderRadius.circular(10),
                   border: Border.all(
                     color: mine
-                        ? const Color(0xFF66BB6A)
-                        : (i < 3 ? medal : const Color(0xFF2A4A2F)),
+                        ? C.accent
+                        : (i < 3 ? medal : C.line),
                     width: i < 3 || mine ? 1.5 : 1,
                   ),
                 ),
@@ -2017,7 +2018,7 @@ class HuntLeaderboardScreen extends StatelessWidget {
                         children: [
                           Text(mine ? '${r.displayName}  (you)' : r.displayName,
                               style: const TextStyle(
-                                  color: Color(0xFFE8F5E9),
+                                  color: C.textHi,
                                   fontSize: 14.5,
                                   fontWeight: FontWeight.w600)),
                           const SizedBox(height: 3),
@@ -2033,7 +2034,7 @@ class HuntLeaderboardScreen extends StatelessWidget {
                                 decoration: BoxDecoration(
                                   color: q < r.solved
                                       ? Colors.greenAccent
-                                      : const Color(0xFF2A4A2F),
+                                      : C.line,
                                   borderRadius: BorderRadius.circular(3),
                                 ),
                               ),
@@ -2054,7 +2055,7 @@ class HuntLeaderboardScreen extends StatelessWidget {
                                 fontWeight: FontWeight.w800)),
                         Text('quests · ${r.total} pts',
                             style: const TextStyle(
-                                color: Color(0xFF4A7A50), fontSize: 10.5)),
+                                color: C.textFaint, fontSize: 10.5)),
                       ],
                     ),
                   ],

@@ -10,6 +10,7 @@ import '../services/language_service.dart';
 import '../services/routing_service.dart';
 import '../services/usage_tracking_service.dart';
 import 'main_nav_screen.dart';
+import '../theme/tokens.dart';
 
 class MapScreen extends StatefulWidget {
   const MapScreen({super.key});
@@ -182,7 +183,7 @@ class _MapScreenState extends State<MapScreen> {
                     Polyline(
                       points: _routePoints,
                       strokeWidth: 5,
-                      color: const Color(0xFF2E7D32),
+                      color: C.accentDim,
                       borderStrokeWidth: 2,
                       borderColor: Colors.white,
                     ),
@@ -257,12 +258,12 @@ class _MapScreenState extends State<MapScreen> {
                     children: [
                       // Menu button
                       Material(
-                        color: const Color(0xFF1A2E1E),
+                        color: C.surface,
                         shape: const CircleBorder(),
                         elevation: 3,
                         child: IconButton(
                           icon: const Icon(Icons.menu_rounded,
-                              color: Color(0xFFE8F5E9)),
+                              color: C.textHi),
                           onPressed: () =>
                               MainNavScreen.scaffoldKey.currentState
                                   ?.openDrawer(),
@@ -273,26 +274,26 @@ class _MapScreenState extends State<MapScreen> {
                       Expanded(
                         child: Container(
                           decoration: BoxDecoration(
-                            color: const Color(0xFF1A2E1E).withValues(alpha: 0.97),
+                            color: C.surface.withValues(alpha: 0.97),
                             borderRadius: BorderRadius.circular(24),
-                            border: Border.all(color: const Color(0xFF2E7D32)),
+                            border: Border.all(color: C.accentDim),
                           ),
                           child: Row(
                             children: [
                               const SizedBox(width: 12),
                               const Icon(Icons.search,
-                                  color: Color(0xFF66BB6A), size: 20),
+                                  color: C.accent, size: 20),
                               const SizedBox(width: 6),
                               Expanded(
                                 child: TextField(
                                   controller: _searchCtrl,
                                   onChanged: (v) => setState(() => _query = v),
                                   style: const TextStyle(
-                                      color: Color(0xFFE8F5E9), fontSize: 14),
+                                      color: C.textHi, fontSize: 14),
                                   decoration: InputDecoration(
                                     hintText: s.searchSectionHint,
                                     hintStyle: const TextStyle(
-                                        color: Color(0xFF4A7A50), fontSize: 14),
+                                        color: C.textFaint, fontSize: 14),
                                     border: InputBorder.none,
                                     isDense: true,
                                     contentPadding: const EdgeInsets.symmetric(
@@ -306,7 +307,7 @@ class _MapScreenState extends State<MapScreen> {
                                   child: SizedBox(
                                       width: 14, height: 14,
                                       child: CircularProgressIndicator(
-                                          color: Color(0xFF66BB6A),
+                                          color: C.accent,
                                           strokeWidth: 2)),
                                 )
                               else
@@ -335,9 +336,9 @@ class _MapScreenState extends State<MapScreen> {
                       margin: const EdgeInsets.only(top: 6, left: 56),
                       constraints: const BoxConstraints(maxHeight: 240),
                       decoration: BoxDecoration(
-                        color: const Color(0xFF111F16),
+                        color: C.surface,
                         borderRadius: BorderRadius.circular(14),
-                        border: Border.all(color: const Color(0xFF2E7D32)),
+                        border: Border.all(color: C.accentDim),
                       ),
                       child: ListView(
                         shrinkWrap: true,
@@ -349,13 +350,13 @@ class _MapScreenState extends State<MapScreen> {
                                       style: const TextStyle(fontSize: 20)),
                                   title: Text(sec.name,
                                       style: const TextStyle(
-                                          color: Color(0xFFE8F5E9),
+                                          color: C.textHi,
                                           fontSize: 14)),
                                   subtitle: Text(sec.blooms,
                                       maxLines: 1,
                                       overflow: TextOverflow.ellipsis,
                                       style: const TextStyle(
-                                          color: Color(0xFF81C784),
+                                          color: C.accent,
                                           fontSize: 11)),
                                   onTap: () => _selectSection(sec),
                                 ))
@@ -372,7 +373,7 @@ class _MapScreenState extends State<MapScreen> {
             right: 12,
             bottom: _selected != null ? 210 : 30,
             child: FloatingActionButton.small(
-              backgroundColor: const Color(0xFF1A2E1E),
+              backgroundColor: C.surface,
               onPressed: () {
                 if (_userLocation != null) {
                   _mapController.move(_userLocation!, 18);
@@ -380,7 +381,7 @@ class _MapScreenState extends State<MapScreen> {
                   _mapController.move(gardenCenter, 17.5);
                 }
               },
-              child: const Icon(Icons.my_location, color: Color(0xFF66BB6A)),
+              child: const Icon(Icons.my_location, color: C.accent),
             ),
           ),
 
@@ -391,7 +392,7 @@ class _MapScreenState extends State<MapScreen> {
               child: Container(
                 padding: const EdgeInsets.fromLTRB(16, 16, 16, 32),
                 decoration: const BoxDecoration(
-                  color: Color(0xFF1A2E1E),
+                  color: C.surface,
                   borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
                 ),
                 child: Column(
@@ -400,7 +401,7 @@ class _MapScreenState extends State<MapScreen> {
                   children: [
                     // Handle bar
                     Center(child: Container(width: 40, height: 4,
-                        decoration: BoxDecoration(color: const Color(0xFF2E7D32), borderRadius: BorderRadius.circular(2)))),
+                        decoration: BoxDecoration(color: C.accentDim, borderRadius: BorderRadius.circular(2)))),
                     const SizedBox(height: 12),
 
                     Row(
@@ -412,31 +413,31 @@ class _MapScreenState extends State<MapScreen> {
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
                               Text(_selected!.name,
-                                  style: const TextStyle(color: Color(0xFFE8F5E9),
+                                  style: const TextStyle(color: C.textHi,
                                       fontWeight: FontWeight.bold, fontSize: 16)),
                               const SizedBox(height: 2),
                               Text(_distanceText(_selected!),
-                                  style: const TextStyle(color: Color(0xFF66BB6A), fontSize: 12)),
+                                  style: const TextStyle(color: C.accent, fontSize: 12)),
                             ],
                           ),
                         ),
                         GestureDetector(
                           onTap: () => setState(() => _selected = null),
-                          child: const Icon(Icons.close, color: Color(0xFF4CAF50)),
+                          child: const Icon(Icons.close, color: C.accent),
                         ),
                       ],
                     ),
                     const SizedBox(height: 10),
                     Text(_selected!.description,
-                        style: const TextStyle(color: Color(0xFFE8F5E9), fontSize: 13, height: 1.5)),
+                        style: const TextStyle(color: C.textHi, fontSize: 13, height: 1.5)),
                     const SizedBox(height: 8),
                     Row(
                       children: [
-                        const Icon(Icons.local_florist, color: Color(0xFF66BB6A), size: 14),
+                        const Icon(Icons.local_florist, color: C.accent, size: 14),
                         const SizedBox(width: 6),
                         Expanded(
                           child: Text('${s.nowLabel}: ${_selected!.blooms}',
-                              style: const TextStyle(color: Color(0xFF66BB6A), fontSize: 12)),
+                              style: const TextStyle(color: C.accent, fontSize: 12)),
                         ),
                       ],
                     ),
@@ -450,7 +451,7 @@ class _MapScreenState extends State<MapScreen> {
                               icon: const Icon(Icons.close_rounded, size: 18),
                               label: Text(s.clearRoute),
                               style: OutlinedButton.styleFrom(
-                                foregroundColor: const Color(0xFFEF9A9A),
+                                foregroundColor: C.danger,
                                 side: const BorderSide(color: Color(0xFF8C2336)),
                                 padding: const EdgeInsets.symmetric(vertical: 13),
                                 shape: RoundedRectangleBorder(
@@ -470,7 +471,7 @@ class _MapScreenState extends State<MapScreen> {
                                       size: 18),
                               label: Text(_routing ? s.findingRoute : s.directions),
                               style: ElevatedButton.styleFrom(
-                                backgroundColor: const Color(0xFF2E7D32),
+                                backgroundColor: C.accentDim,
                                 foregroundColor: Colors.white,
                                 padding: const EdgeInsets.symmetric(vertical: 13),
                                 shape: RoundedRectangleBorder(

@@ -17,6 +17,7 @@ import 'admin/hunt_reviews_screen.dart';
 import 'admin/reported_posts_screen.dart';
 import 'admin_user_list_screen.dart';
 import 'edit_holidays_screen.dart';
+import '../theme/tokens.dart';
 
 class AdminPanelScreen extends StatelessWidget {
   const AdminPanelScreen({super.key});
@@ -25,10 +26,10 @@ class AdminPanelScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     final s = context.watch<LanguageService>().strings;
     return Scaffold(
-      backgroundColor: const Color(0xFF0A1A0F),
+      backgroundColor: C.bg,
       appBar: AppBar(
         title: Text(s.adminPanel),
-        backgroundColor: const Color(0xFF0D1F14),
+        backgroundColor: C.bg,
         elevation: 0,
       ),
       body: SafeArea(
@@ -59,11 +60,11 @@ class AdminPanelScreen extends StatelessWidget {
                           color: const Color(0xFF3B2A0B),
                           borderRadius: BorderRadius.circular(14),
                           border:
-                              Border.all(color: const Color(0xFFFFB300)),
+                              Border.all(color: C.gold),
                         ),
                         child: Row(children: [
                           const Icon(Icons.warning_amber_rounded,
-                              color: Color(0xFFFFD54F)),
+                              color: C.gold),
                           const SizedBox(width: 10),
                           Expanded(
                             child: Text(s.scrapeFailedAlert,
@@ -73,7 +74,7 @@ class AdminPanelScreen extends StatelessWidget {
                                     height: 1.4)),
                           ),
                           const Icon(Icons.arrow_forward_rounded,
-                              color: Color(0xFFFFD54F), size: 18),
+                              color: C.gold, size: 18),
                         ]),
                       ),
                     ),
@@ -119,23 +120,23 @@ class AdminPanelScreen extends StatelessWidget {
                 child: Container(
                   padding: const EdgeInsets.all(14),
                   decoration: BoxDecoration(
-                    color: const Color(0xFF111F16),
+                    color: C.surface,
                     borderRadius: BorderRadius.circular(14),
-                    border: Border.all(color: const Color(0xFF2A4A2F)),
+                    border: Border.all(color: C.line),
                   ),
                   child: Row(children: [
                     const Icon(Icons.event_note_rounded,
-                        color: Color(0xFFFFD54F), size: 20),
+                        color: C.gold, size: 20),
                     const SizedBox(width: 12),
                     Expanded(
                       child: Text(s.editHolidays,
                           style: const TextStyle(
-                              color: Color(0xFFE8F5E9),
+                              color: C.textHi,
                               fontSize: 14,
                               fontWeight: FontWeight.w600)),
                     ),
                     const Icon(Icons.arrow_forward_ios_rounded,
-                        color: Color(0xFF4A7A50), size: 14),
+                        color: C.textFaint, size: 14),
                   ]),
                 ),
               ),
@@ -149,7 +150,7 @@ class AdminPanelScreen extends StatelessWidget {
   Widget _sectionLabel(String text) => Text(
         text.toUpperCase(),
         style: const TextStyle(
-            color: Color(0xFF4A7A50),
+            color: C.textFaint,
             fontSize: 11,
             fontWeight: FontWeight.w700,
             letterSpacing: 1.4),
@@ -214,13 +215,13 @@ class _StatsGrid extends StatelessWidget {
                 icon: Icons.workspace_premium_rounded,
                 label: s.premiumUsers,
                 value: '$premium',
-                color: const Color(0xFFFFD54F),
+                color: C.gold,
                 filter: AdminUserFilter.premium),
             _StatCard(
                 icon: Icons.bolt_rounded,
                 label: s.activeToday,
                 value: '$active',
-                color: const Color(0xFF66BB6A),
+                color: C.accent,
                 filter: AdminUserFilter.activeToday),
             _StatCard(
                 icon: Icons.chat_bubble_rounded,
@@ -263,9 +264,9 @@ class _StatCard extends StatelessWidget {
         child: Container(
           padding: const EdgeInsets.all(12),
           decoration: BoxDecoration(
-            color: const Color(0xFF111F16),
+            color: C.surface,
             borderRadius: BorderRadius.circular(14),
-            border: Border.all(color: const Color(0xFF2A4A2F)),
+            border: Border.all(color: C.line),
           ),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
@@ -280,7 +281,7 @@ class _StatCard extends StatelessWidget {
               const SizedBox(height: 8),
               Text(value,
                   style: const TextStyle(
-                      color: Color(0xFFE8F5E9),
+                      color: C.textHi,
                       fontSize: 22,
                       fontWeight: FontWeight.w800,
                       height: 1.1)),
@@ -289,7 +290,7 @@ class _StatCard extends StatelessWidget {
                   maxLines: 2,
                   overflow: TextOverflow.ellipsis,
                   style: const TextStyle(
-                      color: Color(0xFF81C784),
+                      color: C.accent,
                       fontSize: 10.5,
                       height: 1.2)),
             ],
@@ -314,7 +315,7 @@ class _PendingEventsList extends StatelessWidget {
           return const Padding(
             padding: EdgeInsets.all(20),
             child: Center(
-                child: CircularProgressIndicator(color: Color(0xFF66BB6A))),
+                child: CircularProgressIndicator(color: C.accent)),
           );
         }
         final events = snap.data ?? const [];
@@ -322,13 +323,13 @@ class _PendingEventsList extends StatelessWidget {
           return Container(
             padding: const EdgeInsets.all(20),
             decoration: BoxDecoration(
-              color: const Color(0xFF111F16),
+              color: C.surface,
               borderRadius: BorderRadius.circular(14),
-              border: Border.all(color: const Color(0xFF2A4A2F)),
+              border: Border.all(color: C.line),
             ),
             child: Center(
               child: Text(s.noPendingEvents,
-                  style: const TextStyle(color: Color(0xFF81C784))),
+                  style: const TextStyle(color: C.accent)),
             ),
           );
         }
@@ -347,9 +348,9 @@ class _EventTile extends StatelessWidget {
   Color get _statusColor {
     switch (event.status) {
       case EventStatus.approved:
-        return const Color(0xFF66BB6A);
+        return C.accent;
       case EventStatus.rejected:
-        return const Color(0xFFEF5350);
+        return C.danger;
       case EventStatus.pending:
         return const Color(0xFFFFB74D);
     }
@@ -363,9 +364,9 @@ class _EventTile extends StatelessWidget {
       margin: const EdgeInsets.only(bottom: 10),
       padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
-        color: const Color(0xFF111F16),
+        color: C.surface,
         borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: const Color(0xFF2A4A2F)),
+        border: Border.all(color: C.line),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -375,7 +376,7 @@ class _EventTile extends StatelessWidget {
               Expanded(
                 child: Text(event.name,
                     style: const TextStyle(
-                        color: Color(0xFFE8F5E9),
+                        color: C.textHi,
                         fontSize: 15,
                         fontWeight: FontWeight.w700)),
               ),
@@ -395,15 +396,15 @@ class _EventTile extends StatelessWidget {
           ),
           const SizedBox(height: 6),
           Text('$dateStr · ${event.startTime} – ${event.endTime}  ·  ${event.attendees} ppl',
-              style: const TextStyle(color: Color(0xFF81C784), fontSize: 12)),
+              style: const TextStyle(color: C.accent, fontSize: 12)),
           const SizedBox(height: 6),
           Text(event.description,
               maxLines: 3,
               overflow: TextOverflow.ellipsis,
-              style: const TextStyle(color: Color(0xFFE8F5E9), fontSize: 12.5)),
+              style: const TextStyle(color: C.textHi, fontSize: 12.5)),
           const SizedBox(height: 6),
           Text('${event.userName} · ${event.userEmail}',
-              style: const TextStyle(color: Color(0xFF4A7A50), fontSize: 11)),
+              style: const TextStyle(color: C.textFaint, fontSize: 11)),
           if (event.status == EventStatus.pending) ...[
             const SizedBox(height: 10),
             Row(
@@ -415,8 +416,8 @@ class _EventTile extends StatelessWidget {
                     icon: const Icon(Icons.close_rounded, size: 16),
                     label: Text(s.reject),
                     style: OutlinedButton.styleFrom(
-                      foregroundColor: const Color(0xFFEF5350),
-                      side: const BorderSide(color: Color(0xFFEF5350)),
+                      foregroundColor: C.danger,
+                      side: const BorderSide(color: C.danger),
                       shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(10)),
                     ),
@@ -430,7 +431,7 @@ class _EventTile extends StatelessWidget {
                     icon: const Icon(Icons.check_rounded, size: 16),
                     label: Text(s.approve),
                     style: ElevatedButton.styleFrom(
-                      backgroundColor: const Color(0xFF2E7D32),
+                      backgroundColor: C.accentDim,
                       foregroundColor: Colors.white,
                       elevation: 0,
                       shape: RoundedRectangleBorder(
@@ -461,7 +462,7 @@ class _ReportsList extends StatelessWidget {
           return const Padding(
             padding: EdgeInsets.all(20),
             child: Center(
-                child: CircularProgressIndicator(color: Color(0xFF66BB6A))),
+                child: CircularProgressIndicator(color: C.accent)),
           );
         }
         final reports = snap.data ?? const [];
@@ -469,13 +470,13 @@ class _ReportsList extends StatelessWidget {
           return Container(
             padding: const EdgeInsets.all(20),
             decoration: BoxDecoration(
-              color: const Color(0xFF111F16),
+              color: C.surface,
               borderRadius: BorderRadius.circular(14),
-              border: Border.all(color: const Color(0xFF2A4A2F)),
+              border: Border.all(color: C.line),
             ),
             child: Center(
               child: Text(s.noReports,
-                  style: const TextStyle(color: Color(0xFF81C784))),
+                  style: const TextStyle(color: C.accent)),
             ),
           );
         }
@@ -508,9 +509,9 @@ class _ReportTile extends StatelessWidget {
       margin: const EdgeInsets.only(bottom: 10),
       padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
-        color: const Color(0xFF111F16),
+        color: C.surface,
         borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: const Color(0xFF2A4A2F)),
+        border: Border.all(color: C.line),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -523,24 +524,24 @@ class _ReportTile extends StatelessWidget {
               Expanded(
                 child: Text(category,
                     style: const TextStyle(
-                        color: Color(0xFFE8F5E9),
+                        color: C.textHi,
                         fontSize: 14,
                         fontWeight: FontWeight.w700)),
               ),
               Text(dateStr,
-                  style: const TextStyle(color: Color(0xFF4A7A50), fontSize: 11)),
+                  style: const TextStyle(color: C.textFaint, fontSize: 11)),
             ],
           ),
           if (note.isNotEmpty) ...[
             const SizedBox(height: 6),
             Text(note,
-                style: const TextStyle(color: Color(0xFFE8F5E9), fontSize: 13)),
+                style: const TextStyle(color: C.textHi, fontSize: 13)),
           ],
           if (aiDesc.isNotEmpty) ...[
             const SizedBox(height: 6),
             Text(aiDesc,
                 style: const TextStyle(
-                    color: Color(0xFF81C784),
+                    color: C.accent,
                     fontSize: 12,
                     fontStyle: FontStyle.italic)),
           ],
@@ -549,23 +550,23 @@ class _ReportTile extends StatelessWidget {
             children: [
               if (lat != null && lng != null) ...[
                 const Icon(Icons.place_rounded,
-                    color: Color(0xFF4A7A50), size: 12),
+                    color: C.textFaint, size: 12),
                 const SizedBox(width: 3),
                 Text(
                     '${lat.toStringAsFixed(4)}, ${lng.toStringAsFixed(4)}',
                     style: const TextStyle(
-                        color: Color(0xFF4A7A50), fontSize: 11)),
+                        color: C.textFaint, fontSize: 11)),
                 const SizedBox(width: 10),
               ],
               const Icon(Icons.person_outline_rounded,
-                  color: Color(0xFF4A7A50), size: 12),
+                  color: C.textFaint, size: 12),
               const SizedBox(width: 3),
               Expanded(
                 child: Text(
                   userEmail.isNotEmpty ? userEmail : userName,
                   overflow: TextOverflow.ellipsis,
                   style: const TextStyle(
-                      color: Color(0xFF4A7A50), fontSize: 11),
+                      color: C.textFaint, fontSize: 11),
                 ),
               ),
             ],
@@ -605,7 +606,7 @@ class _ReviewAlert extends StatelessWidget {
                 decoration: BoxDecoration(
                   color: const Color(0xFF3B1414),
                   borderRadius: BorderRadius.circular(14),
-                  border: Border.all(color: const Color(0xFFEF5350), width: 1.5),
+                  border: Border.all(color: C.danger, width: 1.5),
                 ),
                 child: Row(
                   children: [
@@ -613,7 +614,7 @@ class _ReviewAlert extends StatelessWidget {
                       width: 40,
                       height: 40,
                       decoration: BoxDecoration(
-                        color: const Color(0xFFEF5350),
+                        color: C.danger,
                         borderRadius: BorderRadius.circular(11),
                       ),
                       child: const Icon(Icons.pending_actions_rounded,
@@ -636,12 +637,12 @@ class _ReviewAlert extends StatelessWidget {
                           const Text(
                             'A visitor is waiting on your answer. Tap to check.',
                             style: TextStyle(
-                                color: Color(0xFFEF9A9A), fontSize: 12.5),
+                                color: C.danger, fontSize: 12.5),
                           ),
                         ],
                       ),
                     ),
-                    const Icon(Icons.chevron_right, color: Color(0xFFEF5350)),
+                    const Icon(Icons.chevron_right, color: C.danger),
                   ],
                 ),
               ),
@@ -670,13 +671,13 @@ class _ParticipantsTile extends StatelessWidget {
         child: Container(
           padding: const EdgeInsets.all(14),
           decoration: BoxDecoration(
-            color: const Color(0xFF111F16),
+            color: C.surface,
             borderRadius: BorderRadius.circular(14),
-            border: Border.all(color: const Color(0xFF2A4A2F)),
+            border: Border.all(color: C.line),
           ),
           child: Row(
             children: [
-              const Icon(Icons.groups_rounded, color: Color(0xFF81C784)),
+              const Icon(Icons.groups_rounded, color: C.accent),
               const SizedBox(width: 12),
               const Expanded(
                 child: Column(
@@ -684,16 +685,16 @@ class _ParticipantsTile extends StatelessWidget {
                   children: [
                     Text('Participants',
                         style: TextStyle(
-                            color: Color(0xFFE8F5E9),
+                            color: C.textHi,
                             fontSize: 14.5,
                             fontWeight: FontWeight.w600)),
                     Text('Every Plant Hunt submission, by person',
                         style: TextStyle(
-                            color: Color(0xFF6E8A72), fontSize: 12.5)),
+                            color: C.textFaint, fontSize: 12.5)),
                   ],
                 ),
               ),
-              const Icon(Icons.chevron_right, color: Color(0xFF4A7A50)),
+              const Icon(Icons.chevron_right, color: C.textFaint),
             ],
           ),
         ),
@@ -729,14 +730,14 @@ class _ContestSubmissionsTile extends StatelessWidget {
               child: Container(
                 padding: const EdgeInsets.all(14),
                 decoration: BoxDecoration(
-                  color: const Color(0xFF111F16),
+                  color: C.surface,
                   borderRadius: BorderRadius.circular(14),
-                  border: Border.all(color: const Color(0xFF2A4A2F)),
+                  border: Border.all(color: C.line),
                 ),
                 child: Row(
                   children: [
                     const Icon(Icons.emoji_events_rounded,
-                        color: Color(0xFFFFD54F)),
+                        color: C.gold),
                     const SizedBox(width: 12),
                     Expanded(
                       child: Column(
@@ -744,19 +745,19 @@ class _ContestSubmissionsTile extends StatelessWidget {
                         children: [
                           const Text('Contest submissions',
                               style: TextStyle(
-                                  color: Color(0xFFE8F5E9),
+                                  color: C.textHi,
                                   fontSize: 14.5,
                                   fontWeight: FontWeight.w600)),
                           Text(
                             '${c.title} · locations, teams, missing plants',
                             style: const TextStyle(
-                                color: Color(0xFF6E8A72), fontSize: 12.5),
+                                color: C.textFaint, fontSize: 12.5),
                           ),
                         ],
                       ),
                     ),
                     const Icon(Icons.chevron_right_rounded,
-                        color: Color(0xFF4A7A50)),
+                        color: C.textFaint),
                   ],
                 ),
               ),
@@ -792,20 +793,20 @@ class _ReportedPostsTile extends StatelessWidget {
             child: Container(
               padding: const EdgeInsets.all(14),
               decoration: BoxDecoration(
-                color: pending ? const Color(0xFF2A1414) : const Color(0xFF111F16),
+                color: pending ? const Color(0xFF2A1414) : C.surface,
                 borderRadius: BorderRadius.circular(14),
                 border: Border.all(
                   color: pending
-                      ? const Color(0xFFEF5350)
-                      : const Color(0xFF2A4A2F),
+                      ? C.danger
+                      : C.line,
                 ),
               ),
               child: Row(
                 children: [
                   Icon(Icons.flag_rounded,
                       color: pending
-                          ? const Color(0xFFEF5350)
-                          : const Color(0xFF4A7A50)),
+                          ? C.danger
+                          : C.textFaint),
                   const SizedBox(width: 12),
                   Expanded(
                     child: Column(
@@ -813,7 +814,7 @@ class _ReportedPostsTile extends StatelessWidget {
                       children: [
                         const Text('Reported photos',
                             style: TextStyle(
-                                color: Color(0xFFE8F5E9),
+                                color: C.textHi,
                                 fontSize: 14.5,
                                 fontWeight: FontWeight.w600)),
                         Text(
@@ -823,7 +824,7 @@ class _ReportedPostsTile extends StatelessWidget {
                           style: TextStyle(
                             color: pending
                                 ? const Color(0xFFFFCDD2)
-                                : const Color(0xFF6E8A72),
+                                : C.textFaint,
                             fontSize: 12.5,
                           ),
                         ),
@@ -845,7 +846,7 @@ class _ReportedPostsTile extends StatelessWidget {
                               fontWeight: FontWeight.w700)),
                     ),
                   const SizedBox(width: 4),
-                  const Icon(Icons.chevron_right, color: Color(0xFF4A7A50)),
+                  const Icon(Icons.chevron_right, color: C.textFaint),
                 ],
               ),
             ),

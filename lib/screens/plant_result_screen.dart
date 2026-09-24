@@ -10,6 +10,7 @@ import 'dart:typed_data';
 import '../services/gemini_service.dart';
 import '../services/language_service.dart';
 import '../widgets/plant_tags_bar.dart';
+import '../theme/tokens.dart';
 
 class PlantResultScreen extends StatefulWidget {
   final String imagePath;
@@ -112,27 +113,27 @@ class _PlantResultScreenState extends State<PlantResultScreen>
   Widget build(BuildContext context) {
     final s = context.watch<LanguageService>().strings;
     return Scaffold(
-      backgroundColor: const Color(0xFF0D1F14),
+      backgroundColor: C.bg,
       appBar: AppBar(
-        backgroundColor: const Color(0xFF1A2E1E),
+        backgroundColor: C.surface,
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back_rounded, color: Color(0xFF66BB6A)),
+          icon: const Icon(Icons.arrow_back_rounded, color: C.accent),
           onPressed: () => Navigator.pop(context),
         ),
         title: Text(
           widget.plantInfo.commonName,
           style: const TextStyle(
-            color: Color(0xFFE8F5E9),
+            color: C.textHi,
             fontWeight: FontWeight.bold,
             fontSize: 17,
           ),
         ),
         bottom: TabBar(
           controller: _tabController,
-          indicatorColor: const Color(0xFF66BB6A),
+          indicatorColor: C.accent,
           indicatorWeight: 3,
-          labelColor: const Color(0xFF66BB6A),
-          unselectedLabelColor: const Color(0xFF4CAF50),
+          labelColor: C.accent,
+          unselectedLabelColor: C.accent,
           tabs: [
             Tab(icon: const Icon(Icons.eco_rounded), text: s.tabPlant),
             Tab(icon: const Icon(Icons.chat_bubble_outline_rounded), text: s.tabChat),
@@ -203,16 +204,16 @@ class _PlantResultScreenState extends State<PlantResultScreen>
                         if (prog == null) return child;
                         return Container(
                           height: 260,
-                          color: const Color(0xFF1A2E1E),
+                          color: C.surface,
                           child: const Center(
                             child: CircularProgressIndicator(
-                                color: Color(0xFF66BB6A), strokeWidth: 2),
+                                color: C.accent, strokeWidth: 2),
                           ),
                         );
                       },
                       errorBuilder: (_, __, ___) => Container(
                         height: 180,
-                        color: const Color(0xFF1A2E1E),
+                        color: C.surface,
                         child: const Center(
                             child: Text('🌿', style: TextStyle(fontSize: 64))),
                       ),
@@ -223,7 +224,7 @@ class _PlantResultScreenState extends State<PlantResultScreen>
                 Container(
                   height: 180,
                   width: double.infinity,
-                  color: const Color(0xFF1A2E1E),
+                  color: C.surface,
                   child: const Center(child: Text('🌿', style: TextStyle(fontSize: 64))),
                 ),
               Positioned(
@@ -236,7 +237,7 @@ class _PlantResultScreenState extends State<PlantResultScreen>
                     gradient: LinearGradient(
                       begin: Alignment.bottomCenter,
                       end: Alignment.topCenter,
-                      colors: [Color(0xFF0D1F14), Colors.transparent],
+                      colors: [C.bg, Colors.transparent],
                     ),
                   ),
                 ),
@@ -311,9 +312,9 @@ class _PlantResultScreenState extends State<PlantResultScreen>
                   width: double.infinity,
                   padding: const EdgeInsets.all(16),
                   decoration: BoxDecoration(
-                    color: const Color(0xFF1A2E1E),
+                    color: C.surface,
                     borderRadius: BorderRadius.circular(14),
-                    border: Border.all(color: const Color(0xFF2E7D32)),
+                    border: Border.all(color: C.accentDim),
                   ),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
@@ -321,12 +322,12 @@ class _PlantResultScreenState extends State<PlantResultScreen>
                       Row(
                         children: [
                           const Icon(Icons.description_rounded,
-                              color: Color(0xFF66BB6A), size: 18),
+                              color: C.accent, size: 18),
                           const SizedBox(width: 8),
                           Text(
                             s.descriptionUpper,
                             style: const TextStyle(
-                              color: Color(0xFF66BB6A),
+                              color: C.accent,
                               fontWeight: FontWeight.bold,
                               fontSize: 12,
                               letterSpacing: 1,
@@ -338,7 +339,7 @@ class _PlantResultScreenState extends State<PlantResultScreen>
                       Text(
                         info.description,
                         style: const TextStyle(
-                          color: Color(0xFFE8F5E9),
+                          color: C.textHi,
                           fontSize: 14.5,
                           height: 1.65,
                         ),
@@ -352,7 +353,7 @@ class _PlantResultScreenState extends State<PlantResultScreen>
                     width: double.infinity,
                     padding: const EdgeInsets.all(16),
                     decoration: BoxDecoration(
-                      color: const Color(0xFF1A2E1E),
+                      color: C.surface,
                       borderRadius: BorderRadius.circular(14),
                       border: Border.all(color: const Color(0xFFF57F17)),
                     ),
@@ -378,7 +379,7 @@ class _PlantResultScreenState extends State<PlantResultScreen>
                         Text(
                           info.funFact,
                           style: const TextStyle(
-                            color: Color(0xFFE8F5E9),
+                            color: C.textHi,
                             fontSize: 14.5,
                             height: 1.65,
                           ),
@@ -392,7 +393,7 @@ class _PlantResultScreenState extends State<PlantResultScreen>
                   width: double.infinity,
                   child: ElevatedButton.icon(
                     style: ElevatedButton.styleFrom(
-                      backgroundColor: const Color(0xFF2E7D32),
+                      backgroundColor: C.accentDim,
                       foregroundColor: Colors.white,
                       padding: const EdgeInsets.symmetric(vertical: 14),
                       shape: RoundedRectangleBorder(
@@ -426,13 +427,13 @@ class _PlantResultScreenState extends State<PlantResultScreen>
                     mainAxisSize: MainAxisSize.min,
                     children: [
                       const Icon(Icons.chat_bubble_outline_rounded,
-                          color: Color(0xFF2E7D32), size: 52),
+                          color: C.accentDim, size: 52),
                       const SizedBox(height: 14),
                       Text(
                         s.askAnythingAboutPlant,
                         textAlign: TextAlign.center,
                         style: const TextStyle(
-                          color: Color(0xFF4CAF50),
+                          color: C.accent,
                           fontSize: 17,
                           height: 1.5,
                         ),
@@ -441,7 +442,7 @@ class _PlantResultScreenState extends State<PlantResultScreen>
                       Text(
                         widget.plantInfo.scientificName,
                         style: const TextStyle(
-                          color: Color(0xFF66BB6A),
+                          color: C.accent,
                           fontSize: 13,
                           fontStyle: FontStyle.italic,
                         ),
@@ -465,23 +466,23 @@ class _PlantResultScreenState extends State<PlantResultScreen>
                   width: 14,
                   height: 14,
                   child: CircularProgressIndicator(
-                      color: Color(0xFF66BB6A), strokeWidth: 2),
+                      color: C.accent, strokeWidth: 2),
                 ),
                 const SizedBox(width: 8),
                 Text(s.thinking,
-                    style: const TextStyle(color: Color(0xFF4CAF50), fontSize: 12)),
+                    style: const TextStyle(color: C.accent, fontSize: 12)),
               ],
             ),
           ),
         Container(
           padding: const EdgeInsets.fromLTRB(12, 8, 12, 20),
-          color: const Color(0xFF1A2E1E),
+          color: C.surface,
           child: Row(
             children: [
               Expanded(
                 child: TextField(
                   controller: _inputCtrl,
-                  style: const TextStyle(color: Color(0xFFE8F5E9)),
+                  style: const TextStyle(color: C.textHi),
                   decoration: InputDecoration(
                     hintText: s.askAboutThisPlantHint,
                     contentPadding: const EdgeInsets.symmetric(
@@ -499,7 +500,7 @@ class _PlantResultScreenState extends State<PlantResultScreen>
                   width: 46,
                   height: 46,
                   decoration: const BoxDecoration(
-                    color: Color(0xFF2E7D32),
+                    color: C.accentDim,
                     shape: BoxShape.circle,
                   ),
                   child: const Icon(Icons.send_rounded,
@@ -530,13 +531,13 @@ class _InfoCard extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
       decoration: BoxDecoration(
-        color: const Color(0xFF1A2E1E),
+        color: C.surface,
         borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: const Color(0xFF2E7D32)),
+        border: Border.all(color: C.accentDim),
       ),
       child: Row(
         children: [
-          Icon(icon, color: const Color(0xFF66BB6A), size: 20),
+          Icon(icon, color: C.accent, size: 20),
           const SizedBox(width: 12),
           Expanded(
             child: Column(
@@ -545,7 +546,7 @@ class _InfoCard extends StatelessWidget {
                 Text(
                   label.toUpperCase(),
                   style: const TextStyle(
-                    color: Color(0xFF66BB6A),
+                    color: C.accent,
                     fontSize: 11,
                     fontWeight: FontWeight.bold,
                     letterSpacing: 0.8,
@@ -555,7 +556,7 @@ class _InfoCard extends StatelessWidget {
                 Text(
                   value,
                   style: const TextStyle(
-                    color: Color(0xFFE8F5E9),
+                    color: C.textHi,
                     fontSize: 15,
                     fontStyle: FontStyle.italic,
                   ),
@@ -610,7 +611,7 @@ class _ImageViewer extends StatelessWidget {
                           if (prog == null) return child;
                           return const Center(
                               child: CircularProgressIndicator(
-                                  color: Color(0xFF66BB6A)));
+                                  color: C.accent));
                         },
                       ),
               ),
@@ -655,8 +656,8 @@ class _ChatBubble extends StatelessWidget {
             maxWidth: MediaQuery.of(context).size.width * 0.75),
         decoration: BoxDecoration(
           color: message.isUser
-              ? const Color(0xFF2E7D32)
-              : const Color(0xFF1A2E1E),
+              ? C.accentDim
+              : C.surface,
           borderRadius: BorderRadius.only(
             topLeft: const Radius.circular(16),
             topRight: const Radius.circular(16),
@@ -665,13 +666,13 @@ class _ChatBubble extends StatelessWidget {
           ),
           border: message.isUser
               ? null
-              : Border.all(color: const Color(0xFF2E7D32)),
+              : Border.all(color: C.accentDim),
         ),
         child: message.isUser
             ? Text(
                 message.text,
                 style: const TextStyle(
-                  color: Color(0xFFE8F5E9),
+                  color: C.textHi,
                   fontSize: 14,
                   height: 1.45,
                 ),
@@ -681,49 +682,49 @@ class _ChatBubble extends StatelessWidget {
                 shrinkWrap: true,
                 styleSheet: MarkdownStyleSheet(
                   p: const TextStyle(
-                    color: Color(0xFFE8F5E9),
+                    color: C.textHi,
                     fontSize: 14,
                     height: 1.45,
                   ),
                   strong: const TextStyle(
-                    color: Color(0xFFE8F5E9),
+                    color: C.textHi,
                     fontSize: 14,
                     fontWeight: FontWeight.w700,
                     height: 1.45,
                   ),
                   em: const TextStyle(
-                    color: Color(0xFFE8F5E9),
+                    color: C.textHi,
                     fontSize: 14,
                     fontStyle: FontStyle.italic,
                     height: 1.45,
                   ),
                   listBullet: const TextStyle(
-                    color: Color(0xFF81C784),
+                    color: C.accent,
                     fontSize: 14,
                   ),
                   code: const TextStyle(
                     color: Color(0xFFC5E1A5),
                     fontSize: 13,
-                    backgroundColor: Color(0xFF0D1F14),
+                    backgroundColor: C.bg,
                     fontFamily: 'monospace',
                   ),
                   h1: const TextStyle(
-                    color: Color(0xFFE8F5E9),
+                    color: C.textHi,
                     fontSize: 17,
                     fontWeight: FontWeight.w700,
                   ),
                   h2: const TextStyle(
-                    color: Color(0xFFE8F5E9),
+                    color: C.textHi,
                     fontSize: 16,
                     fontWeight: FontWeight.w700,
                   ),
                   h3: const TextStyle(
-                    color: Color(0xFFE8F5E9),
+                    color: C.textHi,
                     fontSize: 15,
                     fontWeight: FontWeight.w700,
                   ),
                   blockquote: const TextStyle(
-                    color: Color(0xFF81C784),
+                    color: C.accent,
                     fontSize: 13,
                     fontStyle: FontStyle.italic,
                   ),

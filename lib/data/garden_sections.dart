@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:latlong2/latlong.dart';
+import '../theme/tokens.dart';
 
 // ── Garden centre ─────────────────────────────────────────────────────────────
 // Oulu Botanical Garden (Oulun kasvitieteellinen puutarha), Linnanmaa campus.
@@ -100,7 +101,7 @@ final List<GardenSection> gardenSections = [
         'unchanged since the dinosaurs), climbing Philodendrons and Bromeliads.',
     blooms: 'Theobroma cacao, Coffea arabica, Cycas revoluta',
     location: const LatLng(65.063510, 25.464850),
-    color: const Color(0xFF2E7D32),
+    color: C.accentDim,
   ),
   GardenSection(
     id: 'romeo_subtropical',
@@ -221,7 +222,7 @@ final List<GardenSection> gardenSections = [
         'Native boreal forest — birch, pine, spruce and typical understory plants of Finnish forests.',
     blooms: 'Wood Anemone, May Lily, Wild Garlic',
     location: const LatLng(65.062800, 25.460800),
-    color: const Color(0xFF1B5E20),
+    color: C.accentDim,
   ),
 
   // ── Lake shore — north-east ───────────────────────────────────────────────
@@ -248,7 +249,7 @@ final List<GardenSection> gardenSections = [
         'southern edges of the garden.',
     blooms: 'Conifers, Maples, Rowan',
     location: const LatLng(65.062639, 25.460306),
-    color: const Color(0xFF1B5E20),
+    color: C.accentDim,
   ),
   GardenSection(
     id: 'rhododendrons',

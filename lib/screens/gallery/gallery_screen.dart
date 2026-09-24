@@ -15,6 +15,7 @@ import '../../models/gallery_post.dart';
 import '../../services/auth_service.dart';
 import '../../services/gallery_service.dart';
 import 'gallery_compose.dart';
+import '../../theme/tokens.dart';
 
 class GalleryScreen extends StatefulWidget {
   const GalleryScreen({super.key});
@@ -64,21 +65,21 @@ class _GalleryScreenState extends State<GalleryScreen>
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFF0A1A0F),
+      backgroundColor: C.bg,
       appBar: AppBar(
-        backgroundColor: const Color(0xFF0D1F14),
+        backgroundColor: C.bg,
         elevation: 0,
         title: const Text('Garden Diary'),
         bottom: TabBar(
           controller: _tabs,
-          labelColor: const Color(0xFF81C784),
-          unselectedLabelColor: const Color(0xFF4A7A50),
-          indicatorColor: const Color(0xFF81C784),
+          labelColor: C.accent,
+          unselectedLabelColor: C.textFaint,
+          indicatorColor: C.accent,
           tabs: const [Tab(text: 'Shared'), Tab(text: 'Mine')],
         ),
       ),
       floatingActionButton: FloatingActionButton.extended(
-        backgroundColor: const Color(0xFF2E7D32),
+        backgroundColor: C.accentDim,
         foregroundColor: Colors.white,
         icon: const Icon(Icons.add_a_photo_rounded),
         label: const Text('Add photo'),
@@ -121,7 +122,7 @@ class _Feed extends StatelessWidget {
               child: Text(
                 'Nothing shared yet.\nBe the first to post a photo.',
                 textAlign: TextAlign.center,
-                style: TextStyle(color: Color(0xFF9CCC9F), height: 1.5),
+                style: TextStyle(color: C.textSoft, height: 1.5),
               ),
             ),
           );
@@ -154,9 +155,9 @@ class _FeedCardState extends State<_FeedCard> {
     return Container(
       margin: const EdgeInsets.only(bottom: 14),
       decoration: BoxDecoration(
-        color: const Color(0xFF111F16),
+        color: C.surface,
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: const Color(0xFF2A4A2F)),
+        border: Border.all(color: C.line),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -170,10 +171,10 @@ class _FeedCardState extends State<_FeedCard> {
                 aspectRatio: 4 / 3,
                 child: s.data == null
                     ? Container(
-                        color: const Color(0xFF13301A),
+                        color: C.surfaceAlt,
                         child: const Center(
                           child: Icon(Icons.image_outlined,
-                              color: Color(0xFF4A7A50)),
+                              color: C.textFaint),
                         ),
                       )
                     : Image.network(s.data!, fit: BoxFit.cover),
@@ -188,7 +189,7 @@ class _FeedCardState extends State<_FeedCard> {
                 if (p.caption.isNotEmpty)
                   Text(p.caption,
                       style: const TextStyle(
-                          color: Color(0xFFE8F5E9),
+                          color: C.textHi,
                           fontSize: 14.5,
                           height: 1.4)),
                 if (p.plantName != null && p.plantName!.isNotEmpty)
@@ -196,7 +197,7 @@ class _FeedCardState extends State<_FeedCard> {
                     padding: const EdgeInsets.only(top: 4),
                     child: Text(p.plantName!,
                         style: const TextStyle(
-                            color: Color(0xFF81C784),
+                            color: C.accent,
                             fontSize: 12.5,
                             fontStyle: FontStyle.italic)),
                   ),
@@ -205,7 +206,7 @@ class _FeedCardState extends State<_FeedCard> {
                   children: [
                     Text(p.displayName,
                         style: const TextStyle(
-                            color: Color(0xFF4A7A50), fontSize: 12)),
+                            color: C.textFaint, fontSize: 12)),
                     const Spacer(),
                     IconButton(
                       visualDensity: VisualDensity.compact,
@@ -218,21 +219,21 @@ class _FeedCardState extends State<_FeedCard> {
                             ? Icons.local_florist_rounded
                             : Icons.local_florist_outlined,
                         color: reacted
-                            ? const Color(0xFF81C784)
-                            : const Color(0xFF4A7A50),
+                            ? C.accent
+                            : C.textFaint,
                         size: 20,
                       ),
                     ),
                     Text('${p.reactionCount}',
                         style: const TextStyle(
-                            color: Color(0xFF81C784), fontSize: 13)),
+                            color: C.accent, fontSize: 13)),
                     if (p.uid != widget.uid)
                       IconButton(
                         visualDensity: VisualDensity.compact,
                         tooltip: 'Report',
                         onPressed: () => _report(p),
                         icon: const Icon(Icons.flag_outlined,
-                            size: 18, color: Color(0xFF4A7A50)),
+                            size: 18, color: C.textFaint),
                       ),
                   ],
                 ),
@@ -248,18 +249,18 @@ class _FeedCardState extends State<_FeedCard> {
     final ok = await showDialog<bool>(
       context: context,
       builder: (_) => AlertDialog(
-        backgroundColor: const Color(0xFF0D1F14),
+        backgroundColor: C.bg,
         title: const Text('Report this post?',
-            style: TextStyle(color: Color(0xFFE8F5E9), fontSize: 17)),
+            style: TextStyle(color: C.textHi, fontSize: 17)),
         content: const Text(
           'A garden admin will review it. The post stays visible until they do.',
-          style: TextStyle(color: Color(0xFF9CCC9F), fontSize: 13.5),
+          style: TextStyle(color: C.textSoft, fontSize: 13.5),
         ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context, false),
             child: const Text('Cancel',
-                style: TextStyle(color: Color(0xFF81C784))),
+                style: TextStyle(color: C.accent)),
           ),
           FilledButton(
             onPressed: () => Navigator.pop(context, true),
@@ -275,9 +276,9 @@ class _FeedCardState extends State<_FeedCard> {
     if (mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
-          backgroundColor: Color(0xFF1B4020),
+          backgroundColor: C.surfaceAlt,
           content: Text('Reported. Thank you.',
-              style: TextStyle(color: Color(0xFFE8F5E9))),
+              style: TextStyle(color: C.textHi)),
         ),
       );
     }
@@ -307,7 +308,7 @@ class _MinePane extends StatelessWidget {
           child: Text(
             'No photos yet.\nYours stay on this phone unless you share them.',
             textAlign: TextAlign.center,
-            style: TextStyle(color: Color(0xFF9CCC9F), height: 1.5),
+            style: TextStyle(color: C.textSoft, height: 1.5),
           ),
         ),
       );
@@ -375,20 +376,20 @@ class _MineCardState extends State<_MineCard> {
     final ok = await showDialog<bool>(
       context: context,
       builder: (_) => AlertDialog(
-        backgroundColor: const Color(0xFF0D1F14),
+        backgroundColor: C.bg,
         title: const Text('Delete this photo?',
-            style: TextStyle(color: Color(0xFFE8F5E9), fontSize: 17)),
+            style: TextStyle(color: C.textHi, fontSize: 17)),
         content: Text(
           widget.post.isPublic
               ? 'It will be removed from the shared feed and from this phone.'
               : 'It will be removed from this phone. This cannot be undone.',
-          style: const TextStyle(color: Color(0xFF9CCC9F), fontSize: 13.5),
+          style: const TextStyle(color: C.textSoft, fontSize: 13.5),
         ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context, false),
             child: const Text('Cancel',
-                style: TextStyle(color: Color(0xFF81C784))),
+                style: TextStyle(color: C.accent)),
           ),
           FilledButton(
             onPressed: () => Navigator.pop(context, true),
@@ -419,10 +420,10 @@ class _MineCardState extends State<_MineCard> {
     return Container(
       margin: const EdgeInsets.only(bottom: 14),
       decoration: BoxDecoration(
-        color: const Color(0xFF111F16),
+        color: C.surface,
         borderRadius: BorderRadius.circular(12),
         border: Border.all(
-          color: p.isPublic ? const Color(0xFF2E7D32) : const Color(0xFF2A4A2F),
+          color: p.isPublic ? C.accentDim : C.line,
         ),
       ),
       child: Column(
@@ -440,10 +441,10 @@ class _MineCardState extends State<_MineCard> {
                           .privatePhotoUrl(p.localPath),
                       builder: (_, s) => s.data == null
                           ? Container(
-                              color: const Color(0xFF13301A),
+                              color: C.surfaceAlt,
                               child: const Center(
                                 child: Icon(Icons.image_outlined,
-                                    color: Color(0xFF4A7A50)),
+                                    color: C.textFaint),
                               ),
                             )
                           : Image.network(s.data!, fit: BoxFit.cover),
@@ -451,7 +452,7 @@ class _MineCardState extends State<_MineCard> {
                   : file != null && file.existsSync()
                   ? Image.file(file, fit: BoxFit.cover)
                   : Container(
-                      color: const Color(0xFF13301A),
+                      color: C.surfaceAlt,
                       child: const Center(
                         child: Padding(
                           padding: EdgeInsets.all(16),
@@ -459,7 +460,7 @@ class _MineCardState extends State<_MineCard> {
                             'Photo no longer on this device',
                             textAlign: TextAlign.center,
                             style: TextStyle(
-                                color: Color(0xFF6E8A72), fontSize: 12.5),
+                                color: C.textFaint, fontSize: 12.5),
                           ),
                         ),
                       ),
@@ -474,7 +475,7 @@ class _MineCardState extends State<_MineCard> {
                 if (p.caption.isNotEmpty)
                   Text(p.caption,
                       style: const TextStyle(
-                          color: Color(0xFFE8F5E9),
+                          color: C.textHi,
                           fontSize: 14.5,
                           height: 1.4)),
                 if (p.plantName != null && p.plantName!.isNotEmpty)
@@ -482,7 +483,7 @@ class _MineCardState extends State<_MineCard> {
                     padding: const EdgeInsets.only(top: 4),
                     child: Text(p.plantName!,
                         style: const TextStyle(
-                            color: Color(0xFF81C784),
+                            color: C.accent,
                             fontSize: 12.5,
                             fontStyle: FontStyle.italic)),
                   ),
@@ -493,16 +494,16 @@ class _MineCardState extends State<_MineCard> {
                       p.isPublic ? Icons.public_rounded : Icons.lock_outline,
                       size: 15,
                       color: p.isPublic
-                          ? const Color(0xFF81C784)
-                          : const Color(0xFF6E8A72),
+                          ? C.accent
+                          : C.textFaint,
                     ),
                     const SizedBox(width: 6),
                     Text(
                       p.isPublic ? 'Shared' : 'Only you',
                       style: TextStyle(
                         color: p.isPublic
-                            ? const Color(0xFF81C784)
-                            : const Color(0xFF6E8A72),
+                            ? C.accent
+                            : C.textFaint,
                         fontSize: 12.5,
                       ),
                     ),
@@ -521,14 +522,14 @@ class _MineCardState extends State<_MineCard> {
                         child: Text(
                           p.isPublic ? 'Make private' : 'Share',
                           style: const TextStyle(
-                              color: Color(0xFF81C784), fontSize: 13),
+                              color: C.accent, fontSize: 13),
                         ),
                       ),
                       IconButton(
                         visualDensity: VisualDensity.compact,
                         onPressed: _delete,
                         icon: const Icon(Icons.delete_outline,
-                            size: 19, color: Color(0xFF6E8A72)),
+                            size: 19, color: C.textFaint),
                       ),
                     ],
                   ],

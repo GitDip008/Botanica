@@ -14,6 +14,7 @@ import '../../services/contest_service.dart';
 import '../../services/wikipedia_image_service.dart';
 import 'contest_entry_flow.dart';
 import 'contest_teams_tab.dart';
+import '../../theme/tokens.dart';
 
 class ContestScreen extends StatefulWidget {
   const ContestScreen({super.key, required this.contest});
@@ -40,17 +41,17 @@ class _ContestScreenState extends State<ContestScreen>
     final c = widget.contest;
 
     return Scaffold(
-      backgroundColor: const Color(0xFF0A1A0F),
+      backgroundColor: C.bg,
       appBar: AppBar(
-        backgroundColor: const Color(0xFF0D1F14),
+        backgroundColor: C.bg,
         elevation: 0,
         title: Text(c.title),
         bottom: TabBar(
           controller: _tabs,
           isScrollable: true,
-          labelColor: const Color(0xFFFFD54F),
-          unselectedLabelColor: const Color(0xFF81C784),
-          indicatorColor: const Color(0xFFFFD54F),
+          labelColor: C.gold,
+          unselectedLabelColor: C.accent,
+          indicatorColor: C.gold,
           tabs: const [
             Tab(text: 'How to play'),
             Tab(text: 'Leaderboard'),
@@ -61,7 +62,7 @@ class _ContestScreenState extends State<ContestScreen>
       ),
       floatingActionButton: c.isLive
           ? FloatingActionButton.extended(
-              backgroundColor: const Color(0xFFFFB300),
+              backgroundColor: C.gold,
               foregroundColor: const Color(0xFF231A00),
               icon: const Icon(Icons.add_a_photo_rounded),
               label: const Text('Add a plant'),
@@ -99,7 +100,7 @@ class _HowToPlay extends StatelessWidget {
           Text(
             contest.subtitle,
             style: const TextStyle(
-              color: Color(0xFFFFD54F),
+              color: C.gold,
               fontSize: 16,
               fontWeight: FontWeight.w700,
               height: 1.35,
@@ -110,7 +111,7 @@ class _HowToPlay extends StatelessWidget {
           Text(
             contest.intro,
             style: const TextStyle(
-                color: Color(0xFFE8F5E9), fontSize: 14.5, height: 1.5),
+                color: C.textHi, fontSize: 14.5, height: 1.5),
           ),
         const SizedBox(height: 20),
         for (var i = 0; i < contest.steps.length; i++)
@@ -124,7 +125,7 @@ class _HowToPlay extends StatelessWidget {
                   height: 24,
                   alignment: Alignment.center,
                   decoration: const BoxDecoration(
-                    color: Color(0xFF2E7D32),
+                    color: C.accentDim,
                     shape: BoxShape.circle,
                   ),
                   child: Text('${i + 1}',
@@ -137,7 +138,7 @@ class _HowToPlay extends StatelessWidget {
                 Expanded(
                   child: Text(contest.steps[i],
                       style: const TextStyle(
-                          color: Color(0xFFCFE8D2),
+                          color: C.text,
                           fontSize: 14,
                           height: 1.45)),
                 ),
@@ -147,7 +148,7 @@ class _HowToPlay extends StatelessWidget {
         const SizedBox(height: 12),
         const Text('THE SCALES',
             style: TextStyle(
-                color: Color(0xFF81C784),
+                color: C.accent,
                 fontSize: 11,
                 fontWeight: FontWeight.w700,
                 letterSpacing: 1.3)),
@@ -157,7 +158,7 @@ class _HowToPlay extends StatelessWidget {
             margin: const EdgeInsets.only(bottom: 8),
             padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
             decoration: BoxDecoration(
-              color: const Color(0xFF13301A),
+              color: C.surfaceAlt,
               borderRadius: BorderRadius.circular(10),
             ),
             child: Row(
@@ -165,15 +166,15 @@ class _HowToPlay extends StatelessWidget {
                 Expanded(
                   child: Text(a.left,
                       style: const TextStyle(
-                          color: Color(0xFFE8F5E9), fontSize: 13.5)),
+                          color: C.textHi, fontSize: 13.5)),
                 ),
                 const Icon(Icons.swap_horiz_rounded,
-                    size: 16, color: Color(0xFF6E8A72)),
+                    size: 16, color: C.textFaint),
                 Expanded(
                   child: Text(a.right,
                       textAlign: TextAlign.right,
                       style: const TextStyle(
-                          color: Color(0xFFE8F5E9), fontSize: 13.5)),
+                          color: C.textHi, fontSize: 13.5)),
                 ),
               ],
             ),
@@ -190,7 +191,7 @@ class _HowToPlay extends StatelessWidget {
             child: Row(
               children: [
                 const Icon(Icons.emoji_events_rounded,
-                    color: Color(0xFFFFD54F), size: 20),
+                    color: C.gold, size: 20),
                 const SizedBox(width: 10),
                 Expanded(
                   child: Text(contest.prizeNote,
@@ -304,7 +305,7 @@ class _LeaderboardState extends State<_Leaderboard> {
     return Padding(
       padding: const EdgeInsets.only(right: 8),
       child: Material(
-        color: selected ? const Color(0xFF3A2A06) : const Color(0xFF111F16),
+        color: selected ? const Color(0xFF3A2A06) : C.surface,
         borderRadius: BorderRadius.circular(20),
         child: InkWell(
           borderRadius: BorderRadius.circular(20),
@@ -315,8 +316,8 @@ class _LeaderboardState extends State<_Leaderboard> {
               borderRadius: BorderRadius.circular(20),
               border: Border.all(
                   color: selected
-                      ? const Color(0xFFFFD54F)
-                      : const Color(0xFF2A4A2F)),
+                      ? C.gold
+                      : C.line),
             ),
             child: Row(
               mainAxisSize: MainAxisSize.min,
@@ -324,15 +325,15 @@ class _LeaderboardState extends State<_Leaderboard> {
                 Text(label,
                     style: TextStyle(
                       color: selected
-                          ? const Color(0xFFFFD54F)
-                          : const Color(0xFF9CCC9F),
+                          ? C.gold
+                          : C.textSoft,
                       fontSize: 12.5,
                       fontWeight:
                           selected ? FontWeight.w700 : FontWeight.normal,
                     )),
                 if (trailing != null) ...[
                   const SizedBox(width: 5),
-                  Icon(trailing, size: 14, color: const Color(0xFFFFD54F)),
+                  Icon(trailing, size: 14, color: C.gold),
                 ],
               ],
             ),
@@ -353,7 +354,7 @@ class _LeaderboardState extends State<_Leaderboard> {
                 ? 'No plants picked yet.\nBe the first.'
                 : 'Nobody has rated a plant on this scale yet.',
             textAlign: TextAlign.center,
-            style: const TextStyle(color: Color(0xFF9CCC9F), height: 1.5),
+            style: const TextStyle(color: C.textSoft, height: 1.5),
           ),
         ),
       );
@@ -364,22 +365,22 @@ class _LeaderboardState extends State<_Leaderboard> {
           itemBuilder: (_, i) {
             final r = rows[i];
             final medal = i == 0
-                ? const Color(0xFFFFD54F)
+                ? C.gold
                 : i == 1
                     ? const Color(0xFFCFD8DC)
                     : i == 2
                         ? const Color(0xFFBCAAA4)
-                        : const Color(0xFF2A4A2F);
+                        : C.line;
             return GestureDetector(
               onTap: () => _showAverages(context, r),
               child: Container(
               margin: const EdgeInsets.only(bottom: 8),
               padding: const EdgeInsets.all(12),
               decoration: BoxDecoration(
-                color: const Color(0xFF111F16),
+                color: C.surface,
                 borderRadius: BorderRadius.circular(10),
                 border: Border.all(
-                    color: i < 3 ? medal : const Color(0xFF2A4A2F),
+                    color: i < 3 ? medal : C.line,
                     width: i < 3 ? 1.5 : 1),
               ),
               child: Row(
@@ -399,13 +400,13 @@ class _LeaderboardState extends State<_Leaderboard> {
                       children: [
                         Text(r.plantName,
                             style: const TextStyle(
-                                color: Color(0xFFE8F5E9),
+                                color: C.textHi,
                                 fontSize: 14.5,
                                 fontWeight: FontWeight.w600)),
                         if (r.plantSection.isNotEmpty)
                           Text(r.plantSection,
                               style: const TextStyle(
-                                  color: Color(0xFF4A7A50), fontSize: 11.5)),
+                                  color: C.textFaint, fontSize: 11.5)),
                       ],
                     ),
                   ),
@@ -421,8 +422,8 @@ class _LeaderboardState extends State<_Leaderboard> {
                             : r.averageFor(axis.key)!.toStringAsFixed(1),
                         style: TextStyle(
                             color: axis == null
-                                ? const Color(0xFF81C784)
-                                : const Color(0xFFFFD54F),
+                                ? C.accent
+                                : C.gold,
                             fontSize: 17,
                             fontWeight: FontWeight.w800),
                       ),
@@ -431,14 +432,14 @@ class _LeaderboardState extends State<_Leaderboard> {
                             ? (r.votes == 1 ? 'pick' : 'picks')
                             : '${r.votes} ${r.votes == 1 ? "pick" : "picks"}',
                         style: const TextStyle(
-                            color: Color(0xFF4A7A50), fontSize: 10.5),
+                            color: C.textFaint, fontSize: 10.5),
                       ),
                     ],
                   ),
                   const Padding(
                     padding: EdgeInsets.only(left: 4),
                     child: Icon(Icons.expand_more_rounded,
-                        size: 18, color: Color(0xFF4A7A50)),
+                        size: 18, color: C.textFaint),
                   ),
                 ],
               ),
@@ -454,7 +455,7 @@ class _LeaderboardState extends State<_Leaderboard> {
   void _showAverages(BuildContext context, LeaderboardRow r) {
     showModalBottomSheet(
       context: context,
-      backgroundColor: const Color(0xFF0D1F14),
+      backgroundColor: C.bg,
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(18)),
       ),
@@ -478,17 +479,17 @@ class _LeaderboardState extends State<_Leaderboard> {
               _WikiPhoto(plantName: r.plantName),
               Text(r.plantName,
                   style: const TextStyle(
-                      color: Color(0xFFE8F5E9),
+                      color: C.textHi,
                       fontSize: 17,
                       fontWeight: FontWeight.w700)),
               if (r.plantSection.isNotEmpty)
                 Text(r.plantSection,
                     style: const TextStyle(
-                        color: Color(0xFF4A7A50), fontSize: 12)),
+                        color: C.textFaint, fontSize: 12)),
               const SizedBox(height: 4),
               Text(
                 '${r.votes} ${r.votes == 1 ? "person" : "people"} picked it · average of their scales',
-                style: const TextStyle(color: Color(0xFF9CCC9F), fontSize: 12.5),
+                style: const TextStyle(color: C.textSoft, fontSize: 12.5),
               ),
               const SizedBox(height: 18),
               for (final a in contest.axes)
@@ -504,10 +505,10 @@ class _LeaderboardState extends State<_Leaderboard> {
 
               // Who picked it — the prize goes to a person or a team, so the
               // names have to be visible without opening the database.
-              const Divider(color: Color(0xFF2A4A2F), height: 26),
+              const Divider(color: C.line, height: 26),
               const Text('PICKED BY',
                   style: TextStyle(
-                      color: Color(0xFF81C784),
+                      color: C.accent,
                       fontSize: 11,
                       fontWeight: FontWeight.w700,
                       letterSpacing: 1.2)),
@@ -521,18 +522,18 @@ class _LeaderboardState extends State<_Leaderboard> {
                       padding: const EdgeInsets.symmetric(
                           horizontal: 10, vertical: 6),
                       decoration: BoxDecoration(
-                        color: const Color(0xFF13301A),
+                        color: C.surfaceAlt,
                         borderRadius: BorderRadius.circular(20),
                         border: Border.all(
                             color: p.teamName == null
-                                ? const Color(0xFF2A4A2F)
+                                ? C.line
                                 : const Color(0xFF8D6E00)),
                       ),
                       child: Text(p.label,
                           style: TextStyle(
                               color: p.teamName == null
-                                  ? const Color(0xFFCFE8D2)
-                                  : const Color(0xFFFFD54F),
+                                  ? C.text
+                                  : C.gold,
                               fontSize: 12)),
                     ),
                 ],
@@ -601,7 +602,7 @@ class _WikiThumb extends StatelessWidget {
         height: 42,
         margin: const EdgeInsets.only(right: 10),
         decoration: BoxDecoration(
-          color: const Color(0xFF13301A),
+          color: C.surfaceAlt,
           borderRadius: BorderRadius.circular(8),
           image: snap.data == null
               ? null
@@ -610,7 +611,7 @@ class _WikiThumb extends StatelessWidget {
         ),
         child: snap.data == null
             ? const Icon(Icons.local_florist_rounded,
-                size: 18, color: Color(0xFF4A7A50))
+                size: 18, color: C.textFaint)
             : null,
       ),
     );
@@ -627,7 +628,7 @@ class _MyPicks extends StatelessWidget {
     if (uid.isEmpty) {
       return const Center(
         child: Text('Sign in to take part.',
-            style: TextStyle(color: Color(0xFF9CCC9F))),
+            style: TextStyle(color: C.textSoft)),
       );
     }
     return StreamBuilder<List<ContestEntry>>(
@@ -644,7 +645,7 @@ class _MyPicks extends StatelessWidget {
               child: Text(
                 "You haven't picked a plant yet.\nTap “Add a plant” to start.",
                 textAlign: TextAlign.center,
-                style: TextStyle(color: Color(0xFF9CCC9F), height: 1.5),
+                style: TextStyle(color: C.textSoft, height: 1.5),
               ),
             ),
           );
@@ -670,9 +671,9 @@ class _MyPickCard extends StatelessWidget {
       margin: const EdgeInsets.only(bottom: 10),
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
-        color: const Color(0xFF111F16),
+        color: C.surface,
         borderRadius: BorderRadius.circular(10),
-        border: Border.all(color: const Color(0xFF2A4A2F)),
+        border: Border.all(color: C.line),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -714,13 +715,13 @@ class _MyPickCard extends StatelessWidget {
                   children: [
                     Text(entry.plantName,
                         style: const TextStyle(
-                            color: Color(0xFFE8F5E9),
+                            color: C.textHi,
                             fontSize: 14.5,
                             fontWeight: FontWeight.w600)),
                     if (entry.plantSection.isNotEmpty)
                       Text(entry.plantSection,
                           style: const TextStyle(
-                              color: Color(0xFF4A7A50), fontSize: 11.5)),
+                              color: C.textFaint, fontSize: 11.5)),
                     if (entry.teamName != null)
                       Text('Team ${entry.teamName}',
                           style: const TextStyle(
@@ -770,7 +771,7 @@ class _MiniScale extends StatelessWidget {
     // -5..5 -> 0..1
     final t = ((value + 5) / 10).clamp(0.0, 1.0);
     final labelStyle = TextStyle(
-      color: showValue ? const Color(0xFFCFE8D2) : const Color(0xFF6E8A72),
+      color: showValue ? C.text : C.textFaint,
       fontSize: showValue ? 12.5 : 10.5,
       fontWeight: showValue ? FontWeight.w600 : FontWeight.normal,
     );
@@ -792,7 +793,7 @@ class _MiniScale extends StatelessWidget {
               Container(
                 height: showValue ? 8 : 6,
                 decoration: BoxDecoration(
-                  color: const Color(0xFF13301A),
+                  color: C.surfaceAlt,
                   borderRadius: BorderRadius.circular(4),
                 ),
               ),
@@ -802,7 +803,7 @@ class _MiniScale extends StatelessWidget {
                 Positioned(
                   left: box.maxWidth / 2 - 0.5,
                   child: Container(
-                      width: 1, height: 8, color: const Color(0xFF2A4A2F)),
+                      width: 1, height: 8, color: C.line),
                 ),
               Positioned(
                 left: (box.maxWidth - 12) * t,
@@ -810,7 +811,7 @@ class _MiniScale extends StatelessWidget {
                   width: 12,
                   height: showValue ? 8 : 6,
                   decoration: BoxDecoration(
-                    color: const Color(0xFFFFD54F),
+                    color: C.gold,
                     borderRadius: BorderRadius.circular(4),
                   ),
                 ),
@@ -823,7 +824,7 @@ class _MiniScale extends StatelessWidget {
             padding: const EdgeInsets.only(top: 3),
             child: Text(
               value.toStringAsFixed(1),
-              style: const TextStyle(color: Color(0xFF6E8A72), fontSize: 10.5),
+              style: const TextStyle(color: C.textFaint, fontSize: 10.5),
             ),
           ),
       ],

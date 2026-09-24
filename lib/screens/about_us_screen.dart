@@ -3,6 +3,7 @@ import 'package:provider/provider.dart';
 import 'package:url_launcher/url_launcher.dart';
 import '../services/language_service.dart';
 import '../widgets/developed_by_card.dart';
+import '../theme/tokens.dart';
 
 /// All-in-one info page about Oulu Botanical Garden.
 /// Reachable from drawer and from tapping the Open/Closed chip on home.
@@ -22,10 +23,10 @@ class AboutUsScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     final s = context.watch<LanguageService>().strings;
     return Scaffold(
-      backgroundColor: const Color(0xFF0A1A0F),
+      backgroundColor: C.bg,
       appBar: AppBar(
         title: Text(s.aboutUs),
-        backgroundColor: const Color(0xFF0D1F14),
+        backgroundColor: C.bg,
         elevation: 0,
       ),
       body: SafeArea(
@@ -126,7 +127,7 @@ class AboutUsScreen extends StatelessWidget {
                     child: _actionButton(
                       icon: Icons.mail_rounded,
                       label: 'Email',
-                      color: const Color(0xFF66BB6A),
+                      color: C.accent,
                       onTap: () =>
                           launchUrl(Uri.parse('mailto:$_mainEmail')),
                     ),
@@ -168,20 +169,20 @@ class AboutUsScreen extends StatelessWidget {
           colors: [Color(0xFF162B1C), Color(0xFF0F2018)],
         ),
         borderRadius: BorderRadius.circular(18),
-        border: Border.all(color: const Color(0xFF2A4A2F)),
+        border: Border.all(color: C.line),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: const [
           Text('Oulu Botanical Garden',
               style: TextStyle(
-                  color: Color(0xFFE8F5E9),
+                  color: C.textHi,
                   fontSize: 20,
                   fontWeight: FontWeight.w800)),
           SizedBox(height: 4),
           Text('Oulun kasvitieteellinen puutarha',
               style: TextStyle(
-                  color: Color(0xFF81C784),
+                  color: C.accent,
                   fontSize: 13,
                   fontStyle: FontStyle.italic)),
           SizedBox(height: 10),
@@ -200,20 +201,20 @@ class AboutUsScreen extends StatelessWidget {
       child: Container(
         padding: const EdgeInsets.all(16),
         decoration: BoxDecoration(
-          color: const Color(0xFF111F16),
+          color: C.surface,
           borderRadius: BorderRadius.circular(16),
-          border: Border.all(color: const Color(0xFF2A4A2F)),
+          border: Border.all(color: C.line),
         ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Row(
               children: [
-                Icon(icon, color: const Color(0xFF66BB6A), size: 18),
+                Icon(icon, color: C.accent, size: 18),
                 const SizedBox(width: 8),
                 Text(title,
                     style: const TextStyle(
-                        color: Color(0xFFE8F5E9),
+                        color: C.textHi,
                         fontSize: 15,
                         fontWeight: FontWeight.w700)),
               ],
@@ -243,26 +244,26 @@ class AboutUsScreen extends StatelessWidget {
           child: Container(
             padding: const EdgeInsets.all(16),
             decoration: BoxDecoration(
-              color: const Color(0xFF111F16),
+              color: C.surface,
               borderRadius: BorderRadius.circular(16),
-              border: Border.all(color: const Color(0xFF2A4A2F)),
+              border: Border.all(color: C.line),
             ),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Row(
                   children: [
-                    Icon(icon, color: const Color(0xFF66BB6A), size: 18),
+                    Icon(icon, color: C.accent, size: 18),
                     const SizedBox(width: 8),
                     Expanded(
                       child: Text(title,
                           style: const TextStyle(
-                              color: Color(0xFFE8F5E9),
+                              color: C.textHi,
                               fontSize: 15,
                               fontWeight: FontWeight.w700)),
                     ),
                     const Icon(Icons.open_in_new_rounded,
-                        color: Color(0xFF4A7A50), size: 16),
+                        color: C.textFaint, size: 16),
                   ],
                 ),
                 const SizedBox(height: 8),
@@ -283,7 +284,7 @@ class AboutUsScreen extends StatelessWidget {
         padding: const EdgeInsets.only(bottom: 6),
         child: Text(text,
             style: const TextStyle(
-                color: Color(0xFF81C784),
+                color: C.accent,
                 fontSize: 13,
                 fontWeight: FontWeight.w700)),
       );
@@ -353,12 +354,12 @@ class _InfoLine extends StatelessWidget {
             width: 88,
             child: Text(label,
                 style: const TextStyle(
-                    color: Color(0xFF4A7A50), fontSize: 12)),
+                    color: C.textFaint, fontSize: 12)),
           ),
           Expanded(
             child: Text(value,
                 style: const TextStyle(
-                    color: Color(0xFFE8F5E9),
+                    color: C.textHi,
                     fontSize: 13,
                     fontWeight: FontWeight.w500)),
           ),

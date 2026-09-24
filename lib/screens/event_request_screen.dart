@@ -5,6 +5,7 @@ import '../services/event_service.dart';
 import '../services/language_service.dart';
 import '../services/usage_tracking_service.dart';
 import '../services/user_state.dart';
+import '../theme/tokens.dart';
 
 class EventRequestScreen extends StatefulWidget {
   const EventRequestScreen({super.key});
@@ -46,9 +47,9 @@ class _EventRequestScreenState extends State<EventRequestScreen> {
       builder: (ctx, child) => Theme(
         data: Theme.of(ctx).copyWith(
           colorScheme: const ColorScheme.dark(
-            primary: Color(0xFF66BB6A),
-            surface: Color(0xFF111F16),
-            onSurface: Color(0xFFE8F5E9),
+            primary: C.accent,
+            surface: C.surface,
+            onSurface: C.textHi,
           ),
         ),
         child: child!,
@@ -66,9 +67,9 @@ class _EventRequestScreenState extends State<EventRequestScreen> {
       builder: (ctx, child) => Theme(
         data: Theme.of(ctx).copyWith(
           colorScheme: const ColorScheme.dark(
-            primary: Color(0xFF66BB6A),
-            surface: Color(0xFF111F16),
-            onSurface: Color(0xFFE8F5E9),
+            primary: C.accent,
+            surface: C.surface,
+            onSurface: C.textHi,
           ),
         ),
         child: child!,
@@ -112,7 +113,7 @@ class _EventRequestScreenState extends State<EventRequestScreen> {
       if (mounted) {
         final s = context.read<LanguageService>().strings;
         ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-          backgroundColor: const Color(0xFF2E7D32),
+          backgroundColor: C.accentDim,
           content: Text(s.eventSubmitted),
         ));
         Navigator.pop(context);
@@ -126,10 +127,10 @@ class _EventRequestScreenState extends State<EventRequestScreen> {
   Widget build(BuildContext context) {
     final s = context.watch<LanguageService>().strings;
     return Scaffold(
-      backgroundColor: const Color(0xFF0A1A0F),
+      backgroundColor: C.bg,
       appBar: AppBar(
         title: Text(s.eventPlanner),
-        backgroundColor: const Color(0xFF0D1F14),
+        backgroundColor: C.bg,
         elevation: 0,
       ),
       body: SafeArea(
@@ -142,7 +143,7 @@ class _EventRequestScreenState extends State<EventRequestScreen> {
               children: [
                 Text(s.eventPlannerSubtitle,
                     style:
-                        const TextStyle(color: Color(0xFF81C784), fontSize: 13)),
+                        const TextStyle(color: C.accent, fontSize: 13)),
                 const SizedBox(height: 20),
                 _field(s.eventName, _name),
                 const SizedBox(height: 12),
@@ -191,16 +192,16 @@ class _EventRequestScreenState extends State<EventRequestScreen> {
                 Container(
                   padding: const EdgeInsets.all(14),
                   decoration: BoxDecoration(
-                    color: const Color(0xFF111F16),
+                    color: C.surface,
                     borderRadius: BorderRadius.circular(14),
-                    border: Border.all(color: const Color(0xFF2A4A2F)),
+                    border: Border.all(color: C.line),
                   ),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(s.visibility,
                           style: const TextStyle(
-                              color: Color(0xFF81C784),
+                              color: C.accent,
                               fontSize: 12,
                               fontWeight: FontWeight.w600)),
                       const SizedBox(height: 8),
@@ -228,7 +229,7 @@ class _EventRequestScreenState extends State<EventRequestScreen> {
                         const SizedBox(height: 14),
                         Text(s.rsvpCapacity,
                             style: const TextStyle(
-                                color: Color(0xFF81C784),
+                                color: C.accent,
                                 fontSize: 12,
                                 fontWeight: FontWeight.w600)),
                         const SizedBox(height: 6),
@@ -236,25 +237,25 @@ class _EventRequestScreenState extends State<EventRequestScreen> {
                           controller: _capacity,
                           keyboardType: TextInputType.number,
                           style:
-                              const TextStyle(color: Color(0xFFE8F5E9)),
+                              const TextStyle(color: C.textHi),
                           decoration: InputDecoration(
                             hintText: s.rsvpCapacityHint,
                             hintStyle: const TextStyle(
-                                color: Color(0xFF4A7A50), fontSize: 12),
+                                color: C.textFaint, fontSize: 12),
                             filled: true,
                             fillColor: const Color(0xFF0F1A12),
                             border: OutlineInputBorder(
                                 borderRadius: BorderRadius.circular(10),
                                 borderSide: const BorderSide(
-                                    color: Color(0xFF2A4A2F))),
+                                    color: C.line)),
                             enabledBorder: OutlineInputBorder(
                                 borderRadius: BorderRadius.circular(10),
                                 borderSide: const BorderSide(
-                                    color: Color(0xFF2A4A2F))),
+                                    color: C.line)),
                             focusedBorder: OutlineInputBorder(
                                 borderRadius: BorderRadius.circular(10),
                                 borderSide: const BorderSide(
-                                    color: Color(0xFF66BB6A), width: 1.5)),
+                                    color: C.accent, width: 1.5)),
                             contentPadding: const EdgeInsets.symmetric(
                                 horizontal: 12, vertical: 10),
                           ),
@@ -272,7 +273,7 @@ class _EventRequestScreenState extends State<EventRequestScreen> {
                       ? null
                       : _submit,
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: const Color(0xFF2E7D32),
+                    backgroundColor: C.accentDim,
                     foregroundColor: Colors.white,
                     padding: const EdgeInsets.symmetric(vertical: 16),
                     shape: RoundedRectangleBorder(
@@ -311,13 +312,13 @@ class _EventRequestScreenState extends State<EventRequestScreen> {
           padding: const EdgeInsets.symmetric(vertical: 10),
           decoration: BoxDecoration(
             color: selected
-                ? const Color(0xFF1A3320)
-                : const Color(0xFF0D1F14),
+                ? C.surfaceAlt
+                : C.bg,
             borderRadius: BorderRadius.circular(10),
             border: Border.all(
               color: selected
-                  ? const Color(0xFF66BB6A)
-                  : const Color(0xFF2A4A2F),
+                  ? C.accent
+                  : C.line,
               width: selected ? 1.5 : 1,
             ),
           ),
@@ -327,14 +328,14 @@ class _EventRequestScreenState extends State<EventRequestScreen> {
               Icon(icon,
                   size: 16,
                   color: selected
-                      ? const Color(0xFF66BB6A)
-                      : const Color(0xFF4A7A50)),
+                      ? C.accent
+                      : C.textFaint),
               const SizedBox(width: 6),
               Text(label,
                   style: TextStyle(
                       color: selected
-                          ? const Color(0xFFE8F5E9)
-                          : const Color(0xFF81C784),
+                          ? C.textHi
+                          : C.accent,
                       fontSize: 12,
                       fontWeight: FontWeight.w600)),
             ],
@@ -351,23 +352,23 @@ class _EventRequestScreenState extends State<EventRequestScreen> {
       controller: c,
       maxLines: maxLines,
       keyboardType: keyboard,
-      style: const TextStyle(color: Color(0xFFE8F5E9)),
+      style: const TextStyle(color: C.textHi),
       decoration: InputDecoration(
         labelText: label,
-        labelStyle: const TextStyle(color: Color(0xFF81C784)),
+        labelStyle: const TextStyle(color: C.accent),
         filled: true,
-        fillColor: const Color(0xFF111F16),
+        fillColor: C.surface,
         border: OutlineInputBorder(
           borderRadius: BorderRadius.circular(14),
-          borderSide: const BorderSide(color: Color(0xFF2A4A2F)),
+          borderSide: const BorderSide(color: C.line),
         ),
         enabledBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(14),
-          borderSide: const BorderSide(color: Color(0xFF2A4A2F)),
+          borderSide: const BorderSide(color: C.line),
         ),
         focusedBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(14),
-          borderSide: const BorderSide(color: Color(0xFF66BB6A), width: 1.5),
+          borderSide: const BorderSide(color: C.accent, width: 1.5),
         ),
       ),
       validator: (v) => (v == null || v.trim().isEmpty) ? s.required : null,
@@ -388,12 +389,12 @@ class _EventRequestScreenState extends State<EventRequestScreen> {
         child: Container(
           padding: const EdgeInsets.all(14),
           decoration: BoxDecoration(
-            color: const Color(0xFF111F16),
+            color: C.surface,
             borderRadius: BorderRadius.circular(14),
-            border: Border.all(color: const Color(0xFF2A4A2F)),
+            border: Border.all(color: C.line),
           ),
           child: Row(children: [
-            Icon(icon, color: const Color(0xFF66BB6A), size: 20),
+            Icon(icon, color: C.accent, size: 20),
             const SizedBox(width: 12),
             Expanded(
               child: Column(
@@ -401,17 +402,17 @@ class _EventRequestScreenState extends State<EventRequestScreen> {
                 children: [
                   Text(label,
                       style: const TextStyle(
-                          color: Color(0xFF81C784), fontSize: 12)),
+                          color: C.accent, fontSize: 12)),
                   Text(value,
                       style: const TextStyle(
-                          color: Color(0xFFE8F5E9),
+                          color: C.textHi,
                           fontSize: 14,
                           fontWeight: FontWeight.w600)),
                 ],
               ),
             ),
             const Icon(Icons.arrow_forward_ios_rounded,
-                color: Color(0xFF4A7A50), size: 14),
+                color: C.textFaint, size: 14),
           ]),
         ),
       ),

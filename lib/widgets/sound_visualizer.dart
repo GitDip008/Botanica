@@ -5,6 +5,7 @@ import 'package:flutter/scheduler.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'package:record/record.dart';
 import '../services/language_service.dart';
+import '../theme/tokens.dart';
 
 class SoundVisualizer extends StatefulWidget {
   const SoundVisualizer({super.key});
@@ -160,8 +161,8 @@ class _SoundVisualizerState extends State<SoundVisualizer>
   // ── Helpers ───────────────────────────────────────────────────────────────
 
   Color _dbColor(double db) {
-    if (db < 40) return const Color(0xFF2E7D32);
-    if (db < 60) return const Color(0xFF66BB6A);
+    if (db < 40) return C.accentDim;
+    if (db < 60) return C.accent;
     if (db < 80) return const Color(0xFF80CBC4); // teal-green
     if (db < 95) return Colors.yellow[600]!;
     return Colors.red[400]!;
@@ -196,17 +197,17 @@ class _SoundVisualizerState extends State<SoundVisualizer>
             margin: const EdgeInsets.only(bottom: 8),
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
             decoration: BoxDecoration(
-              color: const Color(0xFF1A2E1E),
+              color: C.surface,
               borderRadius: BorderRadius.circular(10),
             ),
             child: Row(
               mainAxisSize: MainAxisSize.min,
               children: [
                 const SizedBox(width: 14, height: 14,
-                    child: CircularProgressIndicator(color: Color(0xFF66BB6A), strokeWidth: 2)),
+                    child: CircularProgressIndicator(color: C.accent, strokeWidth: 2)),
                 const SizedBox(width: 10),
                 Text(s.startingMic,
-                    style: const TextStyle(color: Color(0xFF66BB6A), fontSize: 13)),
+                    style: const TextStyle(color: C.accent, fontSize: 13)),
               ],
             ),
           ),
@@ -215,7 +216,7 @@ class _SoundVisualizerState extends State<SoundVisualizer>
         Container(
           padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
           decoration: BoxDecoration(
-            color: const Color(0xFF1A2E1E),
+            color: C.surface,
             borderRadius: BorderRadius.circular(20),
             border: Border.all(color: _dbColor(_smoothDb), width: 1.5),
             boxShadow: _isListening
@@ -239,7 +240,7 @@ class _SoundVisualizerState extends State<SoundVisualizer>
               ),
               const SizedBox(width: 8),
               Text(_dbLabel(_currentDb),
-                  style: const TextStyle(color: Color(0xFF4CAF50), fontSize: 12)),
+                  style: const TextStyle(color: C.accent, fontSize: 12)),
             ],
           ),
         ),
@@ -278,20 +279,20 @@ class _SoundVisualizerState extends State<SoundVisualizer>
           borderRadius: BorderRadius.circular(4),
           child: Container(
             height: 4,
-            color: const Color(0xFF1A2E1E),
+            color: C.surface,
             child: FractionallySizedBox(
               alignment: Alignment.centerLeft,
               widthFactor: (_smoothDb / 120).clamp(0.0, 1.0),
               child: Container(
                 decoration: BoxDecoration(
                   gradient: LinearGradient(colors: [
-                    const Color(0xFF1B5E20),
-                    const Color(0xFF66BB6A),
+                    C.accentDim,
+                    C.accent,
                     if (_smoothDb > 75) Colors.yellow[700]!,
                     if (_smoothDb > 95) Colors.red[400]!,
                   ]),
                   boxShadow: [
-                    BoxShadow(color: const Color(0xFF66BB6A).withOpacity(0.4),
+                    BoxShadow(color: C.accent.withOpacity(0.4),
                         blurRadius: 6, spreadRadius: 1),
                   ],
                 ),
@@ -304,10 +305,10 @@ class _SoundVisualizerState extends State<SoundVisualizer>
         Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
-            Text(s.dbQuiet, style: const TextStyle(color: Color(0xFF4CAF50), fontSize: 10)),
+            Text(s.dbQuiet, style: const TextStyle(color: C.accent, fontSize: 10)),
             Text(s.listeningToGarden,
-                style: const TextStyle(color: Color(0xFF4CAF50), fontSize: 10)),
-            Text(s.dbLoud, style: const TextStyle(color: Color(0xFF4CAF50), fontSize: 10)),
+                style: const TextStyle(color: C.accent, fontSize: 10)),
+            Text(s.dbLoud, style: const TextStyle(color: C.accent, fontSize: 10)),
           ],
         ),
         const SizedBox(height: 12),
@@ -327,17 +328,17 @@ class _SoundVisualizerState extends State<SoundVisualizer>
           mainAxisSize: MainAxisSize.min,
           children: [
             Icon(Icons.mic_off,
-                color: isPerm ? Colors.red[400] : const Color(0xFF4CAF50), size: 56),
+                color: isPerm ? Colors.red[400] : C.accent, size: 56),
             const SizedBox(height: 16),
             Text(
               isPerm ? s.micPermBodyPerm : s.micPermBody,
               textAlign: TextAlign.center,
-              style: const TextStyle(color: Color(0xFF4CAF50), fontSize: 14, height: 1.6),
+              style: const TextStyle(color: C.accent, fontSize: 14, height: 1.6),
             ),
             const SizedBox(height: 20),
             ElevatedButton.icon(
               style: ElevatedButton.styleFrom(
-                backgroundColor: const Color(0xFF2E7D32),
+                backgroundColor: C.accentDim,
                 foregroundColor: Colors.white,
                 padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
                 shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
@@ -372,7 +373,7 @@ class _SoundVisualizerState extends State<SoundVisualizer>
             Text(
               s.noAudioArrived,
               textAlign: TextAlign.center,
-              style: const TextStyle(color: Color(0xFF4CAF50), fontSize: 13, height: 1.6),
+              style: const TextStyle(color: C.accent, fontSize: 13, height: 1.6),
             ),
             const SizedBox(height: 20),
             Row(
@@ -380,7 +381,7 @@ class _SoundVisualizerState extends State<SoundVisualizer>
               children: [
                 ElevatedButton.icon(
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: const Color(0xFF2E7D32),
+                    backgroundColor: C.accentDim,
                     foregroundColor: Colors.white,
                     shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
                   ),
@@ -391,8 +392,8 @@ class _SoundVisualizerState extends State<SoundVisualizer>
                 const SizedBox(width: 12),
                 OutlinedButton.icon(
                   style: OutlinedButton.styleFrom(
-                    foregroundColor: const Color(0xFF66BB6A),
-                    side: const BorderSide(color: Color(0xFF2E7D32)),
+                    foregroundColor: C.accent,
+                    side: const BorderSide(color: C.accentDim),
                     shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
                   ),
                   icon: const Icon(Icons.settings, size: 16),
@@ -444,8 +445,8 @@ class _FlowingWavePainter extends CustomPainter {
       waveHeight: h * (0.12 + amplitude * 0.22),
       yCenter: mid + h * 0.04,
       topColors: [
-        const Color(0xFF1B5E20).withOpacity(0.55),
-        const Color(0xFF1B5E20).withOpacity(0.0),
+        C.accentDim.withOpacity(0.55),
+        C.accentDim.withOpacity(0.0),
       ],
     );
 
@@ -457,8 +458,8 @@ class _FlowingWavePainter extends CustomPainter {
       waveHeight: h * (0.08 + amplitude * 0.18),
       yCenter: mid,
       topColors: [
-        const Color(0xFF2E7D32).withOpacity(0.65),
-        const Color(0xFF2E7D32).withOpacity(0.0),
+        C.accentDim.withOpacity(0.65),
+        C.accentDim.withOpacity(0.0),
       ],
     );
 
@@ -482,8 +483,8 @@ class _FlowingWavePainter extends CustomPainter {
       waveHeight: h * (0.06 + amplitude * 0.10),
       yCenter: mid + h * 0.15,
       topColors: [
-        const Color(0xFF1B5E20).withOpacity(0.25),
-        const Color(0xFF1B5E20).withOpacity(0.0),
+        C.accentDim.withOpacity(0.25),
+        C.accentDim.withOpacity(0.0),
       ],
     );
   }

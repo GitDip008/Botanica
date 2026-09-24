@@ -18,6 +18,7 @@ import 'package:flutter/material.dart';
 import '../data/plant_index.dart';
 import '../services/language_service.dart';
 import '../widgets/plant_tags_bar.dart';
+import '../theme/tokens.dart';
 
 class PlantsScreen extends StatefulWidget {
   const PlantsScreen({super.key});
@@ -81,9 +82,9 @@ class _PlantsScreenState extends State<PlantsScreen> {
     final results = _ready ? _results() : const <PlantFacts>[];
 
     return Scaffold(
-      backgroundColor: const Color(0xFF0A1A0F),
+      backgroundColor: C.bg,
       appBar: AppBar(
-        backgroundColor: const Color(0xFF0D1F14),
+        backgroundColor: C.bg,
         elevation: 0,
         title: Text(_isFinnish ? 'Tunne kasvit' : 'Know Our Plants'),
       ),
@@ -94,17 +95,17 @@ class _PlantsScreenState extends State<PlantsScreen> {
                 Padding(
                   padding: const EdgeInsets.fromLTRB(16, 12, 16, 0),
                   child: TextField(
-                    style: const TextStyle(color: Color(0xFFE8F5E9)),
+                    style: const TextStyle(color: C.textHi),
                     onChanged: (v) => setState(() => _query = v),
                     decoration: InputDecoration(
                       hintText: _isFinnish
                           ? 'Hae nimellä tai osastolla'
                           : 'Search by name or section',
-                      hintStyle: const TextStyle(color: Color(0xFF6E8A72)),
+                      hintStyle: const TextStyle(color: C.textFaint),
                       prefixIcon:
-                          const Icon(Icons.search, color: Color(0xFF81C784)),
+                          const Icon(Icons.search, color: C.accent),
                       filled: true,
-                      fillColor: const Color(0xFF13301A),
+                      fillColor: C.surfaceAlt,
                       border: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(10),
                         borderSide: BorderSide.none,
@@ -125,14 +126,14 @@ class _PlantsScreenState extends State<PlantsScreen> {
                         onSelected: (v) => setState(() => _onlyCurated = v),
                         labelStyle: TextStyle(
                           color: _onlyCurated
-                              ? const Color(0xFF0A1A0F)
-                              : const Color(0xFFE8F5E9),
+                              ? C.bg
+                              : C.textHi,
                           fontSize: 12.5,
                           fontWeight: FontWeight.w600,
                         ),
                         selectedColor: const Color(0xFFFFB74D),
-                        backgroundColor: const Color(0xFF13301A),
-                        side: const BorderSide(color: Color(0xFF2E7D32)),
+                        backgroundColor: C.surfaceAlt,
+                        side: const BorderSide(color: C.accentDim),
                         showCheckmark: false,
                       ),
                       const SizedBox(width: 8),
@@ -144,14 +145,14 @@ class _PlantsScreenState extends State<PlantsScreen> {
                               () => on ? _themes.add(t) : _themes.remove(t)),
                           labelStyle: TextStyle(
                             color: _themes.contains(t)
-                                ? const Color(0xFF0A1A0F)
-                                : const Color(0xFFE8F5E9),
+                                ? C.bg
+                                : C.textHi,
                             fontSize: 12.5,
                             fontWeight: FontWeight.w600,
                           ),
-                          selectedColor: const Color(0xFF81C784),
-                          backgroundColor: const Color(0xFF13301A),
-                          side: const BorderSide(color: Color(0xFF2E7D32)),
+                          selectedColor: C.accent,
+                          backgroundColor: C.surfaceAlt,
+                          side: const BorderSide(color: C.accentDim),
                           showCheckmark: false,
                         ),
                         const SizedBox(width: 8),
@@ -168,7 +169,7 @@ class _PlantsScreenState extends State<PlantsScreen> {
                           ? '${results.length} kasvia'
                           : '${results.length} plants',
                       style: const TextStyle(
-                          color: Color(0xFF6E8A72), fontSize: 12),
+                          color: C.textFaint, fontSize: 12),
                     ),
                   ),
                 ),
@@ -179,7 +180,7 @@ class _PlantsScreenState extends State<PlantsScreen> {
                             _isFinnish
                                 ? 'Ei osumia.'
                                 : 'Nothing matches those filters.',
-                            style: const TextStyle(color: Color(0xFF9CCC9F)),
+                            style: const TextStyle(color: C.textSoft),
                           ),
                         )
                       : ListView.builder(
@@ -206,7 +207,7 @@ class _PlantsScreenState extends State<PlantsScreen> {
 
     showModalBottomSheet(
       context: context,
-      backgroundColor: const Color(0xFF0D1F14),
+      backgroundColor: C.bg,
       isScrollControlled: true,
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(18)),
@@ -224,7 +225,7 @@ class _PlantsScreenState extends State<PlantsScreen> {
                 Text(
                   p.scientificName,
                   style: const TextStyle(
-                    color: Color(0xFFE8F5E9),
+                    color: C.textHi,
                     fontSize: 19,
                     fontWeight: FontWeight.w700,
                     fontStyle: FontStyle.italic,
@@ -235,7 +236,7 @@ class _PlantsScreenState extends State<PlantsScreen> {
                     padding: const EdgeInsets.only(top: 2),
                     child: Text(common,
                         style: const TextStyle(
-                            color: Color(0xFF9CCC9F), fontSize: 14)),
+                            color: C.textSoft, fontSize: 14)),
                   ),
                 const SizedBox(height: 14),
                 if (section.isNotEmpty)
@@ -263,7 +264,7 @@ class _PlantsScreenState extends State<PlantsScreen> {
                     (_isFinnish ? 'Mikä tekee siitä erityisen' : 'What makes it notable')
                         .toUpperCase(),
                     style: const TextStyle(
-                      color: Color(0xFF81C784),
+                      color: C.accent,
                       fontSize: 11,
                       fontWeight: FontWeight.w700,
                       letterSpacing: 1.2,
@@ -279,13 +280,13 @@ class _PlantsScreenState extends State<PlantsScreen> {
                         children: [
                           Text(t,
                               style: const TextStyle(
-                                  color: Color(0xFFFFD54F),
+                                  color: C.gold,
                                   fontSize: 13,
                                   fontWeight: FontWeight.w700)),
                           Text(
                             (_isFinnish ? p.tagsFi[t] : null) ?? p.tags[t] ?? '',
                             style: const TextStyle(
-                                color: Color(0xFFCFE8D2),
+                                color: C.text,
                                 fontSize: 13.5,
                                 height: 1.45),
                           ),
@@ -300,7 +301,7 @@ class _PlantsScreenState extends State<PlantsScreen> {
                           ? 'Tälle kasville ei ole vielä kuvausta puutarhan aineistossa.'
                           : "The garden's records carry no description for this plant yet.",
                       style: const TextStyle(
-                          color: Color(0xFF6E8A72), fontSize: 13),
+                          color: C.textFaint, fontSize: 13),
                     ),
                   ),
               ],
@@ -316,7 +317,7 @@ class _PlantsScreenState extends State<PlantsScreen> {
         child: Row(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Icon(icon, size: 16, color: const Color(0xFF81C784)),
+            Icon(icon, size: 16, color: C.accent),
             const SizedBox(width: 10),
             Expanded(
               child: Column(
@@ -324,13 +325,13 @@ class _PlantsScreenState extends State<PlantsScreen> {
                 children: [
                   Text(label.toUpperCase(),
                       style: const TextStyle(
-                          color: Color(0xFF6E8A72),
+                          color: C.textFaint,
                           fontSize: 10,
                           letterSpacing: 1.1,
                           fontWeight: FontWeight.w700)),
                   Text(value,
                       style: const TextStyle(
-                          color: Color(0xFFE8F5E9), fontSize: 13.5)),
+                          color: C.textHi, fontSize: 13.5)),
                 ],
               ),
             ),
@@ -365,9 +366,9 @@ class _PlantRow extends StatelessWidget {
         margin: const EdgeInsets.only(bottom: 8),
         padding: const EdgeInsets.all(12),
         decoration: BoxDecoration(
-          color: const Color(0xFF111F16),
+          color: C.surface,
           borderRadius: BorderRadius.circular(10),
-          border: Border.all(color: const Color(0xFF2A4A2F)),
+          border: Border.all(color: C.line),
         ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -381,7 +382,7 @@ class _PlantRow extends StatelessWidget {
                       Text(
                         facts.scientificName,
                         style: const TextStyle(
-                          color: Color(0xFFE8F5E9),
+                          color: C.textHi,
                           fontSize: 14.5,
                           fontWeight: FontWeight.w600,
                           fontStyle: FontStyle.italic,
@@ -390,13 +391,13 @@ class _PlantRow extends StatelessWidget {
                       if (common != null && common.isNotEmpty)
                         Text(common,
                             style: const TextStyle(
-                                color: Color(0xFF9CCC9F), fontSize: 12.5)),
+                                color: C.textSoft, fontSize: 12.5)),
                       if (section.isNotEmpty)
                         Padding(
                           padding: const EdgeInsets.only(top: 3),
                           child: Text(section,
                               style: const TextStyle(
-                                  color: Color(0xFF4A7A50), fontSize: 11.5)),
+                                  color: C.textFaint, fontSize: 11.5)),
                         ),
                     ],
                   ),
@@ -405,9 +406,9 @@ class _PlantRow extends StatelessWidget {
                   const Padding(
                     padding: EdgeInsets.only(right: 6),
                     child: Icon(Icons.warning_amber_rounded,
-                        size: 18, color: Color(0xFFEF5350)),
+                        size: 18, color: C.danger),
                   ),
-                const Icon(Icons.chevron_right, color: Color(0xFF4A7A50)),
+                const Icon(Icons.chevron_right, color: C.textFaint),
               ],
             ),
             // Tags inline on the card. Each chip handles its own tap, so a tap

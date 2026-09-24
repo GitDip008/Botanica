@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
 import '../services/language_service.dart';
+import '../theme/tokens.dart';
 
 /// Which subset of users to display.
 enum AdminUserFilter { all, premium, activeToday, chatsToday }
@@ -56,10 +57,10 @@ class AdminUserListScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     final s = context.watch<LanguageService>().strings;
     return Scaffold(
-      backgroundColor: const Color(0xFF0A1A0F),
+      backgroundColor: C.bg,
       appBar: AppBar(
         title: Text(_titleFor(s)),
-        backgroundColor: const Color(0xFF0D1F14),
+        backgroundColor: C.bg,
         elevation: 0,
       ),
       body: StreamBuilder<QuerySnapshot>(
@@ -67,7 +68,7 @@ class AdminUserListScreen extends StatelessWidget {
         builder: (context, snap) {
           if (snap.connectionState == ConnectionState.waiting) {
             return const Center(
-                child: CircularProgressIndicator(color: Color(0xFF66BB6A)));
+                child: CircularProgressIndicator(color: C.accent));
           }
           // Deduplicate by document ID (uid) — multiple devices = same uid
           final seen = <String>{};
@@ -87,7 +88,7 @@ class AdminUserListScreen extends StatelessWidget {
                 child: Text(s.noUsersMatch,
                     textAlign: TextAlign.center,
                     style: const TextStyle(
-                        color: Color(0xFF81C784), fontSize: 14)),
+                        color: C.accent, fontSize: 14)),
               ),
             );
           }
@@ -139,9 +140,9 @@ class _UserTile extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
-        color: const Color(0xFF111F16),
+        color: C.surface,
         borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: const Color(0xFF2A4A2F)),
+        border: Border.all(color: C.line),
       ),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -152,7 +153,7 @@ class _UserTile extends StatelessWidget {
                 ? const Color(0xFFB8860B)
                 : isPremium
                     ? const Color(0xFF8B6914)
-                    : const Color(0xFF1E3D24),
+                    : C.line,
             child: Text(initial,
                 style: const TextStyle(
                     color: Colors.white, fontWeight: FontWeight.w700)),
@@ -169,44 +170,44 @@ class _UserTile extends StatelessWidget {
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
                       style: const TextStyle(
-                          color: Color(0xFFE8F5E9),
+                          color: C.textHi,
                           fontSize: 14,
                           fontWeight: FontWeight.w700),
                     ),
                   ),
                   if (isAdmin)
-                    _badge(s.adminBadge, const Color(0xFFFFD54F))
+                    _badge(s.adminBadge, C.gold)
                   else if (isGardener)
-                    _badge(s.gardenerBadge, const Color(0xFF66BB6A))
+                    _badge(s.gardenerBadge, C.accent)
                   else if (isPremium)
                     _badge(s.premium, const Color(0xFFB8860B))
                   else
-                    _badge(s.free, const Color(0xFF4A7A50)),
+                    _badge(s.free, C.textFaint),
                 ]),
                 const SizedBox(height: 3),
                 Text(email,
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
                     style: const TextStyle(
-                        color: Color(0xFF81C784), fontSize: 12)),
+                        color: C.accent, fontSize: 12)),
                 const SizedBox(height: 6),
                 Row(children: [
                   const Icon(Icons.calendar_today_rounded,
-                      size: 11, color: Color(0xFF4A7A50)),
+                      size: 11, color: C.textFaint),
                   const SizedBox(width: 4),
                   Text('${s.registeredAt}: $joinedStr',
                       style: const TextStyle(
-                          color: Color(0xFF4A7A50), fontSize: 11)),
+                          color: C.textFaint, fontSize: 11)),
                 ]),
                 if (chatsToday > 0) ...[
                   const SizedBox(height: 3),
                   Row(children: [
                     const Icon(Icons.chat_bubble_rounded,
-                        size: 11, color: Color(0xFF66BB6A)),
+                        size: 11, color: C.accent),
                     const SizedBox(width: 4),
                     Text(s.chatsToday(chatsToday),
                         style: const TextStyle(
-                            color: Color(0xFF66BB6A), fontSize: 11)),
+                            color: C.accent, fontSize: 11)),
                   ]),
                 ],
                 // Gardener access control. Admins are already full staff, so the
@@ -228,12 +229,12 @@ class _UserTile extends StatelessWidget {
                       ),
                       style: OutlinedButton.styleFrom(
                         foregroundColor: isGardener
-                            ? const Color(0xFFEF9A9A)
-                            : const Color(0xFF66BB6A),
+                            ? C.danger
+                            : C.accent,
                         side: BorderSide(
                           color: isGardener
                               ? const Color(0xFF7A3A3A)
-                              : const Color(0xFF2E7D32),
+                              : C.accentDim,
                         ),
                         padding: const EdgeInsets.symmetric(
                             horizontal: 12, vertical: 4),
@@ -263,7 +264,7 @@ class _UserTile extends StatelessWidget {
           .set({'role': make ? 'gardener' : 'visitor'}, SetOptions(merge: true));
       messenger.showSnackBar(SnackBar(
         content: Text(make ? s.gardenerPromoted : s.gardenerRemoved),
-        backgroundColor: const Color(0xFF1E3D24),
+        backgroundColor: C.line,
       ));
     } catch (e) {
       messenger.showSnackBar(SnackBar(

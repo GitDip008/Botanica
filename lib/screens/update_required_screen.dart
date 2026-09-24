@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:url_launcher/url_launcher.dart';
 import '../services/language_service.dart';
+import '../theme/tokens.dart';
 
 class UpdateRequiredScreen extends StatelessWidget {
   final String latestVersion;
@@ -16,7 +17,7 @@ class UpdateRequiredScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     final s = context.watch<LanguageService>().strings;
     return Scaffold(
-      backgroundColor: const Color(0xFF0A1A0F),
+      backgroundColor: C.bg,
       body: SafeArea(
         child: Padding(
           padding: const EdgeInsets.all(32),
@@ -24,19 +25,19 @@ class UpdateRequiredScreen extends StatelessWidget {
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
               const Icon(Icons.system_update_rounded,
-                  color: Color(0xFFFFD54F), size: 88),
+                  color: C.gold, size: 88),
               const SizedBox(height: 20),
               Text(s.updateRequired,
                   textAlign: TextAlign.center,
                   style: const TextStyle(
-                      color: Color(0xFFE8F5E9),
+                      color: C.textHi,
                       fontSize: 26,
                       fontWeight: FontWeight.w800)),
               const SizedBox(height: 12),
               Text(s.updateRequiredBody,
                   textAlign: TextAlign.center,
                   style: const TextStyle(
-                      color: Color(0xFF81C784),
+                      color: C.accent,
                       fontSize: 14,
                       height: 1.5)),
               if (latestVersion.isNotEmpty) ...[
@@ -45,12 +46,12 @@ class UpdateRequiredScreen extends StatelessWidget {
                   padding:
                       const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
                   decoration: BoxDecoration(
-                    color: const Color(0xFF1E3D24),
+                    color: C.line,
                     borderRadius: BorderRadius.circular(20),
                   ),
                   child: Text('v$latestVersion',
                       style: const TextStyle(
-                          color: Color(0xFF66BB6A),
+                          color: C.accent,
                           fontWeight: FontWeight.w700)),
                 ),
               ],
@@ -66,7 +67,7 @@ class UpdateRequiredScreen extends StatelessWidget {
                         style: const TextStyle(
                             fontSize: 16, fontWeight: FontWeight.w700)),
                     style: ElevatedButton.styleFrom(
-                      backgroundColor: const Color(0xFF2E7D32),
+                      backgroundColor: C.accentDim,
                       foregroundColor: Colors.white,
                       padding: const EdgeInsets.symmetric(vertical: 16),
                       shape: RoundedRectangleBorder(
