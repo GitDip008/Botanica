@@ -35,7 +35,7 @@ const STARTS = new Date("2026-09-25T12:00:00Z");
 const ENDS = new Date("2026-09-25T21:00:00Z");
 
 const contest = {
-  title: "Secrets of Plants",
+  title: "Peer Review",
   subtitle: "Which plant is the strangest, most beautiful, or most astonishing?",
   intro:
     "Welcome to Researchers' Night. Walk the garden — greenhouses and grounds " +
@@ -45,7 +45,7 @@ const contest = {
   steps: [
     "Pick a trail, or just wander wherever you like.",
     "Found something? Photograph it and add it here.",
-    "Place it on the three scales — strange, beautiful, astonishing.",
+    "Place it on the three scales: astonishing, beautiful, unknown.",
     "Add as many plants as you like, alone or as a team.",
     "Watch the leaderboard to see what the garden voted for tonight.",
   ],
@@ -53,9 +53,9 @@ const contest = {
   // left-hand label is the ordinary end so the right-hand label — the one the
   // programme actually names — is what a high score means.
   axes: [
-    { key: "ordinary_strangest", left: "Ordinary", right: "Strangest" },
-    { key: "plain_beautiful", left: "Plain", right: "Most beautiful" },
-    { key: "expected_astonishing", left: "As expected", right: "Most astonishing" },
+    { key: "expected_astonishing", left: "Ordinary", right: "Astonishing" },
+    { key: "plain_beautiful", left: "Plain", right: "Beautiful" },
+    { key: "familiar_unknown", left: "Familiar", right: "Unknown" },
   ],
   prizeNote:
     "The winning plants are announced at the end of the evening in meeting " +

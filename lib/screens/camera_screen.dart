@@ -10,6 +10,7 @@ import '../services/plant_identification_service.dart';
 import '../services/usage_tracking_service.dart';
 import 'plant_result_screen.dart';
 import '../theme/tokens.dart';
+import '../i18n/tr.dart';
 
 class CameraScreen extends StatefulWidget {
   const CameraScreen({super.key});
@@ -88,13 +89,13 @@ class _CameraScreenState extends State<CameraScreen> {
             backgroundColor: const Color(0xFF3B0B14),
             duration: const Duration(seconds: 4),
             content: Row(
-              children: const [
+              children: [
                 Icon(Icons.error_outline_rounded,
                     color: Color(0xFFFFCDD2), size: 20),
                 SizedBox(width: 10),
                 Expanded(
                   child: Text(
-                    "Couldn't detect a plant. Get closer to a leaf or flower and try again.",
+                    tr('Couldn\'t detect a plant. Get closer to a leaf or flower and try again.'),
                     style: TextStyle(color: Color(0xFFFFCDD2)),
                   ),
                 ),
@@ -126,7 +127,7 @@ class _CameraScreenState extends State<CameraScreen> {
         setState(() => _isLoading = false);
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('Error: $e'),
+            content: Text(tr('Error: {0}', [e])),
             backgroundColor: Colors.red[900],
           ),
         );
@@ -164,7 +165,7 @@ class _CameraScreenState extends State<CameraScreen> {
                 color: Colors.black54,
                 shape: const CircleBorder(),
                 child: IconButton(
-                  tooltip: 'Switch camera',
+                  tooltip: tr('Switch camera'),
                   icon: Icon(
                     Icons.flip_camera_android_rounded,
                     color: _active != null && isFront(_active!)
@@ -195,8 +196,8 @@ class _CameraScreenState extends State<CameraScreen> {
               ),
               child: Column(
                 children: [
-                  const Text(
-                    '📸 Botanica',
+                  Text(
+                    tr('📸 Botanica'),
                     style: TextStyle(
                       color: C.accent,
                       fontSize: 26,
@@ -241,7 +242,7 @@ class _CameraScreenState extends State<CameraScreen> {
                 mainAxisSize: MainAxisSize.min,
                 children: [
                   Text(
-                    _isLoading ? 'Identifying plant...' : 'Point at a plant and capture',
+                    _isLoading ? tr('Identifying plant...') : tr('Point at a plant and capture'),
                     style: const TextStyle(
                       color: C.textHi,
                       fontSize: 14,

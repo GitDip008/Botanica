@@ -17,6 +17,7 @@ import 'package:url_launcher/url_launcher.dart';
 import '../../models/contest.dart';
 import '../../services/contest_service.dart';
 import '../../theme/tokens.dart';
+import '../../i18n/tr.dart';
 
 class ContestSubmissionsScreen extends StatelessWidget {
   const ContestSubmissionsScreen({super.key, required this.contest});
@@ -29,7 +30,7 @@ class ContestSubmissionsScreen extends StatelessWidget {
       appBar: AppBar(
         backgroundColor: C.bg,
         elevation: 0,
-        title: const Text('Contest submissions'),
+        title: Text(tr('Contest submissions')),
       ),
       body: StreamBuilder<List<ContestEntry>>(
         stream: ContestService.instance.watchEntries(contest.id),
@@ -40,8 +41,8 @@ class ContestSubmissionsScreen extends StatelessWidget {
           final all = snap.data!
             ..sort((a, b) => b.createdAt.compareTo(a.createdAt));
           if (all.isEmpty) {
-            return const Center(
-              child: Text('No submissions yet.',
+            return Center(
+              child: Text(tr('No submissions yet.'),
                   style: TextStyle(color: C.textSoft)),
             );
           }
@@ -52,17 +53,17 @@ class ContestSubmissionsScreen extends StatelessWidget {
           final withGps = all.where((e) => e.hasLocation).length;
 
           return ListView(
-            padding: const EdgeInsets.fromLTRB(16, 16, 16, 32),
+            padding: const EdgeInsets.fromLTRB(20, 16, 20, 32),
             children: [
               Row(
                 children: [
-                  _Stat(value: '${all.length}', label: 'submissions'),
+                  _Stat(value: '${all.length}', label: tr('submissions')),
                   const SizedBox(width: 10),
-                  _Stat(value: '$withGps', label: 'with location'),
+                  _Stat(value: '$withGps', label: tr('with location')),
                   const SizedBox(width: 10),
                   _Stat(
                     value: '${offIndexPlants.length}',
-                    label: 'not in records',
+                    label: tr('not in records'),
                     warn: offIndexPlants.isNotEmpty,
                   ),
                 ],
@@ -70,7 +71,7 @@ class ContestSubmissionsScreen extends StatelessWidget {
 
               if (offIndexPlants.isNotEmpty) ...[
                 const SizedBox(height: 20),
-                const Text('TYPED BY HAND — MISSING FROM THE PLANT INDEX',
+                Text(tr('TYPED BY HAND — MISSING FROM THE PLANT INDEX'),
                     style: TextStyle(
                         color: C.gold,
                         fontSize: 11,
@@ -81,7 +82,7 @@ class ContestSubmissionsScreen extends StatelessWidget {
                   padding: const EdgeInsets.all(12),
                   decoration: BoxDecoration(
                     color: const Color(0xFF2E1A00),
-                    borderRadius: BorderRadius.circular(10),
+                    borderRadius: BorderRadius.circular(12),
                     border: Border.all(color: const Color(0xFF8D6E00)),
                   ),
                   child: Wrap(
@@ -94,7 +95,7 @@ class ContestSubmissionsScreen extends StatelessWidget {
                               horizontal: 9, vertical: 5),
                           decoration: BoxDecoration(
                             color: const Color(0xFF1A0F00),
-                            borderRadius: BorderRadius.circular(16),
+                            borderRadius: BorderRadius.circular(18),
                           ),
                           child: Text(name,
                               style: const TextStyle(
@@ -106,7 +107,7 @@ class ContestSubmissionsScreen extends StatelessWidget {
               ],
 
               const SizedBox(height: 22),
-              const Text('ALL SUBMISSIONS',
+              Text(tr('ALL SUBMISSIONS'),
                   style: TextStyle(
                       color: C.accent,
                       fontSize: 11,
@@ -177,8 +178,7 @@ class _SubmissionCard extends StatelessWidget {
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
         color: C.surface,
-        borderRadius: BorderRadius.circular(10),
-        border: Border.all(color: C.line),
+        borderRadius: BorderRadius.circular(12),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -249,9 +249,9 @@ class _SubmissionCard extends StatelessWidget {
                     Text(
                       [
                         entry.displayName.isEmpty
-                            ? 'Visitor'
+                            ? tr('Visitor')
                             : entry.displayName,
-                        if (entry.teamName != null) 'Team ${entry.teamName}',
+                        if (entry.teamName != null) tr('Team {0}', [entry.teamName]),
                         if (entry.plantSection.isNotEmpty) entry.plantSection,
                       ].join('  ·  '),
                       style: const TextStyle(
@@ -283,8 +283,7 @@ class _SubmissionCard extends StatelessWidget {
                   onTap: () => launchUrl(Uri.parse(entry.mapsUrl!),
                       mode: LaunchMode.externalApplication),
                   child: Text(
-                    '${entry.lat!.toStringAsFixed(5)}, '
-                    '${entry.lng!.toStringAsFixed(5)}  ·  open in Maps',
+                    tr('{0}, {1}  ·  open in Maps', [entry.lat!.toStringAsFixed(5), entry.lng!.toStringAsFixed(5)]),
                     style: const TextStyle(
                         color: C.accent,
                         fontSize: 11.5,
@@ -292,7 +291,7 @@ class _SubmissionCard extends StatelessWidget {
                   ),
                 )
               else
-                const Text('no location',
+                Text(tr('no location'),
                     style:
                         TextStyle(color: C.textFaint, fontSize: 11.5)),
               if (entry.photoPath == null) ...[
@@ -300,7 +299,7 @@ class _SubmissionCard extends StatelessWidget {
                 const Icon(Icons.no_photography_rounded,
                     size: 14, color: C.textFaint),
                 const SizedBox(width: 4),
-                const Text('no photo',
+                Text(tr('no photo'),
                     style:
                         TextStyle(color: C.textFaint, fontSize: 11.5)),
               ],

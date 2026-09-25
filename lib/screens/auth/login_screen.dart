@@ -6,6 +6,7 @@ import '../../services/language_service.dart';
 import '../../theme/tokens.dart';
 import '../../widgets/ui_kit.dart';
 import 'signup_screen.dart';
+import '../../i18n/tr.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -114,7 +115,7 @@ class _LoginScreenState extends State<LoginScreen> {
               style: const TextStyle(color: C.textHi),
               decoration: InputDecoration(
                 labelText: s.email,
-                labelStyle: const TextStyle(color: C.accent),
+                labelStyle: const TextStyle(color: C.textSoft),
                 enabledBorder: const UnderlineInputBorder(
                     borderSide: BorderSide(color: C.line)),
                 focusedBorder: const UnderlineInputBorder(
@@ -190,14 +191,13 @@ class _LoginScreenState extends State<LoginScreen> {
                 // the path almost everyone should take, and a button below a
                 // password field is a button most people never reach.
                 AppButton(
-                  label: 'Continue as guest',
+                  label: tr('Continue as guest'),
                   icon: Icons.bolt_rounded,
                   onPressed: _busy ? null : _continueAsGuest,
                 ),
                 const SizedBox(height: Sp.s),
-                const Text(
-                  'No account, no email — just a name. Everything works, '
-                  'including the leaderboards.',
+                Text(
+                  tr('No account, no email — just a name. Everything works, including the leaderboards.'),
                   textAlign: TextAlign.center,
                   style: TextStyle(
                       color: C.textFaint, fontSize: 12, height: 1.4),
@@ -205,9 +205,9 @@ class _LoginScreenState extends State<LoginScreen> {
                 const SizedBox(height: Sp.xl),
                 Row(children: [
                   Expanded(child: Container(height: 1, color: C.line)),
-                  const Padding(
+                  Padding(
                     padding: EdgeInsets.symmetric(horizontal: 12),
-                    child: Text('or sign in',
+                    child: Text(tr('or sign in'),
                         style: TextStyle(color: C.textFaint, fontSize: 12)),
                   ),
                   Expanded(child: Container(height: 1, color: C.line)),
@@ -219,7 +219,7 @@ class _LoginScreenState extends State<LoginScreen> {
                   controller: _emailCtrl,
                   keyboardType: TextInputType.emailAddress,
                   style: const TextStyle(color: Colors.white),
-                  decoration: _decoration('Email', Icons.mail_outline_rounded),
+                  decoration: _decoration(tr('Email'), Icons.mail_outline_rounded),
                   validator: (v) {
                     if (v == null || v.isEmpty) return s.enterYourEmail;
                     if (!v.contains('@')) return s.invalidEmail;
@@ -234,7 +234,7 @@ class _LoginScreenState extends State<LoginScreen> {
                   obscureText: _obscure,
                   style: const TextStyle(color: Colors.white),
                   decoration: _decoration(
-                    'Password',
+                    tr('Password'),
                     Icons.lock_outline_rounded,
                     suffix: IconButton(
                       icon: Icon(
@@ -275,7 +275,7 @@ class _LoginScreenState extends State<LoginScreen> {
                     padding: const EdgeInsets.all(12),
                     decoration: BoxDecoration(
                       color: const Color(0xFF3B0B14),
-                      borderRadius: BorderRadius.circular(10),
+                      borderRadius: BorderRadius.circular(12),
                       border: Border.all(color: const Color(0xFF8C2336)),
                     ),
                     child: Row(
@@ -303,7 +303,7 @@ class _LoginScreenState extends State<LoginScreen> {
                     backgroundColor: C.surfaceAlt,
                     foregroundColor: C.textHi,
                     padding: const EdgeInsets.symmetric(vertical: 16),
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)),
                     elevation: 0,
                   ),
                   child: _busy
@@ -336,7 +336,7 @@ class _LoginScreenState extends State<LoginScreen> {
                   style: OutlinedButton.styleFrom(
                     side: const BorderSide(color: C.line),
                     padding: const EdgeInsets.symmetric(vertical: 14),
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)),
                   ),
                 ),
 
@@ -370,23 +370,11 @@ class _LoginScreenState extends State<LoginScreen> {
   InputDecoration _decoration(String label, IconData icon, {Widget? suffix}) {
     return InputDecoration(
       labelText: label,
-      labelStyle: const TextStyle(color: C.accent),
+      labelStyle: const TextStyle(color: C.textSoft),
       prefixIcon: Icon(icon, color: C.textFaint),
       suffixIcon: suffix,
       filled: true,
       fillColor: C.surface,
-      border: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(14),
-        borderSide: const BorderSide(color: C.line),
-      ),
-      enabledBorder: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(14),
-        borderSide: const BorderSide(color: C.line),
-      ),
-      focusedBorder: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(14),
-        borderSide: const BorderSide(color: C.accent, width: 1.5),
-      ),
     );
   }
 }
@@ -421,13 +409,13 @@ class _GuestNameDialogState extends State<_GuestNameDialog> {
     return AlertDialog(
       backgroundColor: C.surface,
       shape: RoundedRectangleBorder(borderRadius: R.rm),
-      title: const Text('What should we call you?', style: T.h2),
+      title: Text(tr('What should we call you?'), style: T.h2),
       content: Column(
         mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text(
-            'Shown on the leaderboards. A first name or a nickname is fine.',
+          Text(
+            tr('Shown on the leaderboards. A first name or a nickname is fine.'),
             style: T.bodySm,
           ),
           const SizedBox(height: Sp.l),
@@ -440,7 +428,7 @@ class _GuestNameDialogState extends State<_GuestNameDialog> {
             onChanged: (_) => setState(() {}),
             onSubmitted: (_) => _go(),
             decoration: InputDecoration(
-              hintText: 'e.g. Aino, or Team Kaktus',
+              hintText: tr('e.g. Aino, or Team Kaktus'),
               hintStyle: const TextStyle(color: C.textFaint),
               counterStyle: const TextStyle(color: C.textFaint),
               filled: true,
@@ -456,7 +444,7 @@ class _GuestNameDialogState extends State<_GuestNameDialog> {
       actions: [
         TextButton(
           onPressed: () => Navigator.pop(context),
-          child: const Text('Cancel', style: TextStyle(color: C.textSoft)),
+          child: Text(tr('Cancel'), style: TextStyle(color: C.textSoft)),
         ),
         FilledButton(
           style: FilledButton.styleFrom(
@@ -464,7 +452,7 @@ class _GuestNameDialogState extends State<_GuestNameDialog> {
             foregroundColor: C.bg,
           ),
           onPressed: _ctrl.text.trim().isEmpty ? null : _go,
-          child: const Text('Start exploring'),
+          child: Text(tr('Start exploring')),
         ),
       ],
     );

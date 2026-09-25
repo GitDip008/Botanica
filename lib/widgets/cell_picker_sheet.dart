@@ -16,6 +16,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart' show rootBundle;
 import '../data/greenhouse_cells.dart';
 import '../theme/tokens.dart';
+import '../i18n/tr.dart';
 
 // Re-exported so a caller needs only this one import to use the picker AND the
 // GreenhouseCell type it returns. Dart extensions (Greenhouse.label) resolve
@@ -96,7 +97,7 @@ class _CellPickerSheetState extends State<_CellPickerSheet> {
               ),
               const SizedBox(height: 12),
               Text(
-                isStart ? 'Where are you now?' : 'Where do you want to go?',
+                isStart ? tr('Where are you now?') : tr('Where do you want to go?'),
                 style: const TextStyle(
                   color: C.textHi,
                   fontSize: 18,
@@ -104,8 +105,8 @@ class _CellPickerSheetState extends State<_CellPickerSheet> {
                 ),
               ),
               const SizedBox(height: 4),
-              const Text(
-                'Tap the cell marked on the greenhouse bench nearest to you.',
+              Text(
+                tr('Tap the cell marked on the greenhouse bench nearest to you.'),
                 style: TextStyle(color: C.textSoft, fontSize: 12.5),
               ),
               const SizedBox(height: 12),
@@ -114,13 +115,13 @@ class _CellPickerSheetState extends State<_CellPickerSheet> {
                 style: const TextStyle(color: C.textHi),
                 onChanged: (v) => setState(() => _query = v.trim().toUpperCase()),
                 decoration: InputDecoration(
-                  hintText: 'Search a cell, e.g. A12',
+                  hintText: tr('Search a cell, e.g. A12'),
                   hintStyle: const TextStyle(color: C.textFaint),
                   prefixIcon: const Icon(Icons.search, color: C.accent),
                   filled: true,
                   fillColor: C.surfaceAlt,
                   border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(10),
+                    borderRadius: BorderRadius.circular(12),
                     borderSide: BorderSide.none,
                   ),
                   isDense: true,
@@ -138,10 +139,10 @@ class _CellPickerSheetState extends State<_CellPickerSheet> {
                       );
                     }
                     if (snap.hasError || snap.data == null) {
-                      return const Padding(
+                      return Padding(
                         padding: EdgeInsets.all(24),
                         child: Text(
-                          "Couldn't load the greenhouse plan.",
+                          tr('Couldn\'t load the greenhouse plan.'),
                           style: TextStyle(color: C.danger),
                         ),
                       );
@@ -151,10 +152,10 @@ class _CellPickerSheetState extends State<_CellPickerSheet> {
                         ? all
                         : all.where((c) => c.name.contains(_query)).toList();
                     if (shown.isEmpty) {
-                      return const Padding(
+                      return Padding(
                         padding: EdgeInsets.all(24),
                         child: Text(
-                          'No cell with that name.',
+                          tr('No cell with that name.'),
                           style: TextStyle(color: C.textSoft),
                         ),
                       );
@@ -183,7 +184,7 @@ class _CellPickerSheetState extends State<_CellPickerSheet> {
       Padding(
         padding: const EdgeInsets.only(top: 10, bottom: 8),
         child: Text(
-          '${house.label} greenhouse  ·  ${cells.length} cells',
+          tr('{0} greenhouse  ·  {1} cells', [house.label, cells.length]),
           style: const TextStyle(
             color: C.accent,
             fontSize: 11,

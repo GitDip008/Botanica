@@ -11,6 +11,7 @@ import '../services/gemini_service.dart';
 import '../services/language_service.dart';
 import '../widgets/plant_tags_bar.dart';
 import '../theme/tokens.dart';
+import '../i18n/tr.dart';
 
 class PlantResultScreen extends StatefulWidget {
   final String imagePath;
@@ -72,9 +73,9 @@ class _PlantResultScreenState extends State<PlantResultScreen>
       // Handle free-tier daily limit
       if (reply == ChatService.chatLimitReachedMarker) {
         setState(() {
-          _messages.add(const _ChatMessage(
+          _messages.add(_ChatMessage(
             text:
-                "You've reached today's free chat limit (10/day). 🌿\n\nUpgrade to **Premium** for unlimited conversations — or check back tomorrow!",
+                tr('You\'ve reached today\'s free chat limit (10/day). 🌿\n\nUpgrade to **Premium** for unlimited conversations — or check back tomorrow!'),
             isUser: false,
           ));
           _isSending = false;
@@ -90,7 +91,7 @@ class _PlantResultScreenState extends State<PlantResultScreen>
     } catch (e) {
       if (mounted) {
         setState(() {
-          _messages.add(_ChatMessage(text: 'Error: $e', isUser: false));
+          _messages.add(_ChatMessage(text: tr('Error: {0}', [e]), isUser: false));
           _isSending = false;
         });
       }
@@ -313,8 +314,7 @@ class _PlantResultScreenState extends State<PlantResultScreen>
                   padding: const EdgeInsets.all(16),
                   decoration: BoxDecoration(
                     color: C.surface,
-                    borderRadius: BorderRadius.circular(14),
-                    border: Border.all(color: C.accentDim),
+                    borderRadius: BorderRadius.circular(18),
                   ),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
@@ -354,20 +354,20 @@ class _PlantResultScreenState extends State<PlantResultScreen>
                     padding: const EdgeInsets.all(16),
                     decoration: BoxDecoration(
                       color: C.surface,
-                      borderRadius: BorderRadius.circular(14),
+                      borderRadius: BorderRadius.circular(18),
                       border: Border.all(color: const Color(0xFFF57F17)),
                     ),
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        const Row(
+                        Row(
                           children: [
                             Text('💡', style: TextStyle(fontSize: 16)),
                             SizedBox(width: 8),
                             Text(
-                              'DID YOU KNOW?',
+                              tr('DID YOU KNOW?'),
                               style: TextStyle(
-                                color: Color(0xFFFFA726),
+                                color: C.gold,
                                 fontWeight: FontWeight.bold,
                                 fontSize: 12,
                                 letterSpacing: 1,
@@ -397,7 +397,7 @@ class _PlantResultScreenState extends State<PlantResultScreen>
                       foregroundColor: Colors.white,
                       padding: const EdgeInsets.symmetric(vertical: 14),
                       shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(14),
+                        borderRadius: BorderRadius.circular(18),
                       ),
                     ),
                     icon: const Icon(Icons.chat_bubble_outline_rounded),
@@ -532,8 +532,7 @@ class _InfoCard extends StatelessWidget {
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
       decoration: BoxDecoration(
         color: C.surface,
-        borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: C.accentDim),
+        borderRadius: BorderRadius.circular(18),
       ),
       child: Row(
         children: [
@@ -659,8 +658,8 @@ class _ChatBubble extends StatelessWidget {
               ? C.accentDim
               : C.surface,
           borderRadius: BorderRadius.only(
-            topLeft: const Radius.circular(16),
-            topRight: const Radius.circular(16),
+            topLeft: const Radius.circular(18),
+            topRight: const Radius.circular(18),
             bottomLeft: Radius.circular(message.isUser ? 16 : 4),
             bottomRight: Radius.circular(message.isUser ? 4 : 16),
           ),
@@ -703,7 +702,7 @@ class _ChatBubble extends StatelessWidget {
                     fontSize: 14,
                   ),
                   code: const TextStyle(
-                    color: Color(0xFFC5E1A5),
+                    color: C.text,
                     fontSize: 13,
                     backgroundColor: C.bg,
                     fontFamily: 'monospace',

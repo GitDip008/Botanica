@@ -28,8 +28,7 @@ class FeatureUsageChart extends StatelessWidget {
             padding: const EdgeInsets.all(20),
             decoration: BoxDecoration(
               color: C.surface,
-              borderRadius: BorderRadius.circular(14),
-              border: Border.all(color: C.line),
+              borderRadius: BorderRadius.circular(18),
             ),
             child: Center(
               child: Text(s.noDataYet,
@@ -47,8 +46,7 @@ class FeatureUsageChart extends StatelessWidget {
           padding: const EdgeInsets.all(16),
           decoration: BoxDecoration(
             color: C.surface,
-            borderRadius: BorderRadius.circular(14),
-            border: Border.all(color: C.line),
+            borderRadius: BorderRadius.circular(18),
           ),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
@@ -122,7 +120,7 @@ class FeatureUsageChart extends StatelessWidget {
       case UsageTrackingService.featureChat:
         return const Color(0xFF64B5F6);
       case UsageTrackingService.featureBloom:
-        return const Color(0xFFFFB74D);
+        return C.gold;
       case UsageTrackingService.featureMap:
         return const Color(0xFF4FC3F7);
       case UsageTrackingService.featureTrails:
@@ -134,7 +132,7 @@ class FeatureUsageChart extends StatelessWidget {
       case UsageTrackingService.featureReport:
         return const Color(0xFFF48FB1);
       case UsageTrackingService.featureEvent:
-        return const Color(0xFF9CCC65);
+        return C.accent;
       default:
         return C.accent;
     }

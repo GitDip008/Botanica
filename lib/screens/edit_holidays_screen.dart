@@ -3,6 +3,7 @@ import 'package:provider/provider.dart';
 import '../services/holiday_hours_service.dart';
 import '../services/language_service.dart';
 import '../theme/tokens.dart';
+import '../i18n/tr.dart';
 
 class EditHolidaysScreen extends StatefulWidget {
   const EditHolidaysScreen({super.key});
@@ -86,9 +87,9 @@ class _EditHolidaysScreenState extends State<EditHolidaysScreen> {
                 autofocus: true,
                 style: const TextStyle(
                     color: C.textHi, fontFamily: 'monospace', fontSize: 12),
-                decoration: const InputDecoration(
+                decoration: InputDecoration(
                   hintText:
-                      'Good Friday 3rd April closed\nSat 4th April 10 -16\n...',
+                      tr('Good Friday 3rd April closed\nSat 4th April 10 -16\n...'),
                   hintStyle: TextStyle(color: C.textFaint, fontSize: 11),
                   filled: true,
                   fillColor: C.bg,
@@ -175,7 +176,7 @@ class _EditHolidaysScreenState extends State<EditHolidaysScreen> {
           ? const Center(
               child: CircularProgressIndicator(color: C.accent))
           : ListView(
-              padding: const EdgeInsets.all(16),
+              padding: const EdgeInsets.all(20),
               children: [
                 for (var i = 0; i < _rows.length; i++)
                   Padding(
@@ -203,7 +204,7 @@ class _EditHolidaysScreenState extends State<EditHolidaysScreen> {
                     foregroundColor: Colors.white,
                     padding: const EdgeInsets.symmetric(vertical: 16),
                     shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(14)),
+                        borderRadius: BorderRadius.circular(18)),
                     elevation: 0,
                   ),
                   child: _saving
@@ -242,7 +243,6 @@ class _Row extends StatelessWidget {
       decoration: BoxDecoration(
         color: C.surface,
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: C.line),
       ),
       child: Row(
         children: [

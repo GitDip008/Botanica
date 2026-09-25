@@ -37,6 +37,21 @@ class ContestService {
       .snapshots()
       .map((d) => d.exists ? Contest.fromDoc(d) : null);
 
+  /// Publish or hide the contest. Admin-only by the /config rule.
+  Future<void> setContestActive(bool active) =>
+      _db.doc(_configDoc).set({'active': active}, SetOptions(merge: true));
+
+  /// Plant Hunt visibility. A missing document means published, so the hunt
+  /// keeps working exactly as before until an admin first hides it.
+  Stream<bool> watchPlantHuntActive() => _db
+      .doc('config/plant_hunt')
+      .snapshots()
+      .map((d) => (d.data()?['active'] as bool?) ?? true);
+
+  Future<void> setPlantHuntActive(bool active) => _db
+      .doc('config/plant_hunt')
+      .set({'active': active}, SetOptions(merge: true));
+
   Future<Contest?> fetchContest() async {
     final d = await _db.doc(_configDoc).get();
     return d.exists ? Contest.fromDoc(d) : null;

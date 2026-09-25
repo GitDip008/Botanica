@@ -21,7 +21,7 @@ class SoundscapeScreen extends StatelessWidget {
           icon: const Icon(Icons.arrow_back_rounded, color: C.accent),
           onPressed: () => Navigator.pop(context),
         ),
-        title: Text('🎵 ${s.soundscape}',
+        title: Text(s.soundscape,
             style: const TextStyle(color: C.textHi, fontWeight: FontWeight.bold)),
       ),
       body: Padding(

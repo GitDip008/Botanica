@@ -4,6 +4,8 @@ import 'package:firebase_app_check/firebase_app_check.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_localizations/flutter_localizations.dart';
+import 'package:intl/date_symbol_data_local.dart';
 import 'theme/app_theme.dart';
 import 'package:provider/provider.dart';
 import 'firebase_options.dart';
@@ -16,6 +18,7 @@ import 'services/notification_service.dart';
 import 'services/user_state.dart';
 import 'widgets/offline_banner.dart';
 import 'theme/tokens.dart';
+import 'i18n/tr.dart';
 
 void main() async {
   // A failure during startup used to leave the splash on screen forever — a
@@ -72,6 +75,7 @@ Future<void> _start() async {
     debugPrint('Connectivity monitoring unavailable: $e');
   }
 
+  await initializeDateFormatting(); // fi / sv month and weekday names
   runApp(const BotanicaApp());
 }
 
@@ -86,17 +90,33 @@ class BotanicaApp extends StatelessWidget {
         ChangeNotifierProvider(create: (_) {
           final svc = LanguageService();
           LanguageService.register(svc);
+          // tr() reads the language directly rather than through a provider,
+          // so a switch has to rebuild every live widget, not just listeners.
+          // ponytail: whole-tree rebuild; fine for a setting changed rarely.
+          svc.addListener(() {
+            void mark(Element e) {
+              e.markNeedsBuild();
+              e.visitChildren(mark);
+            }
+            WidgetsBinding.instance.rootElement?.visitChildren(mark);
+          });
           return svc;
         }),
       ],
-      child: MaterialApp(
-        navigatorKey: NotificationService.navigatorKey,
-        title: 'Botanica',
-        debugShowCheckedModeBanner: false,
-        theme: buildAppTheme(),
-        builder: (context, child) =>
-            OfflineBannerOverlay(child: child ?? const SizedBox.shrink()),
-        home: const AuthGate(),
+      // Consumer so Material's own text (tooltips, pickers) follows too.
+      child: Consumer<LanguageService>(
+        builder: (context, _, _) => MaterialApp(
+          navigatorKey: NotificationService.navigatorKey,
+          title: 'Botanica',
+          debugShowCheckedModeBanner: false,
+          theme: buildAppTheme(),
+          locale: Locale(trLocale()),
+          supportedLocales: const [Locale('en'), Locale('fi'), Locale('sv')],
+          localizationsDelegates: GlobalMaterialLocalizations.delegates,
+          builder: (context, child) =>
+              OfflineBannerOverlay(child: child ?? const SizedBox.shrink()),
+          home: const AuthGate(),
+        ),
       ),
     );
   }

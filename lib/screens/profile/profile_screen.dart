@@ -38,7 +38,7 @@ class ProfileScreen extends StatelessWidget {
         elevation: 0,
       ),
       body: ListView(
-        padding: const EdgeInsets.all(16),
+        padding: const EdgeInsets.all(20),
         children: [
           // ── Avatar + name ─────────────────────────────────
           Container(
@@ -46,11 +46,10 @@ class ProfileScreen extends StatelessWidget {
             decoration: BoxDecoration(
               borderRadius: BorderRadius.circular(20),
               gradient: const LinearGradient(
-                colors: [Color(0xFF162B1C), Color(0xFF0F2018)],
+                colors: [C.surface, C.surface],
                 begin: Alignment.topLeft,
                 end: Alignment.bottomRight,
               ),
-              border: Border.all(color: C.line),
             ),
             child: Column(
               children: [
@@ -215,8 +214,7 @@ class ProfileScreen extends StatelessWidget {
       padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
         color: C.surface,
-        borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: C.line),
+        borderRadius: BorderRadius.circular(18),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -284,13 +282,12 @@ class ProfileScreen extends StatelessWidget {
       color: Colors.transparent,
       child: InkWell(
         onTap: onTap,
-        borderRadius: BorderRadius.circular(14),
+        borderRadius: BorderRadius.circular(18),
         child: Container(
           padding: const EdgeInsets.all(14),
           decoration: BoxDecoration(
             color: C.surface,
-            borderRadius: BorderRadius.circular(14),
-            border: Border.all(color: C.line),
+            borderRadius: BorderRadius.circular(18),
           ),
           child: Row(children: [
             Icon(icon, color: color, size: 20),
@@ -317,14 +314,14 @@ class _UpgradeBanner extends StatelessWidget {
       color: Colors.transparent,
       child: InkWell(
         onTap: onTap,
-        borderRadius: BorderRadius.circular(16),
+        borderRadius: BorderRadius.circular(18),
         child: Ink(
           padding: const EdgeInsets.all(16),
           decoration: BoxDecoration(
             gradient: const LinearGradient(
               colors: [Color(0xFFB8860B), Color(0xFF8B6914)],
             ),
-            borderRadius: BorderRadius.circular(16),
+            borderRadius: BorderRadius.circular(18),
           ),
           child: Row(children: [
             const Icon(Icons.workspace_premium_rounded, color: Colors.white, size: 28),
@@ -337,7 +334,7 @@ class _UpgradeBanner extends StatelessWidget {
                       style: const TextStyle(
                           color: Colors.white, fontSize: 14, fontWeight: FontWeight.w700)),
                   Text(s.premiumBenefits,
-                      style: const TextStyle(color: Colors.white70, fontSize: 11)),
+                      style: const TextStyle(color: C.text, fontSize: 11)),
                 ],
               ),
             ),

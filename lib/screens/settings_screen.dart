@@ -20,7 +20,7 @@ class SettingsScreen extends StatelessWidget {
         elevation: 0,
       ),
       body: ListView(
-        padding: const EdgeInsets.all(16),
+        padding: const EdgeInsets.all(20),
         children: [
           _sectionLabel(s.settings.toUpperCase()),
           const SizedBox(height: 10),
@@ -48,14 +48,13 @@ class _LanguageTile extends StatelessWidget {
     return Material(
       color: Colors.transparent,
       child: InkWell(
-        borderRadius: BorderRadius.circular(14),
+        borderRadius: BorderRadius.circular(18),
         onTap: () => _showLanguageDialog(context, lang),
         child: Container(
           padding: const EdgeInsets.all(14),
           decoration: BoxDecoration(
             color: C.surface,
-            borderRadius: BorderRadius.circular(14),
-            border: Border.all(color: C.line),
+            borderRadius: BorderRadius.circular(18),
           ),
           child: Row(
             children: [

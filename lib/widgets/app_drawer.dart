@@ -9,6 +9,7 @@ import '../screens/settings_screen.dart';
 import '../services/language_service.dart';
 import '../services/user_state.dart';
 import '../theme/tokens.dart';
+import '../i18n/tr.dart';
 
 /// Side navigation drawer with all main destinations + developer info.
 class AppDrawer extends StatelessWidget {
@@ -38,7 +39,7 @@ class AppDrawer extends StatelessWidget {
               child: Row(
                 children: [
                   ClipRRect(
-                    borderRadius: BorderRadius.circular(10),
+                    borderRadius: BorderRadius.circular(12),
                     child: Image.asset('logo.png', width: 44, height: 44),
                   ),
                   const SizedBox(width: 12),
@@ -46,7 +47,7 @@ class AppDrawer extends StatelessWidget {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        const Text('Botanica',
+                        Text(tr('Botanica'),
                             style: TextStyle(
                                 color: C.textHi,
                                 fontSize: 18,
@@ -103,7 +104,7 @@ class AppDrawer extends StatelessWidget {
 
                   // Smart Agent — Phase 1 entry point. Hidden from gold rush
                   // until LLM is wired (Phase 2), but accessible from drawer.
-                  _item(context, Icons.smart_toy_rounded, 'Smart Agent (beta)',
+                  _item(context, Icons.smart_toy_rounded, tr('Smart Agent (beta)'),
                       () {
                     Navigator.pop(context);
                     Navigator.push(

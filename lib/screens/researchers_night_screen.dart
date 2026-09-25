@@ -26,6 +26,7 @@ import '../widgets/ui_kit.dart';
 import 'camera_screen.dart';
 import 'contest/contest_screen.dart';
 import 'trail_screen.dart';
+import '../i18n/tr.dart';
 
 /// When the doors are open. Used to decide whether the app says "tonight",
 /// "tomorrow" or nothing at all.
@@ -58,8 +59,7 @@ bool get isResearchersNightSoon {
 /// Doors are open right now.
 bool get isResearchersNightLive {
   final now = DateTime.now();
-  return now.isAfter(kResearchersNight.subtract(const Duration(hours: 2))) &&
-      now.isBefore(kResearchersNightEnds.add(const Duration(hours: 1)));
+  return !now.isBefore(kResearchersNight) && now.isBefore(kResearchersNightEnds);
 }
 
 // ─── Programme ────────────────────────────────────────────────────────────────
@@ -111,7 +111,7 @@ const _kProgramme = <_Activity>[
         'Live bumblebees, ants and butterflies, the researchers who study '
         'them, and a bug-drawing point if you would rather draw one.',
     where: 'Multifunctional space Sara',
-    accent: Color(0xFFFBBF24),
+    accent: C.gold,
   ),
   _Activity(
     icon: Icons.hive_rounded,
@@ -120,7 +120,7 @@ const _kProgramme = <_Activity>[
         'A working hive behind glass. Taste the honey, buy some, and ask the '
         'beekeeper anything.',
     where: 'Botanical Garden lobby',
-    accent: Color(0xFFFBBF24),
+    accent: C.gold,
   ),
   _Activity(
     icon: Icons.music_note_rounded,
@@ -130,7 +130,7 @@ const _kProgramme = <_Activity>[
         'and science meet. They move between locations — follow the sound.',
     where: 'Around the garden',
     time: '17:30 – 19:30',
-    accent: Color(0xFFF472B6),
+    accent: C.hot,
   ),
   _Activity(
     icon: Icons.local_fire_department_rounded,
@@ -139,7 +139,7 @@ const _kProgramme = <_Activity>[
         'Brushwood into biochar in a cone kiln, and what it does for soil '
         'once it gets there.',
     where: 'Yard area',
-    accent: Color(0xFFFB7185),
+    accent: C.hot,
   ),
 ];
 
@@ -165,7 +165,7 @@ class ResearchersNightScreen extends StatelessWidget {
               // Left inset clears the back arrow: at the collapsed height the
               // title slides under it and the first letter is lost.
               titlePadding: const EdgeInsets.fromLTRB(56, 0, Sp.gutter, 15),
-              title: const Text('Researchers’ Night',
+              title: Text(tr('Researchers’ Night'),
                   style: TextStyle(
                       color: C.textHi,
                       fontSize: 17,
@@ -189,39 +189,35 @@ class ResearchersNightScreen extends StatelessWidget {
             padding: const EdgeInsets.fromLTRB(Sp.gutter, Sp.s, Sp.gutter, Sp.huge),
             sliver: SliverList(
               delegate: SliverChildListDelegate([
-                const Text(
-                  'Become a Plant Adventurer. Choose your own route through '
-                  'the garden, identify what you meet along the way, and make '
-                  'a few surprising discoveries — then tell us which plant '
-                  'deserves the title.',
+                Text(
+                  tr('Become a Plant Adventurer. Choose your own route through the garden, identify what you meet along the way, and make a few surprising discoveries — then tell us which plant deserves the title.'),
                   style: T.body,
                 ),
                 const SizedBox(height: Sp.xxl),
 
-                const SectionTitle('Your three steps', color: C.accent),
+                SectionTitle(tr('Your three steps'), color: C.accent),
                 _Step(
                   n: '1',
                   icon: Icons.route_rounded,
-                  title: 'Choose your route',
+                  title: tr('Choose your route'),
                   subtitle:
-                      'Ten themed trails through the greenhouses and grounds.',
+                      tr('Ten themed trails through the greenhouses and grounds.'),
                   onTap: () => Navigator.push(context,
                       MaterialPageRoute(builder: (_) => const TrailScreen())),
                 ),
                 _Step(
                   n: '2',
                   icon: Icons.center_focus_strong_rounded,
-                  title: 'Identify what you find',
+                  title: tr('Identify what you find'),
                   subtitle:
-                      'Point the camera at any plant and it will tell you '
-                      'what it is.',
+                      tr('Point the camera at any plant and it will tell you what it is.'),
                   onTap: () => Navigator.push(context,
                       MaterialPageRoute(builder: (_) => const CameraScreen())),
                 ),
                 const _VoteStep(),
 
                 const SizedBox(height: Sp.xxl),
-                const SectionTitle('Also on tonight'),
+                SectionTitle(tr('Also on tonight')),
                 for (final a in _kProgramme) _ActivityCard(activity: a),
 
                 const SizedBox(height: Sp.s),
@@ -247,14 +243,14 @@ class _WhenBadge extends StatelessWidget {
         if (live) ...[
           const LiveDot(),
           const SizedBox(width: Sp.s),
-          const Text('HAPPENING NOW',
+          Text(tr('HAPPENING NOW'),
               style: TextStyle(
                   color: C.hot,
                   fontSize: 11.5,
                   fontWeight: FontWeight.w800,
                   letterSpacing: 1.3)),
         ] else
-          const Text('FRI 25 SEPT  ·  17:00 – 21:00',
+          Text(tr('FRI 25 SEPT  ·  17:00 – 21:00'),
               style: TextStyle(
                   color: C.accent,
                   fontSize: 11.5,
@@ -352,14 +348,13 @@ class _VoteStep extends StatelessWidget {
         return _Step(
           n: '3',
           icon: Icons.how_to_vote_rounded,
-          title: 'Cast your vote',
+          title: tr('Peer Review'),
           subtitle: open
-              ? 'Which plant is the strangest, most beautiful, or most '
-                  'astonishing?'
-              : 'Opens when the doors do, at 17:00.',
+              ? tr('Which plant is the strangest, most beautiful, or most astonishing?')
+              : tr('Opens when the doors do, at 17:00.'),
           accent: open ? C.gold : C.textFaint,
           trailing: open
-              ? const Pill('OPEN', color: C.gold)
+              ? Pill(tr('OPEN'), color: C.gold)
               : const Icon(Icons.lock_clock_rounded,
                   size: 16, color: C.textFaint),
           onTap: () {
@@ -368,10 +363,10 @@ class _VoteStep extends StatelessWidget {
                   MaterialPageRoute(builder: (_) => ContestScreen(contest: c)));
             } else {
               ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(
+                SnackBar(
                   backgroundColor: C.surfaceAlt,
                   content: Text(
-                    'Voting opens at 17:00 on Friday — come back then.',
+                    tr('Voting opens at 17:00 on Friday — come back then.'),
                     style: TextStyle(color: C.textHi),
                   ),
                 ),
@@ -405,7 +400,7 @@ class _ActivityCard extends StatelessWidget {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text(a.title, style: T.h2.copyWith(fontSize: 15.5)),
+                      Text(tr(a.title), style: T.h2.copyWith(fontSize: 15.5)),
                       const SizedBox(height: 2),
                       Row(
                         children: [
@@ -413,7 +408,7 @@ class _ActivityCard extends StatelessWidget {
                               size: 12, color: C.textFaint),
                           const SizedBox(width: 4),
                           Expanded(
-                            child: Text(a.where,
+                            child: Text(tr(a.where),
                                 style: T.label.copyWith(
                                     color: C.textFaint, fontSize: 11.5)),
                           ),
@@ -426,7 +421,7 @@ class _ActivityCard extends StatelessWidget {
               ],
             ),
             const SizedBox(height: Sp.m),
-            Text(a.blurb, style: T.bodySm),
+            Text(tr(a.blurb), style: T.bodySm),
           ],
         ),
       ),
@@ -445,15 +440,14 @@ class _GettingThere extends StatelessWidget {
         children: [
           const IconTile(Icons.tram_rounded, color: C.accent, size: 40),
           const SizedBox(width: Sp.m),
-          const Expanded(
+          Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text('Getting here is free', style: T.h2),
+                Text(tr('Getting here is free'), style: T.h2),
                 SizedBox(height: 3),
                 Text(
-                  'The Potnapekka minitrain runs continuously between campus '
-                  'door 2T and the Botanical Garden, 17:00 – 21:00.',
+                  tr('The Potnapekka minitrain runs continuously between campus door 2T and the Botanical Garden, 17:00 – 21:00.'),
                   style: T.bodySm,
                 ),
               ],
@@ -478,12 +472,12 @@ class ResearchersNightBanner extends StatelessWidget {
 
     final live = isResearchersNightLive;
     final when = live
-        ? 'Happening now · until 21:00'
+        ? tr('Happening now · until 21:00')
         : isResearchersNightToday
-            ? 'Tonight · 17:00 – 21:00'
+            ? tr('Tonight · 17:00 – 21:00')
             : isResearchersNightTomorrow
-                ? 'Tomorrow · 17:00 – 21:00'
-                : 'Fri 25 Sept · 17:00 – 21:00';
+                ? tr('Tomorrow · 17:00 – 21:00')
+                : tr('Fri 25 Sept · 17:00 – 21:00');
 
     return Padding(
       padding: const EdgeInsets.only(bottom: Sp.xxl),
@@ -509,19 +503,18 @@ class ResearchersNightBanner extends StatelessWidget {
               ],
             ),
             const SizedBox(height: Sp.m),
-            const Text('Researchers’ Night', style: T.display),
+            Text(tr('Researchers’ Night'), style: T.display),
             const SizedBox(height: Sp.s),
-            const Text(
-              'Secrets of Plants — pick a route, identify what you find, and '
-              'vote for the strangest plant in the garden.',
+            Text(
+              tr('Secrets of Plants — pick a route, identify what you find, and vote for the strangest plant in the garden.'),
               style: T.bodySm,
             ),
             const SizedBox(height: Sp.l),
             Row(
               children: [
-                const Pill('Your route', icon: Icons.route_rounded),
+                Pill(tr('Your route'), icon: Icons.route_rounded),
                 const SizedBox(width: Sp.s),
-                const Pill('Vote', icon: Icons.how_to_vote_rounded, color: C.gold),
+                Pill(tr('Peer Review'), icon: Icons.how_to_vote_rounded, color: C.gold),
                 const Spacer(),
                 Icon(Icons.arrow_forward_rounded,
                     size: 18, color: live ? C.hot : C.accent),

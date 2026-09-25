@@ -9,6 +9,7 @@ import '../services/chat_service.dart';
 import '../services/language_service.dart';
 import '../services/user_state.dart';
 import '../theme/tokens.dart';
+import '../i18n/tr.dart';
 
 /// Continue an existing chat session — load all past messages, allow new ones.
 class ChatContinuationScreen extends StatefulWidget {
@@ -93,7 +94,7 @@ class _ChatContinuationScreenState extends State<ChatContinuationScreen> {
           ..._session.messages,
           ChatMessage(
             text:
-                "You've reached today's free chat limit (10 conversations/day). 🌿\n\nUpgrade to **Premium** for unlimited chats, or come back tomorrow!",
+                tr('You\'ve reached today\'s free chat limit (10 conversations/day). 🌿\n\nUpgrade to **Premium** for unlimited chats, or come back tomorrow!'),
             isUser: false,
             timestamp: DateTime.now(),
           ),
@@ -142,7 +143,7 @@ class _ChatContinuationScreenState extends State<ChatContinuationScreen> {
           style: const TextStyle(color: C.textHi),
           decoration: InputDecoration(
             labelText: s.newName,
-            labelStyle: const TextStyle(color: C.accent),
+            labelStyle: const TextStyle(color: C.textSoft),
             counterStyle: const TextStyle(color: C.textFaint),
           ),
         ),
@@ -402,7 +403,7 @@ class _ChatContinuationScreenState extends State<ChatContinuationScreen> {
                       child: CircularProgressIndicator(color: C.accent))
                   : ListView.builder(
                       controller: _scrollCtrl,
-                      padding: const EdgeInsets.fromLTRB(16, 8, 16, 12),
+                      padding: const EdgeInsets.fromLTRB(20, 8, 20, 12),
                       itemCount: _session.messages.length,
                       itemBuilder: (_, i) => GestureDetector(
                         onLongPress: () => _showMessageMenu(i, s),
@@ -446,19 +447,6 @@ class _ChatContinuationScreenState extends State<ChatContinuationScreen> {
                         fillColor: C.surface,
                         contentPadding: const EdgeInsets.symmetric(
                             horizontal: 14, vertical: 12),
-                        border: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(22),
-                          borderSide: const BorderSide(color: C.line),
-                        ),
-                        enabledBorder: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(22),
-                          borderSide: const BorderSide(color: C.line),
-                        ),
-                        focusedBorder: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(22),
-                          borderSide:
-                              const BorderSide(color: C.accent, width: 1.5),
-                        ),
                       ),
                       onSubmitted: (_) => _send(),
                       textInputAction: TextInputAction.send,
@@ -498,8 +486,8 @@ class _ChatContinuationScreenState extends State<ChatContinuationScreen> {
         decoration: BoxDecoration(
           color: m.isUser ? C.accentDim : C.surface,
           borderRadius: BorderRadius.only(
-            topLeft: const Radius.circular(16),
-            topRight: const Radius.circular(16),
+            topLeft: const Radius.circular(18),
+            topRight: const Radius.circular(18),
             bottomLeft: Radius.circular(m.isUser ? 16 : 4),
             bottomRight: Radius.circular(m.isUser ? 4 : 16),
           ),
@@ -557,7 +545,7 @@ class _ChatsLeftChip extends StatelessWidget {
     final left = user.chatsRemaining;
     final isLow = left <= 2;
     final color = left == 0
-        ? Colors.red[400]!
+        ? C.danger
         : (isLow ? C.gold : C.accent);
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 12),

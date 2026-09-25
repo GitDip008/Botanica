@@ -30,6 +30,7 @@ class TrailStop {
     required this.why,
     this.finnishName,
     this.sectionRoom,
+    this.whyFi,
   });
 
   final String scientificName;
@@ -51,11 +52,17 @@ class TrailStop {
 
   /// Where to go, in one line. Shows both names when they differ, so a visitor
   /// reading an English app can still match the Finnish sign on the door.
-  String get locationLine {
+  String get locationLine => locationLineIn((s) => s);
+
+  /// [locationLine] with the visitor-facing label passed through [translate].
+  /// The garden's own room name is never translated: it is what is printed on
+  /// the sign, and the point of showing it is that it matches.
+  String locationLineIn(String Function(String) translate) {
+    final label = translate(sectionLabel);
     final room = (sectionRoom ?? '').trim();
-    if (room.isEmpty) return sectionLabel;
-    if (room.toUpperCase() == sectionLabel.toUpperCase()) return sectionLabel;
-    return '$sectionLabel  ·  $room';
+    if (room.isEmpty) return label;
+    if (room.toUpperCase() == sectionLabel.toUpperCase()) return label;
+    return '$label  ·  $room';
   }
 
   /// Under glass, as opposed to out in the grounds. Worth saying: it decides
@@ -65,6 +72,10 @@ class TrailStop {
   /// The garden's own curated note for this plant under this theme. This is
   /// why the stop is on the trail, and it is why nothing here needed writing.
   final String why;
+
+  /// The garden's own Finnish note for the same tag, where its records carry
+  /// one. Preferred over any translation of [why]: it is what the garden wrote.
+  final String? whyFi;
 }
 
 /// A themed walk: a tag, and the plants carrying it, grouped by section.
@@ -249,6 +260,7 @@ List<Trail> buildTrails(Iterable<PlantFacts> plants,
             : gloss,
         sectionRoom: room.isEmpty ? null : room,
         why: why.trim(),
+        whyFi: (p.tagsFi[tag] ?? '').trim().isEmpty ? null : p.tagsFi[tag]!.trim(),
       ));
     }
     if (tagged.length < minStops) return;

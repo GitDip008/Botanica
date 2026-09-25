@@ -244,7 +244,7 @@ void main() {
 
     final now = DateTime.now();
 
-    test('live only when switched on AND inside the window', () {
+    test('live when switched on', () {
       expect(
         make(
           active: true,
@@ -255,16 +255,15 @@ void main() {
       );
     });
 
-    test('an expired contest hides itself even if left switched on', () {
-      // The belt-and-braces guard: forgetting to flip `active` must not leave
-      // an event running past its end.
+    test('an admin publishing outside the window still shows it', () {
+      // Visibility is the admin's switch alone, so the vote can be tested
+      // before the event and kept open after it.
       final c = make(
         active: true,
-        start: now.subtract(const Duration(days: 5)),
-        end: now.subtract(const Duration(days: 1)),
+        start: now.add(const Duration(days: 1)),
+        end: now.add(const Duration(days: 2)),
       );
-      expect(c.isLive, isFalse);
-      expect(c.hasEnded, isTrue);
+      expect(c.isLive, isTrue);
     });
 
     test('switching off hides a contest still inside its window', () {
@@ -273,17 +272,6 @@ void main() {
           active: false,
           start: now.subtract(const Duration(days: 1)),
           end: now.add(const Duration(days: 1)),
-        ).isLive,
-        isFalse,
-      );
-    });
-
-    test('a future contest is not live yet', () {
-      expect(
-        make(
-          active: true,
-          start: now.add(const Duration(days: 1)),
-          end: now.add(const Duration(days: 2)),
         ).isLive,
         isFalse,
       );

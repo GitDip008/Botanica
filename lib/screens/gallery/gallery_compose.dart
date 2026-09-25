@@ -18,6 +18,7 @@ import '../../models/gallery_post.dart';
 import '../../services/auth_service.dart';
 import '../../services/gallery_service.dart';
 import '../../theme/tokens.dart';
+import '../../i18n/tr.dart';
 
 class GalleryCompose extends StatefulWidget {
   const GalleryCompose({super.key});
@@ -88,18 +89,18 @@ class _GalleryComposeState extends State<GalleryCompose> {
         if (mounted) setState(() => _photo = bytes);
       }
     } catch (e) {
-      if (mounted) setState(() => _error = 'Camera unavailable: $e');
+      if (mounted) setState(() => _error = tr('Camera unavailable: {0}', [e]));
     }
   }
 
   Future<void> _save() async {
     final user = AuthService.instance.currentUser;
     if (user == null) {
-      setState(() => _error = 'Sign in to save photos.');
+      setState(() => _error = tr('Sign in to save photos.'));
       return;
     }
     if (_photo == null) {
-      setState(() => _error = 'Take a photo first.');
+      setState(() => _error = tr('Take a photo first.'));
       return;
     }
 
@@ -110,7 +111,7 @@ class _GalleryComposeState extends State<GalleryCompose> {
 
     // Which step is running, so a failure says what actually went wrong rather
     // than one "could not save" covering three quite different causes.
-    var step = 'save the photo';
+    var step = tr('save the photo');
     try {
       if (_saved == null) {
         final id = DateTime.now().microsecondsSinceEpoch.toString();
@@ -122,7 +123,7 @@ class _GalleryComposeState extends State<GalleryCompose> {
         final post = GalleryPost(
           id: id,
           uid: user.id,
-          displayName: user.displayName.isEmpty ? 'Visitor' : user.displayName,
+          displayName: user.displayName.isEmpty ? tr('Visitor') : user.displayName,
           caption: _captionCtrl.text.trim(),
           plantName:
               _plantCtrl.text.trim().isEmpty ? null : _plantCtrl.text.trim(),
@@ -135,7 +136,7 @@ class _GalleryComposeState extends State<GalleryCompose> {
       }
 
       if (_makePublic) {
-        step = 'share it';
+        step = tr('share it');
         // Hand over the bytes we are still holding: sharing a photo just taken
         // then needs one upload, not an upload followed by a download and
         // another upload.
@@ -148,8 +149,8 @@ class _GalleryComposeState extends State<GalleryCompose> {
         setState(() {
           _saving = false;
           _error = _saved == null
-              ? 'Could not $step: $e'
-              : 'Saved to your diary, but could not $step: $e';
+              ? tr('Could not {0}: {1}', [step, e])
+              : tr('Saved to your diary, but could not {0}: {1}', [step, e]);
         });
       }
     }
@@ -164,10 +165,10 @@ class _GalleryComposeState extends State<GalleryCompose> {
       appBar: AppBar(
         backgroundColor: C.bg,
         elevation: 0,
-        title: const Text('New photo'),
+        title: Text(tr('New photo')),
       ),
       body: ListView(
-        padding: const EdgeInsets.fromLTRB(16, 16, 16, 32),
+        padding: const EdgeInsets.fromLTRB(20, 16, 20, 32),
         children: [
           GestureDetector(
             onTap: _capture,
@@ -176,7 +177,6 @@ class _GalleryComposeState extends State<GalleryCompose> {
               decoration: BoxDecoration(
                 color: C.surfaceAlt,
                 borderRadius: BorderRadius.circular(12),
-                border: Border.all(color: C.accentDim),
                 image: _photo == null
                     ? null
                     : DecorationImage(
@@ -184,14 +184,14 @@ class _GalleryComposeState extends State<GalleryCompose> {
               ),
               child: _photo != null
                   ? null
-                  : const Center(
+                  : Center(
                       child: Column(
                         mainAxisSize: MainAxisSize.min,
                         children: [
                           Icon(Icons.add_a_photo_rounded,
                               color: C.accent, size: 30),
                           SizedBox(height: 8),
-                          Text('Tap to take a photo',
+                          Text(tr('Tap to take a photo'),
                               style: TextStyle(
                                   color: C.accent, fontSize: 14)),
                         ],
@@ -207,13 +207,13 @@ class _GalleryComposeState extends State<GalleryCompose> {
             maxLength: 300,
             style: const TextStyle(color: C.textHi),
             decoration: InputDecoration(
-              hintText: 'Say something about it…',
+              hintText: tr('Say something about it…'),
               hintStyle: const TextStyle(color: C.textFaint),
               counterStyle: const TextStyle(color: C.textFaint),
               filled: true,
               fillColor: C.surfaceAlt,
               border: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(10),
+                borderRadius: BorderRadius.circular(12),
                 borderSide: BorderSide.none,
               ),
             ),
@@ -224,14 +224,14 @@ class _GalleryComposeState extends State<GalleryCompose> {
             style: const TextStyle(color: C.textHi),
             onChanged: (_) => setState(() {}),
             decoration: InputDecoration(
-              hintText: 'Which plant? (optional)',
+              hintText: tr('Which plant? (optional)'),
               hintStyle: const TextStyle(color: C.textFaint),
               prefixIcon:
                   const Icon(Icons.local_florist_outlined, color: C.accent),
               filled: true,
               fillColor: C.surfaceAlt,
               border: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(10),
+                borderRadius: BorderRadius.circular(12),
                 borderSide: BorderSide.none,
               ),
               isDense: true,
@@ -242,8 +242,7 @@ class _GalleryComposeState extends State<GalleryCompose> {
               margin: const EdgeInsets.only(top: 8),
               decoration: BoxDecoration(
                 color: C.surface,
-                borderRadius: BorderRadius.circular(10),
-                border: Border.all(color: C.line),
+                borderRadius: BorderRadius.circular(12),
               ),
               child: Column(
                 children: [
@@ -269,8 +268,7 @@ class _GalleryComposeState extends State<GalleryCompose> {
             padding: const EdgeInsets.all(14),
             decoration: BoxDecoration(
               color: C.surface,
-              borderRadius: BorderRadius.circular(10),
-              border: Border.all(color: C.line),
+              borderRadius: BorderRadius.circular(12),
             ),
             child: Column(
               children: [
@@ -280,7 +278,7 @@ class _GalleryComposeState extends State<GalleryCompose> {
                   activeThumbColor: C.accent,
                   onChanged: (v) => setState(() => _makePublic = v),
                   title: Text(
-                    _makePublic ? 'Share with everyone' : 'Only you',
+                    _makePublic ? tr('Share with everyone') : tr('Only you'),
                     style: const TextStyle(
                         color: C.textHi,
                         fontSize: 14.5,
@@ -288,8 +286,8 @@ class _GalleryComposeState extends State<GalleryCompose> {
                   ),
                   subtitle: Text(
                     _makePublic
-                        ? 'Anyone using the app will see this photo and can react to it.'
-                        : 'Stays on this phone. Nothing is uploaded — you can share it later.',
+                        ? tr('Anyone using the app will see this photo and can react to it.')
+                        : tr('Stays on this phone. Nothing is uploaded — you can share it later.'),
                     style: const TextStyle(
                         color: C.textSoft, fontSize: 12, height: 1.35),
                   ),
@@ -313,7 +311,7 @@ class _GalleryComposeState extends State<GalleryCompose> {
                     height: 16,
                     child: CircularProgressIndicator(strokeWidth: 2))
                 : const Icon(Icons.check_rounded),
-            label: Text(_saving ? 'Saving…' : 'Save'),
+            label: Text(_saving ? 'Saving…' : tr('Save')),
             style: FilledButton.styleFrom(
               backgroundColor: C.accentDim,
               foregroundColor: Colors.white,
@@ -387,7 +385,7 @@ class _GalleryCameraState extends State<_GalleryCamera> {
                       color: Colors.black54,
                       shape: const CircleBorder(),
                       child: IconButton(
-                        tooltip: 'Switch camera',
+                        tooltip: tr('Switch camera'),
                         icon: Icon(Icons.flip_camera_android_rounded,
                             color: isFront(_active)
                                 ? C.gold

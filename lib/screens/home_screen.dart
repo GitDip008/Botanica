@@ -46,6 +46,7 @@ import 'researchers_night_screen.dart';
 import 'schedule_screen.dart';
 import 'soundscape_screen.dart';
 import 'trail_screen.dart';
+import '../i18n/tr.dart';
 
 class HomeScreen extends StatelessWidget {
   const HomeScreen({super.key});
@@ -199,13 +200,13 @@ class HomeScreen extends StatelessWidget {
       title: Row(
         children: [
           ClipRRect(
-            borderRadius: BorderRadius.circular(10),
+            borderRadius: BorderRadius.circular(12),
             child: Image.asset('logo.png', width: 32, height: 32,
                 fit: BoxFit.cover),
           ),
           const SizedBox(width: Sp.m),
-          const Expanded(
-            child: Text('Botanica',
+          Expanded(
+            child: Text(tr('Botanica'),
                 style: TextStyle(
                     color: C.textHi,
                     fontSize: 19,

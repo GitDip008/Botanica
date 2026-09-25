@@ -8,6 +8,7 @@ import '../services/auth_service.dart';
 import '../services/event_service.dart';
 import '../services/language_service.dart';
 import '../theme/tokens.dart';
+import '../i18n/tr.dart';
 
 class EventsScreen extends StatefulWidget {
   /// If provided, auto-opens the event detail sheet for this ID on first load.
@@ -57,7 +58,7 @@ class _EventsScreenState extends State<EventsScreen> {
       return EventRequest(
         id: id,
         userId: 'oulu',
-        userName: 'Oulu University Events',
+        userName: tr('Oulu University Events'),
         userEmail: 'events@oulu.fi',
         name: name,
         description: description,
@@ -83,22 +84,22 @@ class _EventsScreenState extends State<EventsScreen> {
         id: 'oulu-linnanmaa-picnic',
         name: 'Linnanmaa Picnic',
         description:
-            'Annual outdoor picnic on the Linnanmaa campus lawn. Bring a blanket, meet students and staff, enjoy food and music.',
+            tr('Annual outdoor picnic on the Linnanmaa campus lawn. Bring a blanket, meet students and staff, enjoy food and music.'),
         date: DateTime.parse('2026-06-02T13:00:00Z').toLocal(),
         startTime: '15:00',
         endTime: '18:30',
-        location: 'Linnanmaa campus lawn',
+        location: tr('Linnanmaa campus lawn'),
         sourceUrl: 'https://www.oulu.fi/en/events/linnanmaa-picnic-1',
       ),
       mk(
         id: 'oulu-textailes-day',
         name: 'A day with TEXTaiLES',
         description:
-            'Discover how AI is transforming the digitization of cultural heritage textiles. Talks, demos, and Q&A with the TEXTaiLES research team.',
+            tr('Discover how AI is transforming the digitization of cultural heritage textiles. Talks, demos, and Q&A with the TEXTaiLES research team.'),
         date: DateTime.parse('2026-06-03T05:30:00Z').toLocal(),
         startTime: '08:30',
         endTime: '18:00',
-        location: 'University of Oulu',
+        location: tr('University of Oulu'),
         sourceUrl:
             'https://www.oulu.fi/en/events/day-textailes-discover-how-ai-transforming-digitization-cultural-heritage-textiles',
       ),
@@ -106,11 +107,11 @@ class _EventsScreenState extends State<EventsScreen> {
         id: 'oulu-textiles-threads',
         name: 'Unravelling Hidden Threads',
         description:
-            'Digital journeys into early modern textiles. Exhibition exploring how researchers reveal hidden stories in historic fabrics.',
+            tr('Digital journeys into early modern textiles. Exhibition exploring how researchers reveal hidden stories in historic fabrics.'),
         date: DateTime.parse('2026-05-24T21:00:00Z').toLocal(),
         startTime: '00:00',
         endTime: '23:59',
-        location: 'University of Oulu',
+        location: tr('University of Oulu'),
         sourceUrl:
             'https://www.oulu.fi/en/events/unravelling-hidden-threads-digital-journeys-early-modern-textiles',
       ),
@@ -118,11 +119,11 @@ class _EventsScreenState extends State<EventsScreen> {
         id: 'oulu-mazzone-exhibition',
         name: 'Enrico Mazzone: Alitajunta',
         description:
-            'Exhibition by Italian artist Enrico Mazzone, running June 1 – July 31, 2026. Surreal large-scale drawings exploring the subconscious.',
+            tr('Exhibition by Italian artist Enrico Mazzone, running June 1 – July 31, 2026. Surreal large-scale drawings exploring the subconscious.'),
         date: DateTime.parse('2026-05-31T21:00:00Z').toLocal(),
         startTime: '00:00',
         endTime: '23:59',
-        location: 'University of Oulu',
+        location: tr('University of Oulu'),
         sourceUrl:
             'https://www.oulu.fi/en/events/enrico-mazzone-alitajunta-exhibition-june-1-july-31-2026',
       ),
@@ -130,11 +131,11 @@ class _EventsScreenState extends State<EventsScreen> {
         id: 'oulu-art-tours',
         name: 'Art Tours in English 2026',
         description:
-            'Experience the Art Collection of the University of Oulu. Guided English-language tours running throughout 2026.',
+            tr('Experience the Art Collection of the University of Oulu. Guided English-language tours running throughout 2026.'),
         date: DateTime.parse('2026-01-21T22:00:00Z').toLocal(),
         startTime: '00:00',
         endTime: '23:59',
-        location: 'University of Oulu Art Collection',
+        location: tr('University of Oulu Art Collection'),
         sourceUrl:
             'https://www.oulu.fi/en/events/art-tours-english-2026-experience-art-collection-university-oulu',
       ),
@@ -142,11 +143,11 @@ class _EventsScreenState extends State<EventsScreen> {
         id: 'oulu-ribbons-growth',
         name: 'Campus as a Stage: Ribbons of Growth',
         description:
-            'Collaborative ribbon art installation. Add your own ribbon and watch the artwork grow with the campus community.',
+            tr('Collaborative ribbon art installation. Add your own ribbon and watch the artwork grow with the campus community.'),
         date: DateTime.parse('2026-01-21T22:00:00Z').toLocal(),
         startTime: '00:00',
         endTime: '23:59',
-        location: 'Linnanmaa campus',
+        location: tr('Linnanmaa campus'),
         sourceUrl:
             'https://www.oulu.fi/en/events/campus-stage-exhibitions-ribbons-growth-collaborative-ribbon-art-installation',
       ),
@@ -154,11 +155,11 @@ class _EventsScreenState extends State<EventsScreen> {
         id: 'oulu-window-magnet',
         name: 'Window magnet love poem',
         description:
-            'Campus as a Stage exhibition. Poetic window installations across the Linnanmaa campus throughout the year.',
+            tr('Campus as a Stage exhibition. Poetic window installations across the Linnanmaa campus throughout the year.'),
         date: DateTime.parse('2026-01-21T22:00:00Z').toLocal(),
         startTime: '00:00',
         endTime: '23:59',
-        location: 'Linnanmaa campus windows',
+        location: tr('Linnanmaa campus windows'),
         sourceUrl:
             'https://www.oulu.fi/en/events/campus-stage-exhibitions-window-magnet-love-poem',
       ),
@@ -166,11 +167,11 @@ class _EventsScreenState extends State<EventsScreen> {
         id: 'oulu-virtual-geology',
         name: 'Virtual geology',
         description:
-            'Year-long virtual geology experience. Explore rocks, minerals, and geological history of northern Finland from anywhere.',
+            tr('Year-long virtual geology experience. Explore rocks, minerals, and geological history of northern Finland from anywhere.'),
         date: DateTime.parse('2025-12-31T22:00:00Z').toLocal(),
         startTime: '00:00',
         endTime: '23:59',
-        location: 'Online — University of Oulu',
+        location: tr('Online — University of Oulu'),
         sourceUrl: 'https://www.oulu.fi/en/events/virtual-geology',
       ),
     ];
@@ -200,7 +201,7 @@ class _EventsScreenState extends State<EventsScreen> {
           icon: const Icon(Icons.arrow_back_rounded, color: C.accent),
           onPressed: () => Navigator.pop(context),
         ),
-        title: Text('📅 ${s.upcomingEvents}',
+        title: Text(s.upcomingEvents,
             style: const TextStyle(
                 color: C.textHi, fontWeight: FontWeight.bold)),
       ),
@@ -241,7 +242,7 @@ class _EventsScreenState extends State<EventsScreen> {
             );
           }
           return ListView(
-            padding: const EdgeInsets.all(16),
+            padding: const EdgeInsets.all(20),
             children: events
                 .map((e) => _EventCard(
                       event: e,
@@ -271,13 +272,13 @@ class _EventCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final dateStr = DateFormat('MMM d').format(event.date);
+    final dateStr = DateFormat('MMM d', trLocale()).format(event.date);
     return Padding(
       padding: const EdgeInsets.only(bottom: 12),
       child: Material(
         color: Colors.transparent,
         child: InkWell(
-          borderRadius: BorderRadius.circular(14),
+          borderRadius: BorderRadius.circular(18),
           onTap: onTap,
           child: Container(
             padding: const EdgeInsets.all(14),
@@ -285,7 +286,7 @@ class _EventCard extends StatelessWidget {
               color: highlight
                   ? C.surfaceAlt
                   : C.surface,
-              borderRadius: BorderRadius.circular(14),
+              borderRadius: BorderRadius.circular(18),
               border: Border.all(
                 color: highlight
                     ? C.accent
@@ -302,7 +303,7 @@ class _EventCard extends StatelessWidget {
                       const EdgeInsets.symmetric(vertical: 8, horizontal: 4),
                   decoration: BoxDecoration(
                     color: const Color(0xFF534AB7).withValues(alpha: 0.2),
-                    borderRadius: BorderRadius.circular(10),
+                    borderRadius: BorderRadius.circular(12),
                   ),
                   child: Text(
                     dateStr,
@@ -320,7 +321,7 @@ class _EventCard extends StatelessWidget {
                     children: [
                       Row(children: [
                         Expanded(
-                          child: Text(event.name,
+                          child: Text(tr(event.name),
                               maxLines: 1,
                               overflow: TextOverflow.ellipsis,
                               style: const TextStyle(
@@ -357,7 +358,7 @@ class _EventCard extends StatelessWidget {
                                 color: C.textFaint, fontSize: 11));
                       }),
                       const SizedBox(height: 6),
-                      Text(event.description,
+                      Text(tr(event.description),
                           maxLines: 2,
                           overflow: TextOverflow.ellipsis,
                           style: const TextStyle(
@@ -383,7 +384,7 @@ class _EventDetailsSheet extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final dateStr = DateFormat('EEEE, MMMM d, yyyy').format(event.date);
+    final dateStr = DateFormat('EEEE, MMMM d, yyyy', trLocale()).format(event.date);
     return DraggableScrollableSheet(
       initialChildSize: 0.7,
       minChildSize: 0.4,
@@ -404,7 +405,7 @@ class _EventDetailsSheet extends StatelessWidget {
               ),
             ),
           ),
-          Text(event.name,
+          Text(tr(event.name),
               style: const TextStyle(
                   color: C.textHi,
                   fontSize: 22,
@@ -439,7 +440,7 @@ class _EventDetailsSheet extends StatelessWidget {
                   fontWeight: FontWeight.w700,
                   letterSpacing: 1.4)),
           const SizedBox(height: 8),
-          Text(event.description,
+          Text(tr(event.description),
               style: const TextStyle(
                   color: C.textHi, fontSize: 14, height: 1.55)),
           if (event.sourceUrl != null) ...[

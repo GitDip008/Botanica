@@ -7,6 +7,8 @@ import '../services/language_service.dart';
 import 'chat_continuation_screen.dart';
 import 'main_nav_screen.dart';
 import '../theme/tokens.dart';
+import '../widgets/ui_kit.dart';
+import '../i18n/tr.dart';
 
 /// All-tier accessible list of past plant conversations. Tap one to continue.
 class ChatHistoryScreen extends StatefulWidget {
@@ -122,7 +124,7 @@ class _ChatHistoryScreenState extends State<ChatHistoryScreen> {
           style: const TextStyle(color: C.textHi),
           decoration: InputDecoration(
             labelText: s.newName,
-            labelStyle: const TextStyle(color: C.accent),
+            labelStyle: const TextStyle(color: C.textSoft),
             counterStyle: const TextStyle(color: C.textFaint),
           ),
         ),
@@ -221,7 +223,7 @@ class _ChatHistoryScreenState extends State<ChatHistoryScreen> {
           _allSessions = sessions;
           if (sessions.isEmpty) {
             return ListView(
-              padding: const EdgeInsets.all(16),
+              padding: const EdgeInsets.all(20),
               children: [
                 _NewChatCard(s: s),
                 const SizedBox(height: 32),
@@ -261,7 +263,7 @@ class _ChatHistoryScreenState extends State<ChatHistoryScreen> {
 
           return ListView(
             key: const PageStorageKey('chat-history-list'),
-            padding: const EdgeInsets.all(16),
+            padding: const EdgeInsets.all(20),
             children: [
               // Keep the New-chat card slot in the tree at all times so the
               // list layout doesn't jump when selection mode toggles. We just
@@ -314,11 +316,11 @@ class _SessionTile extends StatelessWidget {
   Widget build(BuildContext context) {
     final s = context.watch<LanguageService>().strings;
     final msgCount = session.messages.length;
-    final formatter = DateFormat('MMM d · HH:mm');
+    final formatter = DateFormat('MMM d · HH:mm', trLocale());
     return Material(
       color: Colors.transparent,
       child: InkWell(
-        borderRadius: BorderRadius.circular(14),
+        borderRadius: BorderRadius.circular(18),
         onTap: () {
           if (selectionMode) {
             onToggle();
@@ -345,7 +347,7 @@ class _SessionTile extends StatelessWidget {
             color: selected
                 ? C.surfaceAlt
                 : C.surface,
-            borderRadius: BorderRadius.circular(14),
+            borderRadius: BorderRadius.circular(18),
             border: Border.all(
               color: selected
                   ? C.accent
@@ -368,7 +370,7 @@ class _SessionTile extends StatelessWidget {
                 const SizedBox(width: 12),
               ],
               ClipRRect(
-                borderRadius: BorderRadius.circular(10),
+                borderRadius: BorderRadius.circular(12),
                 child: session.plantImageUrl != null
                     ? Image.network(
                         session.plantImageUrl!,
@@ -448,68 +450,22 @@ class _NewChatCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Material(
-      color: Colors.transparent,
-      child: InkWell(
-        borderRadius: BorderRadius.circular(16),
-        onTap: () async {
-          // Start a "general botany" chat — no specific plant context.
-          final session = await ChatHistoryService.instance
-              .startGeneralSession(generalName: s.generalBotany);
-          if (session == null || !context.mounted) return;
-          Navigator.push(
-            context,
-            MaterialPageRoute(
-              builder: (_) => ChatContinuationScreen(initialSession: session),
-            ),
-          );
-        },
-        child: Container(
-          padding: const EdgeInsets.all(16),
-          decoration: BoxDecoration(
-            gradient: const LinearGradient(
-              colors: [C.surfaceAlt, C.accentDim],
-              begin: Alignment.topLeft,
-              end: Alignment.bottomRight,
-            ),
-            borderRadius: BorderRadius.circular(16),
+    return ActionTile(
+      icon: Icons.add_comment_rounded,
+      title: s.startNewChat,
+      subtitle: s.identifyOrSearchToBegin,
+      onTap: () async {
+        // Start a "general botany" chat — no specific plant context.
+        final session = await ChatHistoryService.instance
+            .startGeneralSession(generalName: s.generalBotany);
+        if (session == null || !context.mounted) return;
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (_) => ChatContinuationScreen(initialSession: session),
           ),
-          child: Row(
-            children: [
-              Container(
-                width: 44,
-                height: 44,
-                decoration: BoxDecoration(
-                  color: Colors.black.withValues(alpha: 0.25),
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                child: const Center(
-                    child: Text('🌱', style: TextStyle(fontSize: 22))),
-              ),
-              const SizedBox(width: 14),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(s.startNewChat,
-                        style: const TextStyle(
-                            color: Colors.white,
-                            fontSize: 15,
-                            fontWeight: FontWeight.w700)),
-                    const SizedBox(height: 2),
-                    Text(s.identifyOrSearchToBegin,
-                        style: TextStyle(
-                            color: Colors.white.withValues(alpha: 0.7),
-                            fontSize: 12)),
-                  ],
-                ),
-              ),
-              Icon(Icons.arrow_forward_ios_rounded,
-                  color: Colors.white.withValues(alpha: 0.4), size: 14),
-            ],
-          ),
-        ),
-      ),
+        );
+      },
     );
   }
 }

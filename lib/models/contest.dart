@@ -8,6 +8,8 @@
 
 import 'package:cloud_firestore/cloud_firestore.dart';
 
+import '../i18n/tr.dart';
+
 /// One slider axis, e.g. "Cute ↔ Creepy".
 class ContestAxis {
   const ContestAxis({required this.key, required this.left, required this.right});
@@ -19,8 +21,8 @@ class ContestAxis {
 
   factory ContestAxis.fromMap(Map<String, dynamic> m) => ContestAxis(
         key: (m['key'] ?? '') as String,
-        left: (m['left'] ?? '') as String,
-        right: (m['right'] ?? '') as String,
+        left: tr((m['left'] ?? '') as String),
+        right: tr((m['right'] ?? '') as String),
       );
 }
 
@@ -52,12 +54,9 @@ class Contest {
   final bool active;
   final String prizeNote;
 
-  /// Visible only while switched on AND inside its window — belt and braces, so
-  /// forgetting to flip the switch still ends the contest on time.
-  bool get isLive {
-    final now = DateTime.now();
-    return active && now.isAfter(startsAt) && now.isBefore(endsAt);
-  }
+  /// Published by an admin from the home screen. The dates are informational
+  /// only: an admin decides when it shows, including early for testing.
+  bool get isLive => active;
 
   bool get hasEnded => DateTime.now().isAfter(endsAt);
 
@@ -65,17 +64,17 @@ class Contest {
     final m = d.data() ?? {};
     return Contest(
       id: d.id,
-      title: (m['title'] ?? '') as String,
-      subtitle: (m['subtitle'] ?? '') as String,
-      intro: (m['intro'] ?? '') as String,
-      steps: ((m['steps'] as List?) ?? const []).map((e) => '$e').toList(),
+      title: tr((m['title'] ?? '') as String),
+      subtitle: tr((m['subtitle'] ?? '') as String),
+      intro: tr((m['intro'] ?? '') as String),
+      steps: ((m['steps'] as List?) ?? const []).map((e) => tr('$e')).toList(),
       axes: ((m['axes'] as List?) ?? const [])
           .map((e) => ContestAxis.fromMap(Map<String, dynamic>.from(e as Map)))
           .toList(),
       startsAt: (m['startsAt'] as Timestamp?)?.toDate() ?? DateTime(2000),
       endsAt: (m['endsAt'] as Timestamp?)?.toDate() ?? DateTime(2000),
       active: (m['active'] as bool?) ?? false,
-      prizeNote: (m['prizeNote'] ?? '') as String,
+      prizeNote: tr((m['prizeNote'] ?? '') as String),
     );
   }
 }

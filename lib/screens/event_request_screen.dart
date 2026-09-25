@@ -6,6 +6,7 @@ import '../services/language_service.dart';
 import '../services/usage_tracking_service.dart';
 import '../services/user_state.dart';
 import '../theme/tokens.dart';
+import '../i18n/tr.dart';
 
 class EventRequestScreen extends StatefulWidget {
   const EventRequestScreen({super.key});
@@ -156,7 +157,7 @@ class _EventRequestScreenState extends State<EventRequestScreen> {
                   label: s.eventDate,
                   value: _date == null
                       ? '—'
-                      : DateFormat('EEE, MMM d, yyyy').format(_date!),
+                      : DateFormat('EEE, MMM d, yyyy', trLocale()).format(_date!),
                   onTap: _pickDate,
                 ),
                 const SizedBox(height: 12),
@@ -193,8 +194,7 @@ class _EventRequestScreenState extends State<EventRequestScreen> {
                   padding: const EdgeInsets.all(14),
                   decoration: BoxDecoration(
                     color: C.surface,
-                    borderRadius: BorderRadius.circular(14),
-                    border: Border.all(color: C.line),
+                    borderRadius: BorderRadius.circular(18),
                   ),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
@@ -244,18 +244,6 @@ class _EventRequestScreenState extends State<EventRequestScreen> {
                                 color: C.textFaint, fontSize: 12),
                             filled: true,
                             fillColor: const Color(0xFF0F1A12),
-                            border: OutlineInputBorder(
-                                borderRadius: BorderRadius.circular(10),
-                                borderSide: const BorderSide(
-                                    color: C.line)),
-                            enabledBorder: OutlineInputBorder(
-                                borderRadius: BorderRadius.circular(10),
-                                borderSide: const BorderSide(
-                                    color: C.line)),
-                            focusedBorder: OutlineInputBorder(
-                                borderRadius: BorderRadius.circular(10),
-                                borderSide: const BorderSide(
-                                    color: C.accent, width: 1.5)),
                             contentPadding: const EdgeInsets.symmetric(
                                 horizontal: 12, vertical: 10),
                           ),
@@ -277,7 +265,7 @@ class _EventRequestScreenState extends State<EventRequestScreen> {
                     foregroundColor: Colors.white,
                     padding: const EdgeInsets.symmetric(vertical: 16),
                     shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(14)),
+                        borderRadius: BorderRadius.circular(18)),
                     elevation: 0,
                   ),
                   child: _busy
@@ -307,14 +295,14 @@ class _EventRequestScreenState extends State<EventRequestScreen> {
       color: Colors.transparent,
       child: InkWell(
         onTap: onTap,
-        borderRadius: BorderRadius.circular(10),
+        borderRadius: BorderRadius.circular(12),
         child: Container(
           padding: const EdgeInsets.symmetric(vertical: 10),
           decoration: BoxDecoration(
             color: selected
                 ? C.surfaceAlt
                 : C.bg,
-            borderRadius: BorderRadius.circular(10),
+            borderRadius: BorderRadius.circular(12),
             border: Border.all(
               color: selected
                   ? C.accent
@@ -355,21 +343,9 @@ class _EventRequestScreenState extends State<EventRequestScreen> {
       style: const TextStyle(color: C.textHi),
       decoration: InputDecoration(
         labelText: label,
-        labelStyle: const TextStyle(color: C.accent),
+        labelStyle: const TextStyle(color: C.textSoft),
         filled: true,
         fillColor: C.surface,
-        border: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(14),
-          borderSide: const BorderSide(color: C.line),
-        ),
-        enabledBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(14),
-          borderSide: const BorderSide(color: C.line),
-        ),
-        focusedBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(14),
-          borderSide: const BorderSide(color: C.accent, width: 1.5),
-        ),
       ),
       validator: (v) => (v == null || v.trim().isEmpty) ? s.required : null,
     );
@@ -384,14 +360,13 @@ class _EventRequestScreenState extends State<EventRequestScreen> {
     return Material(
       color: Colors.transparent,
       child: InkWell(
-        borderRadius: BorderRadius.circular(14),
+        borderRadius: BorderRadius.circular(18),
         onTap: onTap,
         child: Container(
           padding: const EdgeInsets.all(14),
           decoration: BoxDecoration(
             color: C.surface,
-            borderRadius: BorderRadius.circular(14),
-            border: Border.all(color: C.line),
+            borderRadius: BorderRadius.circular(18),
           ),
           child: Row(children: [
             Icon(icon, color: C.accent, size: 20),

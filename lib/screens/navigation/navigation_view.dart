@@ -3,6 +3,7 @@ import 'package:flutter_map/flutter_map.dart';
 import 'package:latlong2/latlong.dart';
 import '../../services/navigation/nav_graph.dart';
 import '../../theme/tokens.dart';
+import '../../i18n/tr.dart';
 
 /// Renders a computed [NavRoute] door-to-door, MazeMap-style:
 ///   • outdoor segments → polyline on an OSM map
@@ -56,7 +57,7 @@ class _NavigationViewState extends State<NavigationView> {
       backgroundColor: C.bg,
       appBar: AppBar(
         backgroundColor: C.bg,
-        title: Text('To: ${widget.destinationLabel}',
+        title: Text(tr('To: {0}', [widget.destinationLabel]),
             overflow: TextOverflow.ellipsis),
         elevation: 0,
       ),
@@ -72,14 +73,14 @@ class _NavigationViewState extends State<NavigationView> {
                   color: C.accent, size: 20),
               const SizedBox(width: 8),
               Text(
-                '${route.totalMeters.round()} m  ·  ~${route.walkMinutes} min',
+                tr('{0} m  ·  ~{1} min', [route.totalMeters.round(), route.walkMinutes]),
                 style: const TextStyle(
                     color: C.textHi,
                     fontSize: 15,
                     fontWeight: FontWeight.w700),
               ),
               const Spacer(),
-              Text('Leg ${_activeSegment + 1}/${segments.length}',
+              Text(tr('Leg {0}/{1}', [_activeSegment + 1, segments.length]),
                   style: const TextStyle(color: C.accent, fontSize: 12)),
             ]),
           ),
@@ -100,14 +101,14 @@ class _NavigationViewState extends State<NavigationView> {
                 _legButton(
                   enabled: _activeSegment > 0,
                   icon: Icons.chevron_left_rounded,
-                  label: 'Previous leg',
+                  label: tr('Previous leg'),
                   onTap: () => setState(() => _activeSegment--),
                 ),
                 const Spacer(),
                 Text(
                   seg.area == 'indoor'
-                      ? '🏠 Inside ${_floorName(seg.floorplan)}'
-                      : '🌳 Outdoors',
+                      ? tr('🏠 Inside {0}', [_floorName(seg.floorplan)])
+                      : tr('🌳 Outdoors'),
                   style: const TextStyle(
                       color: C.textHi,
                       fontSize: 13,
@@ -117,7 +118,7 @@ class _NavigationViewState extends State<NavigationView> {
                 _legButton(
                   enabled: _activeSegment < segments.length - 1,
                   icon: Icons.chevron_right_rounded,
-                  label: 'Next leg',
+                  label: tr('Next leg'),
                   trailing: true,
                   onTap: () => setState(() => _activeSegment++),
                 ),
@@ -150,19 +151,19 @@ class _NavigationViewState extends State<NavigationView> {
   }
 
   String _floorName(String? f) =>
-      f == 'romeo' ? 'Romeo greenhouse' : f == 'julia' ? 'Julia greenhouse' : 'greenhouse';
+      f == 'romeo' ? tr('Romeo greenhouse') : f == 'julia' ? tr('Julia greenhouse') : 'greenhouse';
 
   Scaffold _emptyScaffold() => Scaffold(
         backgroundColor: C.bg,
         appBar: AppBar(
           backgroundColor: C.bg,
-          title: const Text('Directions'),
+          title: Text(tr('Directions')),
         ),
-        body: const Center(
+        body: Center(
           child: Padding(
             padding: EdgeInsets.all(32),
             child: Text(
-              "I couldn't find a route to that plant. It may not be mapped yet — ask a gardener for help finding it.",
+              tr('I couldn\'t find a route to that plant. It may not be mapped yet — ask a gardener for help finding it.'),
               textAlign: TextAlign.center,
               style: TextStyle(color: C.accent, fontSize: 15, height: 1.5),
             ),
@@ -184,8 +185,8 @@ class _OutdoorSegment extends StatelessWidget {
         .map((n) => LatLng(n.lat!, n.lng!))
         .toList();
     if (pts.isEmpty) {
-      return const Center(
-        child: Text('Outdoor leg — coordinates not set yet',
+      return Center(
+        child: Text(tr('Outdoor leg — coordinates not set yet'),
             style: TextStyle(color: C.accent)),
       );
     }
@@ -258,7 +259,7 @@ class _IndoorSegment extends StatelessWidget {
 
     return LayoutBuilder(builder: (context, box) {
       return Container(
-        color: const Color(0xFF0F2018),
+        color: C.surface,
         child: Stack(
           fit: StackFit.expand,
           children: [
@@ -342,7 +343,7 @@ class _PlanPlaceholder extends StatelessWidget {
           children: [
             const Icon(Icons.meeting_room_outlined, color: C.textFaint, size: 56),
             const SizedBox(height: 12),
-            const Text('Greenhouse floor-plan image not added yet.',
+            Text(tr('Greenhouse floor-plan image not added yet.'),
                 textAlign: TextAlign.center,
                 style: TextStyle(color: C.accent, fontSize: 14)),
             const SizedBox(height: 16),
@@ -398,7 +399,7 @@ class _StepList extends StatelessWidget {
               size: 18,
             ),
             title: Text(
-              isLast ? 'Arrive: ${n.label}' : n.label,
+              isLast ? tr('Arrive: {0}', [n.label]) : n.label,
               style: TextStyle(
                 color: C.textHi,
                 fontSize: 13,
@@ -406,7 +407,7 @@ class _StepList extends StatelessWidget {
               ),
             ),
             subtitle: isDoor
-                ? const Text('Enter the greenhouse here',
+                ? Text(tr('Enter the greenhouse here'),
                     style: TextStyle(color: C.gold, fontSize: 11))
                 : null,
           );

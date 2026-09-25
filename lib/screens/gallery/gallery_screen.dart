@@ -16,6 +16,7 @@ import '../../services/auth_service.dart';
 import '../../services/gallery_service.dart';
 import 'gallery_compose.dart';
 import '../../theme/tokens.dart';
+import '../../i18n/tr.dart';
 
 class GalleryScreen extends StatefulWidget {
   const GalleryScreen({super.key});
@@ -69,20 +70,20 @@ class _GalleryScreenState extends State<GalleryScreen>
       appBar: AppBar(
         backgroundColor: C.bg,
         elevation: 0,
-        title: const Text('Garden Diary'),
+        title: Text(tr('Garden Diary')),
         bottom: TabBar(
           controller: _tabs,
           labelColor: C.accent,
           unselectedLabelColor: C.textFaint,
           indicatorColor: C.accent,
-          tabs: const [Tab(text: 'Shared'), Tab(text: 'Mine')],
+          tabs: [Tab(text: tr('Shared')), Tab(text: tr('Mine'))],
         ),
       ),
       floatingActionButton: FloatingActionButton.extended(
         backgroundColor: C.accentDim,
         foregroundColor: Colors.white,
         icon: const Icon(Icons.add_a_photo_rounded),
-        label: const Text('Add photo'),
+        label: Text(tr('Add photo')),
         onPressed: _compose,
       ),
       body: TabBarView(
@@ -116,11 +117,11 @@ class _Feed extends StatelessWidget {
         }
         final posts = snap.data!;
         if (posts.isEmpty) {
-          return const Center(
+          return Center(
             child: Padding(
               padding: EdgeInsets.all(32),
               child: Text(
-                'Nothing shared yet.\nBe the first to post a photo.',
+                tr('Nothing shared yet.\nBe the first to post a photo.'),
                 textAlign: TextAlign.center,
                 style: TextStyle(color: C.textSoft, height: 1.5),
               ),
@@ -157,7 +158,6 @@ class _FeedCardState extends State<_FeedCard> {
       decoration: BoxDecoration(
         color: C.surface,
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: C.line),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -230,7 +230,7 @@ class _FeedCardState extends State<_FeedCard> {
                     if (p.uid != widget.uid)
                       IconButton(
                         visualDensity: VisualDensity.compact,
-                        tooltip: 'Report',
+                        tooltip: tr('Report'),
                         onPressed: () => _report(p),
                         icon: const Icon(Icons.flag_outlined,
                             size: 18, color: C.textFaint),
@@ -250,23 +250,23 @@ class _FeedCardState extends State<_FeedCard> {
       context: context,
       builder: (_) => AlertDialog(
         backgroundColor: C.bg,
-        title: const Text('Report this post?',
+        title: Text(tr('Report this post?'),
             style: TextStyle(color: C.textHi, fontSize: 17)),
-        content: const Text(
-          'A garden admin will review it. The post stays visible until they do.',
+        content: Text(
+          tr('A garden admin will review it. The post stays visible until they do.'),
           style: TextStyle(color: C.textSoft, fontSize: 13.5),
         ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context, false),
-            child: const Text('Cancel',
+            child: Text(tr('Cancel'),
                 style: TextStyle(color: C.accent)),
           ),
           FilledButton(
             onPressed: () => Navigator.pop(context, true),
             style: FilledButton.styleFrom(
                 backgroundColor: const Color(0xFFC62828)),
-            child: const Text('Report'),
+            child: Text(tr('Report')),
           ),
         ],
       ),
@@ -275,9 +275,9 @@ class _FeedCardState extends State<_FeedCard> {
     await GalleryService.instance.report(p, widget.uid, 'inappropriate');
     if (mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
+        SnackBar(
           backgroundColor: C.surfaceAlt,
-          content: Text('Reported. Thank you.',
+          content: Text(tr('Reported. Thank you.'),
               style: TextStyle(color: C.textHi)),
         ),
       );
@@ -302,11 +302,11 @@ class _MinePane extends StatelessWidget {
   Widget build(BuildContext context) {
     if (loading) return const Center(child: CircularProgressIndicator());
     if (posts.isEmpty) {
-      return const Center(
+      return Center(
         child: Padding(
           padding: EdgeInsets.all(32),
           child: Text(
-            'No photos yet.\nYours stay on this phone unless you share them.',
+            tr('No photos yet.\nYours stay on this phone unless you share them.'),
             textAlign: TextAlign.center,
             style: TextStyle(color: C.textSoft, height: 1.5),
           ),
@@ -348,10 +348,10 @@ class _MineCardState extends State<_MineCard> {
       // The local file is gone — app data cleared, or a reinstall.
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
+          SnackBar(
             backgroundColor: Color(0xFF4A1A1A),
             content: Text(
-              'That photo is no longer on this device, so it cannot be shared.',
+              tr('That photo is no longer on this device, so it cannot be shared.'),
               style: TextStyle(color: Color(0xFFFFCDD2)),
             ),
           ),
@@ -362,7 +362,7 @@ class _MineCardState extends State<_MineCard> {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             backgroundColor: const Color(0xFF4A1A1A),
-            content: Text('Could not update: $e',
+            content: Text(tr('Could not update: {0}', [e]),
                 style: const TextStyle(color: Color(0xFFFFCDD2))),
           ),
         );
@@ -377,25 +377,25 @@ class _MineCardState extends State<_MineCard> {
       context: context,
       builder: (_) => AlertDialog(
         backgroundColor: C.bg,
-        title: const Text('Delete this photo?',
+        title: Text(tr('Delete this photo?'),
             style: TextStyle(color: C.textHi, fontSize: 17)),
         content: Text(
           widget.post.isPublic
-              ? 'It will be removed from the shared feed and from this phone.'
-              : 'It will be removed from this phone. This cannot be undone.',
+              ? tr('It will be removed from the shared feed and from this phone.')
+              : tr('It will be removed from this phone. This cannot be undone.'),
           style: const TextStyle(color: C.textSoft, fontSize: 13.5),
         ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context, false),
-            child: const Text('Cancel',
+            child: Text(tr('Cancel'),
                 style: TextStyle(color: C.accent)),
           ),
           FilledButton(
             onPressed: () => Navigator.pop(context, true),
             style: FilledButton.styleFrom(
                 backgroundColor: const Color(0xFFC62828)),
-            child: const Text('Delete'),
+            child: Text(tr('Delete')),
           ),
         ],
       ),
@@ -453,11 +453,11 @@ class _MineCardState extends State<_MineCard> {
                   ? Image.file(file, fit: BoxFit.cover)
                   : Container(
                       color: C.surfaceAlt,
-                      child: const Center(
+                      child: Center(
                         child: Padding(
                           padding: EdgeInsets.all(16),
                           child: Text(
-                            'Photo no longer on this device',
+                            tr('Photo no longer on this device'),
                             textAlign: TextAlign.center,
                             style: TextStyle(
                                 color: C.textFaint, fontSize: 12.5),
@@ -499,7 +499,7 @@ class _MineCardState extends State<_MineCard> {
                     ),
                     const SizedBox(width: 6),
                     Text(
-                      p.isPublic ? 'Shared' : 'Only you',
+                      p.isPublic ? tr('Shared') : tr('Only you'),
                       style: TextStyle(
                         color: p.isPublic
                             ? C.accent
@@ -520,7 +520,7 @@ class _MineCardState extends State<_MineCard> {
                         style: TextButton.styleFrom(
                             visualDensity: VisualDensity.compact),
                         child: Text(
-                          p.isPublic ? 'Make private' : 'Share',
+                          p.isPublic ? tr('Make private') : tr('Share'),
                           style: const TextStyle(
                               color: C.accent, fontSize: 13),
                         ),

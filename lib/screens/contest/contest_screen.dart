@@ -15,6 +15,7 @@ import '../../services/wikipedia_image_service.dart';
 import 'contest_entry_flow.dart';
 import 'contest_teams_tab.dart';
 import '../../theme/tokens.dart';
+import '../../i18n/tr.dart';
 
 class ContestScreen extends StatefulWidget {
   const ContestScreen({super.key, required this.contest});
@@ -52,11 +53,11 @@ class _ContestScreenState extends State<ContestScreen>
           labelColor: C.gold,
           unselectedLabelColor: C.accent,
           indicatorColor: C.gold,
-          tabs: const [
-            Tab(text: 'How to play'),
-            Tab(text: 'Leaderboard'),
-            Tab(text: 'My picks'),
-            Tab(text: 'Teams'),
+          tabs: [
+            Tab(text: tr('How to play')),
+            Tab(text: tr('Leaderboard')),
+            Tab(text: tr('My picks')),
+            Tab(text: tr('Teams')),
           ],
         ),
       ),
@@ -65,7 +66,7 @@ class _ContestScreenState extends State<ContestScreen>
               backgroundColor: C.gold,
               foregroundColor: const Color(0xFF231A00),
               icon: const Icon(Icons.add_a_photo_rounded),
-              label: const Text('Add a plant'),
+              label: Text(tr('Add a plant')),
               onPressed: () => Navigator.push(
                 context,
                 MaterialPageRoute(
@@ -94,7 +95,7 @@ class _HowToPlay extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return ListView(
-      padding: const EdgeInsets.fromLTRB(16, 16, 16, 96),
+      padding: const EdgeInsets.fromLTRB(20, 16, 20, 96),
       children: [
         if (contest.subtitle.isNotEmpty)
           Text(
@@ -146,7 +147,7 @@ class _HowToPlay extends StatelessWidget {
             ),
           ),
         const SizedBox(height: 12),
-        const Text('THE SCALES',
+        Text(tr('THE SCALES'),
             style: TextStyle(
                 color: C.accent,
                 fontSize: 11,
@@ -159,7 +160,7 @@ class _HowToPlay extends StatelessWidget {
             padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
             decoration: BoxDecoration(
               color: C.surfaceAlt,
-              borderRadius: BorderRadius.circular(10),
+              borderRadius: BorderRadius.circular(12),
             ),
             child: Row(
               children: [
@@ -185,7 +186,7 @@ class _HowToPlay extends StatelessWidget {
             padding: const EdgeInsets.all(14),
             decoration: BoxDecoration(
               color: const Color(0xFF2E1A00),
-              borderRadius: BorderRadius.circular(10),
+              borderRadius: BorderRadius.circular(12),
               border: Border.all(color: const Color(0xFF8D6E00)),
             ),
             child: Row(
@@ -264,10 +265,10 @@ class _LeaderboardState extends State<_Leaderboard> {
       height: 46,
       child: ListView(
         scrollDirection: Axis.horizontal,
-        padding: const EdgeInsets.fromLTRB(16, 8, 16, 0),
+        padding: const EdgeInsets.fromLTRB(20, 8, 20, 0),
         children: [
           _chip(
-            label: 'Most picked',
+            label: tr('Most picked'),
             selected: _axis == null,
             onTap: () => setState(() => _axis = null),
           ),
@@ -351,8 +352,8 @@ class _LeaderboardState extends State<_Leaderboard> {
           padding: const EdgeInsets.all(32),
           child: Text(
             axis == null
-                ? 'No plants picked yet.\nBe the first.'
-                : 'Nobody has rated a plant on this scale yet.',
+                ? tr('No plants picked yet.\nBe the first.')
+                : tr('Nobody has rated a plant on this scale yet.'),
             textAlign: TextAlign.center,
             style: const TextStyle(color: C.textSoft, height: 1.5),
           ),
@@ -360,7 +361,7 @@ class _LeaderboardState extends State<_Leaderboard> {
       );
     }
     return ListView.builder(
-          padding: const EdgeInsets.fromLTRB(16, 12, 16, 96),
+          padding: const EdgeInsets.fromLTRB(20, 12, 20, 96),
           itemCount: rows.length,
           itemBuilder: (_, i) {
             final r = rows[i];
@@ -378,7 +379,7 @@ class _LeaderboardState extends State<_Leaderboard> {
               padding: const EdgeInsets.all(12),
               decoration: BoxDecoration(
                 color: C.surface,
-                borderRadius: BorderRadius.circular(10),
+                borderRadius: BorderRadius.circular(12),
                 border: Border.all(
                     color: i < 3 ? medal : C.line,
                     width: i < 3 ? 1.5 : 1),
@@ -429,8 +430,10 @@ class _LeaderboardState extends State<_Leaderboard> {
                       ),
                       Text(
                         axis == null
-                            ? (r.votes == 1 ? 'pick' : 'picks')
-                            : '${r.votes} ${r.votes == 1 ? "pick" : "picks"}',
+                            ? (r.votes == 1 ? tr('pick') : tr('picks'))
+                            : (r.votes == 1
+                                ? tr('1 pick')
+                                : tr('{0} picks', [r.votes])),
                         style: const TextStyle(
                             color: C.textFaint, fontSize: 10.5),
                       ),
@@ -488,7 +491,9 @@ class _LeaderboardState extends State<_Leaderboard> {
                         color: C.textFaint, fontSize: 12)),
               const SizedBox(height: 4),
               Text(
-                '${r.votes} ${r.votes == 1 ? "person" : "people"} picked it · average of their scales',
+                r.votes == 1
+                    ? tr('1 person picked it · average of their scales')
+                    : tr('{0} people picked it · average of their scales', [r.votes]),
                 style: const TextStyle(color: C.textSoft, fontSize: 12.5),
               ),
               const SizedBox(height: 18),
@@ -506,7 +511,7 @@ class _LeaderboardState extends State<_Leaderboard> {
               // Who picked it — the prize goes to a person or a team, so the
               // names have to be visible without opening the database.
               const Divider(color: C.line, height: 26),
-              const Text('PICKED BY',
+              Text(tr('PICKED BY'),
                   style: TextStyle(
                       color: C.accent,
                       fontSize: 11,
@@ -626,8 +631,8 @@ class _MyPicks extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     if (uid.isEmpty) {
-      return const Center(
-        child: Text('Sign in to take part.',
+      return Center(
+        child: Text(tr('Sign in to take part.'),
             style: TextStyle(color: C.textSoft)),
       );
     }
@@ -639,11 +644,11 @@ class _MyPicks extends StatelessWidget {
         }
         final mine = snap.data!..sort((a, b) => b.createdAt.compareTo(a.createdAt));
         if (mine.isEmpty) {
-          return const Center(
+          return Center(
             child: Padding(
               padding: EdgeInsets.all(32),
               child: Text(
-                "You haven't picked a plant yet.\nTap “Add a plant” to start.",
+                tr('You haven\'t picked a plant yet.\nTap “Add a plant” to start.'),
                 textAlign: TextAlign.center,
                 style: TextStyle(color: C.textSoft, height: 1.5),
               ),
@@ -651,7 +656,7 @@ class _MyPicks extends StatelessWidget {
           );
         }
         return ListView.builder(
-          padding: const EdgeInsets.fromLTRB(16, 16, 16, 96),
+          padding: const EdgeInsets.fromLTRB(20, 16, 20, 96),
           itemCount: mine.length,
           itemBuilder: (_, i) => _MyPickCard(entry: mine[i], contest: contest),
         );
@@ -672,8 +677,7 @@ class _MyPickCard extends StatelessWidget {
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
         color: C.surface,
-        borderRadius: BorderRadius.circular(10),
-        border: Border.all(color: C.line),
+        borderRadius: BorderRadius.circular(12),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -723,9 +727,9 @@ class _MyPickCard extends StatelessWidget {
                           style: const TextStyle(
                               color: C.textFaint, fontSize: 11.5)),
                     if (entry.teamName != null)
-                      Text('Team ${entry.teamName}',
+                      Text(tr('Team {0}', [entry.teamName]),
                           style: const TextStyle(
-                              color: Color(0xFFFFB74D), fontSize: 11.5)),
+                              color: C.gold, fontSize: 11.5)),
                   ],
                 ),
               ),

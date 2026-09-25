@@ -26,6 +26,7 @@ import '../../services/contest_service.dart';
 import '../../services/hunt_submission_service.dart';
 import '../../widgets/zoomable_camera_preview.dart';
 import '../../theme/tokens.dart';
+import '../../i18n/tr.dart';
 
 class ContestEntryFlow extends StatefulWidget {
   const ContestEntryFlow({super.key, required this.contest});
@@ -112,7 +113,7 @@ class _ContestEntryFlowState extends State<ContestEntryFlow> {
       if (mounted) setState(() => _photo = bytes);
       _captureLocation();
     } catch (e) {
-      if (mounted) setState(() => _error = 'Camera unavailable: $e');
+      if (mounted) setState(() => _error = tr('Camera unavailable: {0}', [e]));
     }
   }
 
@@ -132,12 +133,12 @@ class _ContestEntryFlowState extends State<ContestEntryFlow> {
   Future<void> _submit() async {
     final user = AuthService.instance.currentUser;
     if (user == null) {
-      setState(() => _error = 'Sign in to take part.');
+      setState(() => _error = tr('Sign in to take part.'));
       return;
     }
     final name = _plantName?.trim();
     if (name == null || name.isEmpty) {
-      setState(() => _error = 'Choose a plant first.');
+      setState(() => _error = tr('Choose a plant first.'));
       return;
     }
 
@@ -162,8 +163,7 @@ class _ContestEntryFlowState extends State<ContestEntryFlow> {
         if (mounted) {
           setState(() {
             _saving = false;
-            _error = '$mate has already added $name for team ${_team!.name}. '
-                'Pick a different plant.';
+            _error = tr('{0} has already added {1} for team {2}. Pick a different plant.', [mate, name, _team!.name]);
           });
         }
         return;
@@ -174,7 +174,7 @@ class _ContestEntryFlowState extends State<ContestEntryFlow> {
       id: ContestEntry.docId(widget.contest.id, user.id, key),
       contestId: widget.contest.id,
       uid: user.id,
-      displayName: user.displayName.isEmpty ? 'Visitor' : user.displayName,
+      displayName: user.displayName.isEmpty ? tr('Visitor') : user.displayName,
       plantKey: key,
       plantName: name,
       plantSection: _plantSection,
@@ -206,8 +206,8 @@ class _ContestEntryFlowState extends State<ContestEntryFlow> {
           duration: Duration(seconds: photoError == null ? 3 : 7),
           content: Text(
             photoError == null
-                ? '$name added to the leaderboard.'
-                : '$name added, but the photo could not be saved: $photoError',
+                ? tr('{0} added to the leaderboard.', [name])
+                : tr('{0} added, but the photo could not be saved: {1}', [name, photoError]),
             style: const TextStyle(color: C.textHi),
           ),
         ),
@@ -216,7 +216,7 @@ class _ContestEntryFlowState extends State<ContestEntryFlow> {
       if (mounted) {
         setState(() {
           _saving = false;
-          _error = 'Could not save: $e';
+          _error = tr('Could not save: {0}', [e]);
         });
       }
     }
@@ -231,20 +231,20 @@ class _ContestEntryFlowState extends State<ContestEntryFlow> {
       appBar: AppBar(
         backgroundColor: C.bg,
         elevation: 0,
-        title: const Text('Add a plant'),
+        title: Text(tr('Add a plant')),
       ),
       body: ListView(
-        padding: const EdgeInsets.fromLTRB(16, 16, 16, 32),
+        padding: const EdgeInsets.fromLTRB(20, 16, 20, 32),
         children: [
           if (_team != null)
             Padding(
               padding: const EdgeInsets.only(bottom: 12),
-              child: Text('Playing for team ${_team!.name}',
+              child: Text(tr('Playing for team {0}', [_team!.name]),
                   style: const TextStyle(
-                      color: Color(0xFFFFB74D), fontSize: 12.5)),
+                      color: C.gold, fontSize: 12.5)),
             ),
 
-          _label('1  ·  PHOTO'),
+          _label(tr('1  ·  PHOTO')),
           const SizedBox(height: 8),
           GestureDetector(
             onTap: _takePhoto,
@@ -252,8 +252,7 @@ class _ContestEntryFlowState extends State<ContestEntryFlow> {
               height: _photo == null ? 96 : 200,
               decoration: BoxDecoration(
                 color: C.surfaceAlt,
-                borderRadius: BorderRadius.circular(10),
-                border: Border.all(color: C.accentDim),
+                borderRadius: BorderRadius.circular(12),
                 image: _photo == null
                     ? null
                     : DecorationImage(
@@ -261,17 +260,17 @@ class _ContestEntryFlowState extends State<ContestEntryFlow> {
               ),
               child: _photo != null
                   ? null
-                  : const Center(
+                  : Center(
                       child: Column(
                         mainAxisSize: MainAxisSize.min,
                         children: [
                           Icon(Icons.add_a_photo_rounded,
                               color: C.accent),
                           SizedBox(height: 6),
-                          Text('Tap to photograph it',
+                          Text(tr('Tap to photograph it'),
                               style: TextStyle(
                                   color: C.accent, fontSize: 13)),
-                          Text('Only you will see this photo',
+                          Text(tr('Only you will see this photo'),
                               style: TextStyle(
                                   color: C.textFaint, fontSize: 11)),
                         ],
@@ -296,9 +295,8 @@ class _ContestEntryFlowState extends State<ContestEntryFlow> {
                   const SizedBox(width: 5),
                   Text(
                     _pos == null
-                        ? 'No location — the entry still counts'
-                        : 'Spot saved: ${_pos!.latitude.toStringAsFixed(5)}, '
-                            '${_pos!.longitude.toStringAsFixed(5)}',
+                        ? tr('No location — the entry still counts')
+                        : tr('Spot saved: {0}, {1}', [_pos!.latitude.toStringAsFixed(5), _pos!.longitude.toStringAsFixed(5)]),
                     style: TextStyle(
                         color: _pos == null
                             ? C.textFaint
@@ -310,7 +308,7 @@ class _ContestEntryFlowState extends State<ContestEntryFlow> {
             ),
 
           const SizedBox(height: 22),
-          _label('2  ·  WHICH PLANT?'),
+          _label(tr('2  ·  WHICH PLANT?')),
           const SizedBox(height: 8),
           TextField(
             controller: _searchCtrl,
@@ -320,13 +318,13 @@ class _ContestEntryFlowState extends State<ContestEntryFlow> {
               _fromIndex = false; // typing over a picked name un-picks it
             }),
             decoration: InputDecoration(
-              hintText: 'Search, or just type what you see',
+              hintText: tr('Search, or just type what you see'),
               hintStyle: const TextStyle(color: C.textFaint),
               prefixIcon: const Icon(Icons.search, color: C.accent),
               filled: true,
               fillColor: C.surfaceAlt,
               border: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(10),
+                borderRadius: BorderRadius.circular(12),
                 borderSide: BorderSide.none,
               ),
               isDense: true,
@@ -337,8 +335,7 @@ class _ContestEntryFlowState extends State<ContestEntryFlow> {
               margin: const EdgeInsets.only(top: 8),
               decoration: BoxDecoration(
                 color: C.surface,
-                borderRadius: BorderRadius.circular(10),
-                border: Border.all(color: C.line),
+                borderRadius: BorderRadius.circular(12),
               ),
               child: Column(
                 children: [
@@ -376,15 +373,15 @@ class _ContestEntryFlowState extends State<ContestEntryFlow> {
             Padding(
               padding: const EdgeInsets.only(top: 8),
               child: Text(
-                'Using "$_plantName" — not in the garden records, that is fine.',
+                tr('Using "{0}" — not in the garden records, that is fine.', [_plantName]),
                 style: const TextStyle(color: C.textFaint, fontSize: 12),
               ),
             ),
 
           const SizedBox(height: 22),
-          _label('3  ·  WHAT KIND OF VIBE?'),
+          _label(tr('3  ·  WHAT KIND OF VIBE?')),
           const SizedBox(height: 4),
-          const Text('There are no right answers. Trust your first impression.',
+          Text(tr('There are no right answers. Trust your first impression.'),
               style: TextStyle(color: C.textFaint, fontSize: 12)),
           const SizedBox(height: 12),
           for (final a in widget.contest.axes) _axisSlider(a),
@@ -404,7 +401,7 @@ class _ContestEntryFlowState extends State<ContestEntryFlow> {
                     height: 16,
                     child: CircularProgressIndicator(strokeWidth: 2))
                 : const Icon(Icons.check_rounded),
-            label: Text(_saving ? 'Saving…' : 'Submit my pick'),
+            label: Text(_saving ? 'Saving…' : tr('Submit my pick')),
             style: FilledButton.styleFrom(
               backgroundColor: C.gold,
               foregroundColor: const Color(0xFF231A00),
@@ -532,7 +529,7 @@ class _ContestCameraState extends State<_ContestCamera> {
                       color: Colors.black54,
                       shape: const CircleBorder(),
                       child: IconButton(
-                        tooltip: 'Switch camera',
+                        tooltip: tr('Switch camera'),
                         icon: Icon(Icons.flip_camera_android_rounded,
                             color: isFront(_active)
                                 ? C.gold

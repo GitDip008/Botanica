@@ -15,6 +15,8 @@ import 'package:cloud_functions/cloud_functions.dart';
 import 'package:flutter/material.dart';
 import '../data/plant_index.dart';
 import '../services/language_service.dart';
+import '../i18n/tr.dart';
+import '../theme/tokens.dart';
 
 /// True when the app is showing Finnish.
 bool get _isFinnish => LanguageService.instance.current.code == 'fi';
@@ -45,13 +47,13 @@ class PlantTagsBar extends StatelessWidget {
           children: [
             for (final t in tags)
               _TagChip(
-                label: t,
+                label: tr(t),
                 danger: t == 'Dangerous',
-                onTap: () => _showDescription(context, t, _descFor(facts, t)),
+                onTap: () => _showDescription(context, tr(t), _descFor(facts, t)),
               ),
             if (tags.length >= 2)
               _TagChip(
-                label: 'Summary',
+                label: tr('Summary'),
                 summary: true,
                 onTap: () => _showSummary(context, facts),
               ),
@@ -63,24 +65,24 @@ class PlantTagsBar extends StatelessWidget {
 
   void _showDescription(BuildContext context, String tag, String desc) {
     _sheet(context, tag, Text(desc,
-        style: const TextStyle(color: Colors.white70, height: 1.5)));
+        style: const TextStyle(color: C.text, height: 1.5)));
   }
 
   void _showSummary(BuildContext context, PlantFacts facts) {
     _sheet(
       context,
-      '${facts.tags.length} highlights',
+      tr('{0} highlights', [facts.tags.length]),
       FutureBuilder<String>(
         future: _summarise(facts.scientificName, facts),
         builder: (context, snap) {
           if (snap.connectionState != ConnectionState.done) {
-            return const Padding(
-              padding: EdgeInsets.symmetric(vertical: 8),
+            return Padding(
+              padding: const EdgeInsets.symmetric(vertical: 8),
               child: Row(children: [
-                SizedBox(width: 16, height: 16, child: CircularProgressIndicator(
-                    strokeWidth: 2, color: Colors.greenAccent)),
-                SizedBox(width: 12),
-                Text('Summarising…', style: TextStyle(color: Colors.white54)),
+                const SizedBox(width: 16, height: 16, child: CircularProgressIndicator(
+                    strokeWidth: 2, color: C.accent)),
+                const SizedBox(width: 12),
+                Text(tr('Summarising…'), style: const TextStyle(color: C.textSoft)),
               ]),
             );
           }
@@ -88,10 +90,10 @@ class PlantTagsBar extends StatelessWidget {
             // Fall back to just listing the descriptions if the LLM is down.
             return Text(
                 facts.tags.keys.map((t) => _descFor(facts, t)).join('\n\n'),
-                style: const TextStyle(color: Colors.white70, height: 1.5));
+                style: const TextStyle(color: C.text, height: 1.5));
           }
           return Text(snap.data ?? '',
-              style: const TextStyle(color: Colors.white70, height: 1.5));
+              style: const TextStyle(color: C.text, height: 1.5));
         },
       ),
     );
@@ -100,7 +102,7 @@ class PlantTagsBar extends StatelessWidget {
   void _sheet(BuildContext context, String title, Widget body) {
     showModalBottomSheet(
       context: context,
-      backgroundColor: const Color(0xFF1A2E1A),
+      backgroundColor: C.surface,
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
       ),
@@ -111,7 +113,7 @@ class PlantTagsBar extends StatelessWidget {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(title, style: const TextStyle(
-                color: Colors.greenAccent,
+                color: C.accent,
                 fontWeight: FontWeight.bold, fontSize: 16)),
             const SizedBox(height: 12),
             body,
@@ -127,10 +129,9 @@ class PlantTagsBar extends StatelessWidget {
     final lines =
         facts.tags.keys.map((t) => '$t: ${_descFor(facts, t)}').join('\n');
     final system = _isFinnish
-        ? 'Tiivistä nämä kasvin kohokohdat kahteen lyhyeen, ystävälliseen '
-            'suomenkieliseen lauseeseen. Käytä VAIN annettuja tietoja.'
+        ? 'Tiivistä nämä kasvin kohokohdat kahteen lyhyeen, ystävälliseen suomenkieliseen lauseeseen. Käytä VAIN annettuja tietoja.'
         : 'Summarise these highlights about a plant into two short, friendly '
-            'sentences. Use ONLY the facts given, add nothing.';
+            'sentences in ${trLanguageName()}. Use ONLY the facts given, add nothing.';
     final callable = FirebaseFunctions.instanceFor(region: 'europe-north1')
         .httpsCallable('groqChat',
             options: HttpsCallableOptions(timeout: const Duration(seconds: 30)));
@@ -161,10 +162,10 @@ class _TagChip extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final color = danger
-        ? Colors.redAccent
+        ? C.danger
         : summary
-            ? Colors.tealAccent
-            : Colors.lightGreenAccent;
+            ? C.accent
+            : C.accent;
     return Material(
       color: color.withOpacity(0.12),
       shape: StadiumBorder(side: BorderSide(color: color.withOpacity(0.5))),
@@ -178,10 +179,10 @@ class _TagChip extends StatelessWidget {
             children: [
               if (danger) ...[
                 const Icon(Icons.warning_amber_rounded,
-                    size: 13, color: Colors.redAccent),
+                    size: 13, color: C.danger),
                 const SizedBox(width: 4),
               ] else if (summary) ...[
-                const Icon(Icons.auto_awesome, size: 13, color: Colors.tealAccent),
+                const Icon(Icons.auto_awesome, size: 13, color: C.accent),
                 const SizedBox(width: 4),
               ],
               Text(label,

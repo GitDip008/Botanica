@@ -5,6 +5,7 @@ import '../services/gemini_proxy.dart';
 import '../services/language_service.dart';
 import '../services/usage_tracking_service.dart';
 import '../theme/tokens.dart';
+import '../i18n/tr.dart';
 
 class BloomScreen extends StatefulWidget {
   const BloomScreen({super.key});
@@ -47,7 +48,8 @@ class _BloomScreenState extends State<BloomScreen> {
           '  {"common": "Common Name", "scientific": "Scientific name", "section": "one of the section names", "color": "flower colour", "note": "one sentence why notable"}\n'
           ']\n'
           'Sections to choose from: ${_sections.join(', ')}. '
-          'Only include realistic Finnish/subarctic plants for outdoor sections in $monthName.';
+          'Only include realistic Finnish/subarctic plants for outdoor sections in $monthName. '
+          'Write "common", "color" and "note" in ${trLanguageName()}; keep "section" exactly as listed.';
 
       // 1) Try Groq first (free, fast)
       String? text = await ChatService.instance.cloud.completeText(
@@ -77,9 +79,9 @@ class _BloomScreenState extends State<BloomScreen> {
     }
   }
 
-  String _monthName(int m) => const [
-    '', 'January', 'February', 'March', 'April', 'May',
-    'June', 'July', 'August', 'September', 'October', 'November', 'December'
+  String _monthName(int m) => [
+    '', tr('January'), tr('February'), tr('March'), tr('April'), tr('May'),
+    tr('June'), tr('July'), tr('August'), tr('September'), tr('October'), tr('November'), tr('December')
   ][m];
 
   String? _extractJson(String text) {
@@ -111,21 +113,21 @@ class _BloomScreenState extends State<BloomScreen> {
   }
 
   List<_BloomEntry> _fallbackEntries(int month) => [
-    _BloomEntry(common: 'Wood Anemone', scientific: 'Anemone nemorosa', section: 'Woodlands', color: 'White', note: 'One of the first spring bloomers in Finnish forests.'),
-    _BloomEntry(common: 'Cowslip', scientific: 'Primula veris', section: 'Grasslands', color: 'Yellow', note: 'Classic meadow plant, now rare in the wild.'),
-    _BloomEntry(common: 'May Lily', scientific: 'Maianthemum bifolium', section: 'Woodlands', color: 'White', note: 'Fragrant ground-cover of boreal forest floors.'),
-    _BloomEntry(common: 'Tulips (mixed)', scientific: 'Tulipa sp.', section: 'Ornamental', color: 'Red/Yellow', note: 'Spring highlight of the ornamental beds.'),
-    _BloomEntry(common: 'Lapland Rhododendron', scientific: 'Rhododendron lapponicum', section: 'Fennoscandian Mountain', color: 'Purple', note: 'Arctic shrub from Lapland mountain heaths.'),
-    _BloomEntry(common: 'Valerian', scientific: 'Valeriana officinalis', section: 'Economic/Medicinal', color: 'Pink', note: 'Traditional sedative herb with fragrant flowers.'),
-    _BloomEntry(common: 'Bird of Paradise', scientific: 'Strelitzia reginae', section: 'Romeo Greenhouse (tropical)', color: 'Orange/Blue', note: 'Tropical showpiece of Romeo greenhouse.'),
-    _BloomEntry(common: 'Bougainvillea', scientific: 'Bougainvillea spectabilis', section: 'Julia Greenhouse (Mediterranean)', color: 'Magenta', note: 'Vivid climber thriving in Julia\'s warm dry conditions.'),
+    _BloomEntry(common: tr('Wood Anemone'), scientific: tr('Anemone nemorosa'), section: tr('Woodlands'), color: tr('White'), note: tr('One of the first spring bloomers in Finnish forests.')),
+    _BloomEntry(common: tr('Cowslip'), scientific: tr('Primula veris'), section: tr('Grasslands'), color: tr('Yellow'), note: tr('Classic meadow plant, now rare in the wild.')),
+    _BloomEntry(common: tr('May Lily'), scientific: tr('Maianthemum bifolium'), section: tr('Woodlands'), color: tr('White'), note: tr('Fragrant ground-cover of boreal forest floors.')),
+    _BloomEntry(common: tr('Tulips (mixed)'), scientific: tr('Tulipa sp.'), section: 'Ornamental', color: 'Red/Yellow', note: tr('Spring highlight of the ornamental beds.')),
+    _BloomEntry(common: tr('Lapland Rhododendron'), scientific: tr('Rhododendron lapponicum'), section: tr('Fennoscandian Mountain'), color: tr('Purple'), note: tr('Arctic shrub from Lapland mountain heaths.')),
+    _BloomEntry(common: tr('Valerian'), scientific: tr('Valeriana officinalis'), section: 'Economic/Medicinal', color: tr('Pink'), note: tr('Traditional sedative herb with fragrant flowers.')),
+    _BloomEntry(common: tr('Bird of Paradise'), scientific: tr('Strelitzia reginae'), section: tr('Romeo Greenhouse (tropical)'), color: 'Orange/Blue', note: tr('Tropical showpiece of Romeo greenhouse.')),
+    _BloomEntry(common: tr('Bougainvillea'), scientific: tr('Bougainvillea spectabilis'), section: tr('Julia Greenhouse (Mediterranean)'), color: tr('Magenta'), note: tr('Vivid climber thriving in Julia\'s warm dry conditions.')),
   ];
 
   Color _sectionColor(String section) {
     if (section.contains('Ornamental')) return const Color(0xFF880E4F);
     if (section.contains('Fennoscandian')) return const Color(0xFF546E7A);
     if (section.contains('Woodland')) return C.accentDim;
-    if (section.contains('Grassland')) return const Color(0xFF558B2F);
+    if (section.contains('Grassland')) return C.accentDim;
     if (section.contains('Economic') || section.contains('Medicinal')) return const Color(0xFFE65100);
     if (section.contains('Systematic')) return const Color(0xFF00695C);
     if (section.contains('Romeo')) return const Color(0xFF795548);
@@ -145,7 +147,7 @@ class _BloomScreenState extends State<BloomScreen> {
           icon: const Icon(Icons.arrow_back_rounded, color: C.accent),
           onPressed: () => Navigator.pop(context),
         ),
-        title: Text('🌸 ${s.inBloomTitle}',
+        title: Text(s.inBloomTitle,
             style: const TextStyle(color: C.textHi, fontWeight: FontWeight.bold)),
         actions: [
           IconButton(
@@ -164,7 +166,7 @@ class _BloomScreenState extends State<BloomScreen> {
                 const Icon(Icons.calendar_today, color: C.accent, size: 16),
                 const SizedBox(width: 8),
                 Text(
-                  '${_monthName(now.month)} ${now.year} · Oulu Botanical Garden',
+                  tr('{0} {1} · Oulu Botanical Garden', [_monthName(now.month), now.year]),
                   style: const TextStyle(color: C.accent, fontSize: 13),
                 ),
               ],
@@ -219,7 +221,7 @@ class _BloomScreenState extends State<BloomScreen> {
                         padding: const EdgeInsets.all(14),
                         decoration: BoxDecoration(
                           color: C.surface,
-                          borderRadius: BorderRadius.circular(14),
+                          borderRadius: BorderRadius.circular(18),
                           border: Border.all(color: sColor.withOpacity(0.5)),
                         ),
                         child: Row(
@@ -241,7 +243,7 @@ class _BloomScreenState extends State<BloomScreen> {
                                   Row(
                                     children: [
                                       Expanded(
-                                        child: Text(e.common,
+                                        child: Text(tr(e.common),
                                             style: const TextStyle(
                                                 color: C.textHi,
                                                 fontWeight: FontWeight.bold,
@@ -254,7 +256,7 @@ class _BloomScreenState extends State<BloomScreen> {
                                           color: sColor.withOpacity(0.2),
                                           borderRadius: BorderRadius.circular(6),
                                         ),
-                                        child: Text(e.color,
+                                        child: Text(tr(e.color),
                                             style: TextStyle(
                                                 color: sColor.withOpacity(0.9),
                                                 fontSize: 10)),
@@ -267,7 +269,7 @@ class _BloomScreenState extends State<BloomScreen> {
                                           fontSize: 12,
                                           fontStyle: FontStyle.italic)),
                                   const SizedBox(height: 4),
-                                  Text(e.note,
+                                  Text(tr(e.note),
                                       style: const TextStyle(
                                           color: C.textHi,
                                           fontSize: 12,
@@ -278,7 +280,7 @@ class _BloomScreenState extends State<BloomScreen> {
                                       Icon(Icons.location_on,
                                           color: sColor, size: 12),
                                       const SizedBox(width: 4),
-                                      Text(e.section,
+                                      Text(tr(e.section),
                                           style: TextStyle(
                                               color: sColor, fontSize: 11)),
                                     ],

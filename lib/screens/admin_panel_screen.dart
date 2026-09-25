@@ -18,6 +18,7 @@ import 'admin/reported_posts_screen.dart';
 import 'admin_user_list_screen.dart';
 import 'edit_holidays_screen.dart';
 import '../theme/tokens.dart';
+import '../i18n/tr.dart';
 
 class AdminPanelScreen extends StatelessWidget {
   const AdminPanelScreen({super.key});
@@ -34,7 +35,7 @@ class AdminPanelScreen extends StatelessWidget {
       ),
       body: SafeArea(
         child: ListView(
-          padding: const EdgeInsets.all(16),
+          padding: const EdgeInsets.all(20),
           children: [
             // Scrape-error banner (only shown when oulu.fi scrape failed)
             StreamBuilder<HolidayHoursDoc>(
@@ -48,7 +49,7 @@ class AdminPanelScreen extends StatelessWidget {
                   child: Material(
                     color: Colors.transparent,
                     child: InkWell(
-                      borderRadius: BorderRadius.circular(14),
+                      borderRadius: BorderRadius.circular(18),
                       onTap: () => Navigator.push(
                         context,
                         MaterialPageRoute(
@@ -58,7 +59,7 @@ class AdminPanelScreen extends StatelessWidget {
                         padding: const EdgeInsets.all(14),
                         decoration: BoxDecoration(
                           color: const Color(0xFF3B2A0B),
-                          borderRadius: BorderRadius.circular(14),
+                          borderRadius: BorderRadius.circular(18),
                           border:
                               Border.all(color: C.gold),
                         ),
@@ -69,7 +70,7 @@ class AdminPanelScreen extends StatelessWidget {
                           Expanded(
                             child: Text(s.scrapeFailedAlert,
                                 style: const TextStyle(
-                                    color: Color(0xFFFFE082),
+                                    color: C.gold,
                                     fontSize: 12.5,
                                     height: 1.4)),
                           ),
@@ -111,7 +112,7 @@ class AdminPanelScreen extends StatelessWidget {
             Material(
               color: Colors.transparent,
               child: InkWell(
-                borderRadius: BorderRadius.circular(14),
+                borderRadius: BorderRadius.circular(18),
                 onTap: () => Navigator.push(
                   context,
                   MaterialPageRoute(
@@ -121,8 +122,7 @@ class AdminPanelScreen extends StatelessWidget {
                   padding: const EdgeInsets.all(14),
                   decoration: BoxDecoration(
                     color: C.surface,
-                    borderRadius: BorderRadius.circular(14),
-                    border: Border.all(color: C.line),
+                    borderRadius: BorderRadius.circular(18),
                   ),
                   child: Row(children: [
                     const Icon(Icons.event_note_rounded,
@@ -255,7 +255,7 @@ class _StatCard extends StatelessWidget {
     return Material(
       color: Colors.transparent,
       child: InkWell(
-        borderRadius: BorderRadius.circular(14),
+        borderRadius: BorderRadius.circular(18),
         onTap: () => Navigator.push(
           context,
           MaterialPageRoute(
@@ -265,8 +265,7 @@ class _StatCard extends StatelessWidget {
           padding: const EdgeInsets.all(12),
           decoration: BoxDecoration(
             color: C.surface,
-            borderRadius: BorderRadius.circular(14),
-            border: Border.all(color: C.line),
+            borderRadius: BorderRadius.circular(18),
           ),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
@@ -324,8 +323,7 @@ class _PendingEventsList extends StatelessWidget {
             padding: const EdgeInsets.all(20),
             decoration: BoxDecoration(
               color: C.surface,
-              borderRadius: BorderRadius.circular(14),
-              border: Border.all(color: C.line),
+              borderRadius: BorderRadius.circular(18),
             ),
             child: Center(
               child: Text(s.noPendingEvents,
@@ -352,21 +350,20 @@ class _EventTile extends StatelessWidget {
       case EventStatus.rejected:
         return C.danger;
       case EventStatus.pending:
-        return const Color(0xFFFFB74D);
+        return C.gold;
     }
   }
 
   @override
   Widget build(BuildContext context) {
     final s = context.watch<LanguageService>().strings;
-    final dateStr = DateFormat('EEE, MMM d').format(event.date);
+    final dateStr = DateFormat('EEE, MMM d', trLocale()).format(event.date);
     return Container(
       margin: const EdgeInsets.only(bottom: 10),
       padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
         color: C.surface,
-        borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: C.line),
+        borderRadius: BorderRadius.circular(18),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -395,7 +392,7 @@ class _EventTile extends StatelessWidget {
             ],
           ),
           const SizedBox(height: 6),
-          Text('$dateStr · ${event.startTime} – ${event.endTime}  ·  ${event.attendees} ppl',
+          Text(tr('{0} · {1} – {2}  ·  {3} ppl', [dateStr, event.startTime, event.endTime, event.attendees]),
               style: const TextStyle(color: C.accent, fontSize: 12)),
           const SizedBox(height: 6),
           Text(event.description,
@@ -419,7 +416,7 @@ class _EventTile extends StatelessWidget {
                       foregroundColor: C.danger,
                       side: const BorderSide(color: C.danger),
                       shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(10)),
+                          borderRadius: BorderRadius.circular(12)),
                     ),
                   ),
                 ),
@@ -435,7 +432,7 @@ class _EventTile extends StatelessWidget {
                       foregroundColor: Colors.white,
                       elevation: 0,
                       shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(10)),
+                          borderRadius: BorderRadius.circular(12)),
                     ),
                   ),
                 ),
@@ -471,8 +468,7 @@ class _ReportsList extends StatelessWidget {
             padding: const EdgeInsets.all(20),
             decoration: BoxDecoration(
               color: C.surface,
-              borderRadius: BorderRadius.circular(14),
-              border: Border.all(color: C.line),
+              borderRadius: BorderRadius.circular(18),
             ),
             child: Center(
               child: Text(s.noReports,
@@ -496,11 +492,11 @@ class _ReportTile extends StatelessWidget {
   Widget build(BuildContext context) {
     final ts = DateTime.tryParse(data['timestamp'] as String? ?? '');
     final dateStr =
-        ts == null ? '' : DateFormat('MMM d · HH:mm').format(ts);
+        ts == null ? '' : DateFormat('MMM d · HH:mm', trLocale()).format(ts);
     final category = (data['category'] ?? '').toString();
     final note = (data['note'] ?? '').toString();
     final aiDesc = (data['aiDescription'] ?? '').toString();
-    final userName = (data['userName'] ?? 'Anonymous').toString();
+    final userName = (data['userName'] ?? tr('Anonymous')).toString();
     final userEmail = (data['userEmail'] ?? '').toString();
     final lat = data['latitude'] as num?;
     final lng = data['longitude'] as num?;
@@ -510,8 +506,7 @@ class _ReportTile extends StatelessWidget {
       padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
         color: C.surface,
-        borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: C.line),
+        borderRadius: BorderRadius.circular(18),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -596,7 +591,7 @@ class _ReviewAlert extends StatelessWidget {
           child: Material(
             color: Colors.transparent,
             child: InkWell(
-              borderRadius: BorderRadius.circular(14),
+              borderRadius: BorderRadius.circular(18),
               onTap: () => Navigator.push(
                 context,
                 MaterialPageRoute(builder: (_) => const HuntReviewsScreen()),
@@ -605,7 +600,7 @@ class _ReviewAlert extends StatelessWidget {
                 padding: const EdgeInsets.all(16),
                 decoration: BoxDecoration(
                   color: const Color(0xFF3B1414),
-                  borderRadius: BorderRadius.circular(14),
+                  borderRadius: BorderRadius.circular(18),
                   border: Border.all(color: C.danger, width: 1.5),
                 ),
                 child: Row(
@@ -627,15 +622,15 @@ class _ReviewAlert extends StatelessWidget {
                         children: [
                           Text(
                             n == 1
-                                ? '1 photo waiting for review'
-                                : '$n photos waiting for review',
+                                ? tr('1 photo waiting for review')
+                                : tr('{0} photos waiting for review', [n]),
                             style: const TextStyle(
                                 color: Color(0xFFFFCDD2),
                                 fontSize: 15,
                                 fontWeight: FontWeight.w700),
                           ),
-                          const Text(
-                            'A visitor is waiting on your answer. Tap to check.',
+                          Text(
+                            tr('A visitor is waiting on your answer. Tap to check.'),
                             style: TextStyle(
                                 color: C.danger, fontSize: 12.5),
                           ),
@@ -663,7 +658,7 @@ class _ParticipantsTile extends StatelessWidget {
     return Material(
       color: Colors.transparent,
       child: InkWell(
-        borderRadius: BorderRadius.circular(14),
+        borderRadius: BorderRadius.circular(18),
         onTap: () => Navigator.push(
           context,
           MaterialPageRoute(builder: (_) => const ParticipantsScreen()),
@@ -672,23 +667,22 @@ class _ParticipantsTile extends StatelessWidget {
           padding: const EdgeInsets.all(14),
           decoration: BoxDecoration(
             color: C.surface,
-            borderRadius: BorderRadius.circular(14),
-            border: Border.all(color: C.line),
+            borderRadius: BorderRadius.circular(18),
           ),
           child: Row(
             children: [
               const Icon(Icons.groups_rounded, color: C.accent),
               const SizedBox(width: 12),
-              const Expanded(
+              Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text('Participants',
+                    Text(tr('Participants'),
                         style: TextStyle(
                             color: C.textHi,
                             fontSize: 14.5,
                             fontWeight: FontWeight.w600)),
-                    Text('Every Plant Hunt submission, by person',
+                    Text(tr('Every Plant Hunt submission, by person'),
                         style: TextStyle(
                             color: C.textFaint, fontSize: 12.5)),
                   ],
@@ -721,7 +715,7 @@ class _ContestSubmissionsTile extends StatelessWidget {
           child: Material(
             color: Colors.transparent,
             child: InkWell(
-              borderRadius: BorderRadius.circular(14),
+              borderRadius: BorderRadius.circular(18),
               onTap: () => Navigator.push(
                 context,
                 MaterialPageRoute(
@@ -731,8 +725,7 @@ class _ContestSubmissionsTile extends StatelessWidget {
                 padding: const EdgeInsets.all(14),
                 decoration: BoxDecoration(
                   color: C.surface,
-                  borderRadius: BorderRadius.circular(14),
-                  border: Border.all(color: C.line),
+                  borderRadius: BorderRadius.circular(18),
                 ),
                 child: Row(
                   children: [
@@ -743,13 +736,13 @@ class _ContestSubmissionsTile extends StatelessWidget {
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          const Text('Contest submissions',
+                          Text(tr('Contest submissions'),
                               style: TextStyle(
                                   color: C.textHi,
                                   fontSize: 14.5,
                                   fontWeight: FontWeight.w600)),
                           Text(
-                            '${c.title} · locations, teams, missing plants',
+                            tr('{0} · locations, teams, missing plants', [c.title]),
                             style: const TextStyle(
                                 color: C.textFaint, fontSize: 12.5),
                           ),
@@ -785,7 +778,7 @@ class _ReportedPostsTile extends StatelessWidget {
         return Material(
           color: Colors.transparent,
           child: InkWell(
-            borderRadius: BorderRadius.circular(14),
+            borderRadius: BorderRadius.circular(18),
             onTap: () => Navigator.push(
               context,
               MaterialPageRoute(builder: (_) => const ReportedPostsScreen()),
@@ -794,7 +787,7 @@ class _ReportedPostsTile extends StatelessWidget {
               padding: const EdgeInsets.all(14),
               decoration: BoxDecoration(
                 color: pending ? const Color(0xFF2A1414) : C.surface,
-                borderRadius: BorderRadius.circular(14),
+                borderRadius: BorderRadius.circular(18),
                 border: Border.all(
                   color: pending
                       ? C.danger
@@ -812,15 +805,15 @@ class _ReportedPostsTile extends StatelessWidget {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        const Text('Reported photos',
+                        Text(tr('Reported photos'),
                             style: TextStyle(
                                 color: C.textHi,
                                 fontSize: 14.5,
                                 fontWeight: FontWeight.w600)),
                         Text(
                           pending
-                              ? '$n waiting for review'
-                              : 'Nothing to review',
+                              ? tr('{0} waiting for review', [n])
+                              : tr('Nothing to review'),
                           style: TextStyle(
                             color: pending
                                 ? const Color(0xFFFFCDD2)

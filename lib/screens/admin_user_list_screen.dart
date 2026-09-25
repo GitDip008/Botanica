@@ -4,6 +4,7 @@ import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
 import '../services/language_service.dart';
 import '../theme/tokens.dart';
+import '../i18n/tr.dart';
 
 /// Which subset of users to display.
 enum AdminUserFilter { all, premium, activeToday, chatsToday }
@@ -103,7 +104,7 @@ class AdminUserListScreen extends StatelessWidget {
           });
 
           return ListView.separated(
-            padding: const EdgeInsets.all(16),
+            padding: const EdgeInsets.all(20),
             itemCount: users.length,
             separatorBuilder: (_, __) => const SizedBox(height: 10),
             itemBuilder: (_, i) => _UserTile(user: users[i], s: s),
@@ -130,7 +131,7 @@ class _UserTile extends StatelessWidget {
     final joined = DateTime.tryParse(user['joinedAt'] as String? ?? '');
     final joinedStr = joined == null
         ? '—'
-        : DateFormat('MMM d, yyyy · HH:mm').format(joined);
+        : DateFormat('MMM d, yyyy · HH:mm', trLocale()).format(joined);
     final chatsToday =
         ((user['chatsUsedTodayIds'] as List?) ?? const []).length;
     final initial = (name.isNotEmpty ? name : email).isNotEmpty
@@ -141,8 +142,7 @@ class _UserTile extends StatelessWidget {
       padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
         color: C.surface,
-        borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: C.line),
+        borderRadius: BorderRadius.circular(18),
       ),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,

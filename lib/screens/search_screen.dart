@@ -10,6 +10,7 @@ import '../services/usage_tracking_service.dart';
 import 'main_nav_screen.dart';
 import 'plant_result_screen.dart';
 import '../theme/tokens.dart';
+import '../i18n/tr.dart';
 
 class SearchScreen extends StatefulWidget {
   const SearchScreen({super.key});
@@ -23,9 +24,10 @@ class _SearchScreenState extends State<SearchScreen> {
   bool _searching = false;
   String? _error;
 
-  final List<String> _suggestions = [
-    'Valerian', 'Cloudberry', 'Arctic Poppy', 'Bird of Paradise',
-    'Mountain Avens', 'Orchid', 'Lapland Rhododendron', 'Chamomile',
+  // Getter, not a field: rebuilt in the current language every build.
+  List<String> get _suggestions => [
+    tr('Valerian'), tr('Cloudberry'), tr('Arctic Poppy'), tr('Bird of Paradise'),
+    tr('Mountain Avens'), tr('Orchid'), tr('Lapland Rhododendron'), tr('Chamomile'),
   ];
 
   Future<void> _search(String query) async {
@@ -153,11 +155,11 @@ class _SearchScreenState extends State<SearchScreen> {
           onPressed: () =>
               MainNavScreen.scaffoldKey.currentState?.openDrawer(),
         ),
-        title: Text('🕵️‍♂️ ${s.searchPlants}',
+        title: Text(s.searchPlants,
             style: const TextStyle(color: C.textHi, fontWeight: FontWeight.bold)),
       ),
       body: SingleChildScrollView(
-        padding: const EdgeInsets.all(16),
+        padding: const EdgeInsets.all(20),
         keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -200,32 +202,29 @@ class _SearchScreenState extends State<SearchScreen> {
               Container(
                 padding: const EdgeInsets.all(10),
                 decoration: BoxDecoration(
-                  color: Colors.red[900]!.withOpacity(0.2),
-                  borderRadius: BorderRadius.circular(8),
-                  border: Border.all(color: Colors.red[700]!.withOpacity(0.4)),
+                  color: C.danger.withValues(alpha: 0.12),
+                  borderRadius: BorderRadius.circular(R.s),
                 ),
                 child: Text(_error!,
-                    style: const TextStyle(color: Colors.orange, fontSize: 12, height: 1.4)),
+                    style: const TextStyle(color: C.danger, fontSize: 13, height: 1.4)),
               ),
             ],
 
             const SizedBox(height: 24),
 
-            Text(s.quickSearches,
-                style: const TextStyle(color: C.accent, fontWeight: FontWeight.bold, fontSize: 14)),
+            Text(s.quickSearches.toUpperCase(), style: T.overline),
             const SizedBox(height: 10),
             Wrap(
               spacing: 8, runSpacing: 8,
               children: _suggestions.map((s) => GestureDetector(
                 onTap: () { _ctrl.text = s; _search(s); },
                 child: Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+                  padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 9),
                   decoration: BoxDecoration(
-                    color: C.surface,
+                    color: C.surfaceAlt,
                     borderRadius: BorderRadius.circular(20),
-                    border: Border.all(color: C.accentDim),
                   ),
-                  child: Text(s, style: const TextStyle(color: C.accent, fontSize: 13)),
+                  child: Text(s, style: const TextStyle(color: C.text, fontSize: 13.5)),
                 ),
               )).toList(),
             ),

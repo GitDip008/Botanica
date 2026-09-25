@@ -19,6 +19,7 @@ import '../data/plant_index.dart';
 import '../services/language_service.dart';
 import '../widgets/plant_tags_bar.dart';
 import '../theme/tokens.dart';
+import '../i18n/tr.dart';
 
 class PlantsScreen extends StatefulWidget {
   const PlantsScreen({super.key});
@@ -86,7 +87,7 @@ class _PlantsScreenState extends State<PlantsScreen> {
       appBar: AppBar(
         backgroundColor: C.bg,
         elevation: 0,
-        title: Text(_isFinnish ? 'Tunne kasvit' : 'Know Our Plants'),
+        title: Text(tr('Know Our Plants')),
       ),
       body: !_ready
           ? const Center(child: CircularProgressIndicator())
@@ -98,16 +99,14 @@ class _PlantsScreenState extends State<PlantsScreen> {
                     style: const TextStyle(color: C.textHi),
                     onChanged: (v) => setState(() => _query = v),
                     decoration: InputDecoration(
-                      hintText: _isFinnish
-                          ? 'Hae nimellä tai osastolla'
-                          : 'Search by name or section',
+                      hintText: tr('Search by name or section'),
                       hintStyle: const TextStyle(color: C.textFaint),
                       prefixIcon:
                           const Icon(Icons.search, color: C.accent),
                       filled: true,
                       fillColor: C.surfaceAlt,
                       border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(10),
+                        borderRadius: BorderRadius.circular(12),
                         borderSide: BorderSide.none,
                       ),
                       isDense: true,
@@ -121,7 +120,7 @@ class _PlantsScreenState extends State<PlantsScreen> {
                     padding: const EdgeInsets.symmetric(horizontal: 16),
                     children: [
                       FilterChip(
-                        label: Text(_isFinnish ? 'Vain kuvatut' : 'Described only'),
+                        label: Text(tr('Described only')),
                         selected: _onlyCurated,
                         onSelected: (v) => setState(() => _onlyCurated = v),
                         labelStyle: TextStyle(
@@ -131,7 +130,7 @@ class _PlantsScreenState extends State<PlantsScreen> {
                           fontSize: 12.5,
                           fontWeight: FontWeight.w600,
                         ),
-                        selectedColor: const Color(0xFFFFB74D),
+                        selectedColor: C.gold,
                         backgroundColor: C.surfaceAlt,
                         side: const BorderSide(color: C.accentDim),
                         showCheckmark: false,
@@ -166,8 +165,8 @@ class _PlantsScreenState extends State<PlantsScreen> {
                     alignment: Alignment.centerLeft,
                     child: Text(
                       _isFinnish
-                          ? '${results.length} kasvia'
-                          : '${results.length} plants',
+                          ? tr('{0} kasvia', [results.length])
+                          : tr('{0} plants', [results.length]),
                       style: const TextStyle(
                           color: C.textFaint, fontSize: 12),
                     ),
@@ -177,14 +176,12 @@ class _PlantsScreenState extends State<PlantsScreen> {
                   child: results.isEmpty
                       ? Center(
                           child: Text(
-                            _isFinnish
-                                ? 'Ei osumia.'
-                                : 'Nothing matches those filters.',
+                            tr('Nothing matches those filters.'),
                             style: const TextStyle(color: C.textSoft),
                           ),
                         )
                       : ListView.builder(
-                          padding: const EdgeInsets.fromLTRB(16, 4, 16, 24),
+                          padding: const EdgeInsets.fromLTRB(20, 4, 20, 24),
                           itemCount: results.length,
                           itemBuilder: (_, i) => _PlantRow(
                             facts: results[i],
@@ -240,7 +237,7 @@ class _PlantsScreenState extends State<PlantsScreen> {
                   ),
                 const SizedBox(height: 14),
                 if (section.isNotEmpty)
-                  _row(Icons.place_rounded, _isFinnish ? 'Osasto' : 'Area',
+                  _row(Icons.place_rounded, tr('Area'),
                       section +
                           (finnishSection != null &&
                                   finnishSection.toLowerCase() !=
@@ -249,19 +246,19 @@ class _PlantsScreenState extends State<PlantsScreen> {
                               : '') +
                           (p.sectionCode != null ? '  (${p.sectionCode})' : '')),
                 if (p.englishName != null && p.englishName!.isNotEmpty)
-                  _row(Icons.language_rounded, 'English', p.englishName!),
+                  _row(Icons.language_rounded, tr('English'), p.englishName!),
                 if (p.finnishName != null && p.finnishName!.isNotEmpty)
-                  _row(Icons.translate_rounded, 'Suomi', p.finnishName!),
+                  _row(Icons.translate_rounded, tr('Suomi'), p.finnishName!),
                 if (p.count != null && p.count!.isNotEmpty)
                   _row(Icons.numbers_rounded,
-                      _isFinnish ? 'Määrä' : 'Count', p.count!),
+                      tr('Count'), p.count!),
                 if (p.hankintaID != null)
                   _row(Icons.tag_rounded,
-                      _isFinnish ? 'Tunniste' : 'Record id', p.hankintaID!),
+                      tr('Record id'), p.hankintaID!),
                 if (p.tags.isNotEmpty) ...[
                   const SizedBox(height: 12),
                   Text(
-                    (_isFinnish ? 'Mikä tekee siitä erityisen' : 'What makes it notable')
+                    (tr('What makes it notable'))
                         .toUpperCase(),
                     style: const TextStyle(
                       color: C.accent,
@@ -297,9 +294,7 @@ class _PlantsScreenState extends State<PlantsScreen> {
                   Padding(
                     padding: const EdgeInsets.only(top: 10),
                     child: Text(
-                      _isFinnish
-                          ? 'Tälle kasville ei ole vielä kuvausta puutarhan aineistossa.'
-                          : "The garden's records carry no description for this plant yet.",
+                      tr('The garden\'s records carry no description for this plant yet.'),
                       style: const TextStyle(
                           color: C.textFaint, fontSize: 13),
                     ),
@@ -361,14 +356,13 @@ class _PlantRow extends StatelessWidget {
 
     return InkWell(
       onTap: onTap,
-      borderRadius: BorderRadius.circular(10),
+      borderRadius: BorderRadius.circular(12),
       child: Container(
         margin: const EdgeInsets.only(bottom: 8),
         padding: const EdgeInsets.all(12),
         decoration: BoxDecoration(
           color: C.surface,
-          borderRadius: BorderRadius.circular(10),
-          border: Border.all(color: C.line),
+          borderRadius: BorderRadius.circular(12),
         ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,

@@ -68,7 +68,7 @@ class _OfflineBannerOverlayState extends State<OfflineBannerOverlay> {
                       Expanded(
                         child: Text(s.youAreOffline,
                             style: const TextStyle(
-                                color: Color(0xFFFFE082),
+                                color: C.gold,
                                 fontSize: 12.5,
                                 fontWeight: FontWeight.w600)),
                       ),

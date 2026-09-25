@@ -8,6 +8,7 @@ import '../../services/language_service.dart';
 import '../../services/navigation/nav_graph.dart';
 import '../navigation/navigation_view.dart';
 import '../../theme/tokens.dart';
+import '../../i18n/tr.dart';
 
 /// Single chat-style screen the gardener / visitor uses to talk to the agent.
 ///
@@ -268,15 +269,15 @@ class _AgentScreenState extends State<AgentScreen> {
         lang == 'fi' ? fi : (lang == 'sv' ? sv : en);
     if (staff) {
       return [
-        t('What needs attention?', 'Mikä tarvitsee huomiota?', 'Vad behöver uppmärksamhet?'),
-        t('Find a plant', 'Etsi kasvi', 'Hitta en växt'),
-        t('Record an action', 'Kirjaa toimenpide', 'Registrera en åtgärd'),
+        t(tr('What needs attention?'), tr('Mikä tarvitsee huomiota?'), tr('Vad behöver uppmärksamhet?')),
+        t(tr('Find a plant'), tr('Etsi kasvi'), tr('Hitta en växt')),
+        t(tr('Record an action'), tr('Kirjaa toimenpide'), tr('Registrera en åtgärd')),
       ];
     }
     return [
-      t('Find a plant', 'Etsi kasvi', 'Hitta en växt'),
-      t('Plan a 30-minute tour', 'Suunnittele 30 min kierros', 'Planera en 30-min rundtur'),
-      t("What's interesting to see?", 'Mitä kannattaa nähdä?', 'Vad är intressant att se?'),
+      t(tr('Find a plant'), tr('Etsi kasvi'), tr('Hitta en växt')),
+      t(tr('Plan a 30-minute tour'), tr('Suunnittele 30 min kierros'), tr('Planera en 30-min rundtur')),
+      t(tr('What\'s interesting to see?'), tr('Mitä kannattaa nähdä?'), tr('Vad är intressant att se?')),
     ];
   }
 
@@ -301,12 +302,12 @@ class _AgentScreenState extends State<AgentScreen> {
       await NavigationView.show(
         context,
         route: route,
-        destinationLabel: 'Tropical room (Romeo A)',
+        destinationLabel: tr('Tropical room (Romeo A)'),
       );
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Route demo failed: $e')),
+          SnackBar(content: Text(tr('Route demo failed: {0}', [e]))),
         );
       }
     }
@@ -320,7 +321,7 @@ class _AgentScreenState extends State<AgentScreen> {
       setState(() => _messages.add(_Message.agent(
           result.ok ? '↩️ ${result.message}' : '⚠️ ${result.message}')));
     } catch (e) {
-      setState(() => _messages.add(_Message.agent('⚠️ Undo failed: $e')));
+      setState(() => _messages.add(_Message.agent(tr('⚠️ Undo failed: {0}', [e]))));
     } finally {
       if (mounted) setState(() => _busy = false);
       _scrollToEnd();
@@ -380,7 +381,7 @@ class _AgentScreenState extends State<AgentScreen> {
         }
       });
     } catch (e) {
-      setState(() => _messages.add(_Message.agent('⚠️ Save failed: $e')));
+      setState(() => _messages.add(_Message.agent(tr('⚠️ Save failed: {0}', [e]))));
     } finally {
       if (mounted) setState(() => _busy = false);
     }
@@ -394,7 +395,7 @@ class _AgentScreenState extends State<AgentScreen> {
     _input.text = '';
     ScaffoldMessenger.of(context).showSnackBar(SnackBar(
       backgroundColor: C.surfaceAlt,
-      content: Text('Editing draft — describe what to change.',
+      content: Text(tr('Editing draft — describe what to change.'),
           style: const TextStyle(color: C.textHi)),
       duration: const Duration(seconds: 2),
     ));
@@ -406,7 +407,7 @@ class _AgentScreenState extends State<AgentScreen> {
       backgroundColor: C.bg,
       appBar: AppBar(
         backgroundColor: C.bg,
-        title: const Text('Botanica Agent'),
+        title: Text(tr('Botanica Agent')),
         elevation: 0,
         actions: [
           // Gardener-only: enter the slot-filling update conversation. Hidden
@@ -420,7 +421,7 @@ class _AgentScreenState extends State<AgentScreen> {
                   _updateMode ? Icons.check_rounded : Icons.edit_note_rounded,
                   size: 18,
                 ),
-                label: Text(_updateMode ? 'Done' : 'Update'),
+                label: Text(_updateMode ? tr('Done') : tr('Update')),
                 style: FilledButton.styleFrom(
                   backgroundColor:
                       _updateMode ? C.accentDim : C.surfaceAlt,
@@ -431,12 +432,12 @@ class _AgentScreenState extends State<AgentScreen> {
               ),
             ),
           IconButton(
-            tooltip: 'Demo: route to greenhouse',
+            tooltip: tr('Demo: route to greenhouse'),
             icon: const Icon(Icons.directions_rounded, color: C.accent),
             onPressed: _openDemoRoute,
           ),
           IconButton(
-            tooltip: 'Undo last saved action',
+            tooltip: tr('Undo last saved action'),
             icon: const Icon(Icons.undo_rounded, color: C.accent),
             onPressed: _busy ? null : _undoLast,
           ),
@@ -453,7 +454,7 @@ class _AgentScreenState extends State<AgentScreen> {
                     )
                   : ListView.builder(
                       controller: _scroll,
-                      padding: const EdgeInsets.all(16),
+                      padding: const EdgeInsets.all(20),
                       itemCount: _messages.length,
                       itemBuilder: (_, i) => _MessageBubble(
                         message: _messages[i],
@@ -487,7 +488,7 @@ class _AgentScreenState extends State<AgentScreen> {
                           label: Text(s),
                           labelStyle: const TextStyle(
                               color: C.textHi, fontSize: 12.5),
-                          backgroundColor: const Color(0xFF173024),
+                          backgroundColor: C.surfaceAlt,
                           side: const BorderSide(color: C.accentDim),
                           materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
                           visualDensity: VisualDensity.compact,
@@ -565,8 +566,8 @@ class _EmptyHint extends StatelessWidget {
                     const Icon(Icons.eco_rounded,
                         color: C.accent, size: 56),
                     const SizedBox(height: 16),
-                    const Text(
-                      'Ask me about a plant, log an update, or plan a tour.',
+                    Text(
+                      tr('Ask me about a plant, log an update, or plan a tour.'),
                       textAlign: TextAlign.center,
                       style: TextStyle(color: C.textHi, fontSize: 16),
                     ),
@@ -581,7 +582,7 @@ class _EmptyHint extends StatelessWidget {
                             label: Text(s),
                             labelStyle: const TextStyle(
                                 color: C.textHi, fontSize: 13),
-                            backgroundColor: const Color(0xFF173024),
+                            backgroundColor: C.surfaceAlt,
                             side: const BorderSide(color: C.accentDim),
                             materialTapTargetSize:
                                 MaterialTapTargetSize.shrinkWrap,
@@ -658,8 +659,7 @@ class _ClarifyCard extends StatelessWidget {
         padding: const EdgeInsets.all(12),
         decoration: BoxDecoration(
           color: const Color(0xFF13251A),
-          borderRadius: BorderRadius.circular(14),
-          border: Border.all(color: C.accentDim),
+          borderRadius: BorderRadius.circular(18),
         ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -682,8 +682,8 @@ class _ClarifyCard extends StatelessWidget {
               const SizedBox(height: 8),
               Text(
                 clarification.kind == 'did_you_mean'
-                    ? '…or type the correct name.'
-                    : '…or type the section / plant id.',
+                    ? tr('…or type the correct name.')
+                    : tr('…or type the section / plant id.'),
                 style: const TextStyle(
                     color: C.accent,
                     fontSize: 11,
@@ -710,7 +710,7 @@ class _UserBubble extends StatelessWidget {
         padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
         decoration: BoxDecoration(
           color: C.accentDim,
-          borderRadius: BorderRadius.circular(14),
+          borderRadius: BorderRadius.circular(18),
         ),
         child: Text(
           text,
@@ -734,8 +734,7 @@ class _AgentBubble extends StatelessWidget {
         padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
         decoration: BoxDecoration(
           color: C.surface,
-          borderRadius: BorderRadius.circular(14),
-          border: Border.all(color: C.line),
+          borderRadius: BorderRadius.circular(18),
         ),
         child: Text(
           text,
@@ -766,7 +765,7 @@ class _PendingCard extends StatelessWidget {
       padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
         color: C.surface,
-        borderRadius: BorderRadius.circular(14),
+        borderRadius: BorderRadius.circular(18),
         border: Border.all(color: C.gold, width: 1.4),
       ),
       child: Column(
@@ -776,7 +775,7 @@ class _PendingCard extends StatelessWidget {
             const Icon(Icons.fact_check_outlined,
                 color: C.gold, size: 18),
             const SizedBox(width: 8),
-            Text('CONFIRM CHANGE',
+            Text(tr('CONFIRM CHANGE'),
                 style: TextStyle(
                     color: C.gold,
                     fontSize: 11,
@@ -796,7 +795,6 @@ class _PendingCard extends StatelessWidget {
               decoration: BoxDecoration(
                 color: C.surfaceAlt,
                 borderRadius: BorderRadius.circular(8),
-                border: Border.all(color: C.accentDim, width: 1),
               ),
               child: Text(
                 action.plainSummary!,
@@ -817,7 +815,7 @@ class _PendingCard extends StatelessWidget {
           // ── Detailed change breakdown ──
           if (action.changes.isNotEmpty) ...[
             const SizedBox(height: 12),
-            const Text('WHAT WILL CHANGE',
+            Text(tr('WHAT WILL CHANGE'),
                 style: TextStyle(
                     color: C.accent,
                     fontSize: 10,
@@ -830,7 +828,7 @@ class _PendingCard extends StatelessWidget {
           // ── Exact database operation (read-only) ──
           if (action.sqlDisplay != null) ...[
             const SizedBox(height: 12),
-            const Text('DATABASE OPERATION',
+            Text(tr('DATABASE OPERATION'),
                 style: TextStyle(
                     color: Color(0xFF64B5F6),
                     fontSize: 10,
@@ -843,12 +841,11 @@ class _PendingCard extends StatelessWidget {
               decoration: BoxDecoration(
                 color: C.bg,
                 borderRadius: BorderRadius.circular(8),
-                border: Border.all(color: C.line),
               ),
               child: SelectableText(
                 action.sqlDisplay!,
                 style: const TextStyle(
-                    color: Color(0xFF9FD9A0),
+                    color: C.textSoft,
                     fontSize: 11,
                     fontFamily: 'monospace',
                     height: 1.4),
@@ -860,19 +857,19 @@ class _PendingCard extends StatelessWidget {
           Row(children: [
             TextButton(
               onPressed: () => onCancel(action),
-              child: const Text('Cancel',
+              child: Text(tr('Cancel'),
                   style: TextStyle(color: C.danger)),
             ),
             const SizedBox(width: 4),
             TextButton(
               onPressed: () => onEdit(action),
-              child: const Text('Edit',
+              child: Text(tr('Edit'),
                   style: TextStyle(color: Color(0xFF64B5F6))),
             ),
             const Spacer(),
             ElevatedButton.icon(
               icon: const Icon(Icons.check_rounded, size: 18),
-              label: const Text('Make changes'),
+              label: Text(tr('Make changes')),
               style: ElevatedButton.styleFrom(
                 backgroundColor: C.accentDim,
                 foregroundColor: Colors.white,
@@ -942,7 +939,7 @@ class _ChangeRow extends StatelessWidget {
               padding: const EdgeInsets.only(left: 18, top: 1),
               child: Text(change.note,
                   style: const TextStyle(
-                      color: Color(0xFF5F6B5F), fontSize: 10.5, height: 1.3)),
+                      color: C.textFaint, fontSize: 10.5, height: 1.3)),
             ),
         ],
       ),
@@ -962,16 +959,15 @@ class _ConfirmedCard extends StatelessWidget {
       decoration: BoxDecoration(
         color: const Color(0xFF15281A),
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: C.accentDim),
       ),
       child: Row(children: [
         const Icon(Icons.check_circle_outline,
             color: C.accent, size: 18),
         const SizedBox(width: 10),
         Expanded(
-          child: Text('Saved: ${action.preview}',
+          child: Text(tr('Saved: {0}', [action.preview]),
               style: const TextStyle(
-                  color: Color(0xFFC5E1A5), fontSize: 13, height: 1.4)),
+                  color: C.text, fontSize: 13, height: 1.4)),
         ),
       ]),
     );
@@ -1008,7 +1004,7 @@ class _InputBar extends StatelessWidget {
       child: Row(children: [
         // Mic — tap to start/stop dictation. Pulses red while listening.
         IconButton(
-          tooltip: listening ? 'Stop listening' : 'Speak',
+          tooltip: listening ? tr('Stop listening') : tr('Speak'),
           icon: Icon(
             listening ? Icons.mic_rounded : Icons.mic_none_rounded,
             color: listening ? C.danger : C.accent,
@@ -1032,8 +1028,8 @@ class _InputBar extends StatelessWidget {
               hintText: listening
                   ? 'Listening…'
                   : editing
-                      ? 'Describe the correction…'
-                      : 'Type a message…',
+                      ? tr('Describe the correction…')
+                      : tr('Type a message…'),
               hintStyle: TextStyle(
                   color: listening
                       ? C.danger

@@ -22,6 +22,7 @@ import 'package:flutter/material.dart';
 
 import '../services/camera_utils.dart';
 import '../theme/tokens.dart';
+import '../i18n/tr.dart';
 
 class ZoomableCameraPreview extends StatefulWidget {
   const ZoomableCameraPreview({super.key, required this.controller});
@@ -111,10 +112,10 @@ class _ZoomableCameraPreviewState extends State<ZoomableCameraPreview> {
                       mainAxisSize: MainAxisSize.min,
                       children: [
                         IconButton(
-                          tooltip: 'Zoom in',
+                          tooltip: tr('Zoom in'),
                           icon: Icon(Icons.add,
                               color: _zoom >= _max - 0.001
-                                  ? Colors.white38
+                                  ? C.textFaint
                                   : Colors.white,
                               size: 20),
                           onPressed:
@@ -126,10 +127,10 @@ class _ZoomableCameraPreviewState extends State<ZoomableCameraPreview> {
                                 fontSize: 11,
                                 fontWeight: FontWeight.w700)),
                         IconButton(
-                          tooltip: 'Zoom out',
+                          tooltip: tr('Zoom out'),
                           icon: Icon(Icons.remove,
                               color: _zoom <= _min + 0.001
-                                  ? Colors.white38
+                                  ? C.textFaint
                                   : Colors.white,
                               size: 20),
                           onPressed:

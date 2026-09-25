@@ -36,4 +36,9 @@ class LanguageService extends ChangeNotifier {
   static LanguageService? _instance;
   static LanguageService get instance => _instance ??= LanguageService();
   static void register(LanguageService svc) => _instance = svc;
+
+  /// The active language without creating a service as a side effect. Used by
+  /// tr(), which runs in places — model parsing, unit tests — where no app has
+  /// registered one and constructing it would touch SharedPreferences.
+  static AppLanguage get activeOrDefault => _instance?.current ?? AppLanguage.en;
 }

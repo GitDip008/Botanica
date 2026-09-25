@@ -21,6 +21,9 @@ import '../data/plant_index.dart';
 import '../data/trails.dart';
 import '../services/usage_tracking_service.dart';
 import '../theme/tokens.dart';
+import '../i18n/app_strings.dart';
+import '../i18n/tr.dart';
+import '../services/language_service.dart';
 
 const _bg = C.bg;
 const _surface = C.surface;
@@ -66,19 +69,17 @@ class _TrailScreenState extends State<TrailScreen> {
       appBar: AppBar(
         backgroundColor: C.bg,
         elevation: 0,
-        title: const Text('Garden trails',
+        title: Text(tr('Garden trails'),
             style: TextStyle(color: _textPri, fontWeight: FontWeight.bold)),
         iconTheme: const IconThemeData(color: C.accent),
       ),
       body: _loading
           ? const Center(child: CircularProgressIndicator(color: _green))
           : ListView(
-              padding: const EdgeInsets.fromLTRB(16, 16, 16, 32),
+              padding: const EdgeInsets.fromLTRB(20, 16, 20, 32),
               children: [
-                const Text(
-                  'Pick a theme and walk it. Every stop is a plant the garden '
-                  'records in that section, described in the garden’s own '
-                  'words.',
+                Text(
+                  tr('Pick a theme and walk it. Every stop is a plant the garden records in that section, described in the garden’s own words.'),
                   style: TextStyle(
                       color: C.textSoft, fontSize: 13.5, height: 1.5),
                 ),
@@ -103,7 +104,7 @@ class _TrailCard extends StatelessWidget {
       child: Material(
         color: Colors.transparent,
         child: InkWell(
-          borderRadius: BorderRadius.circular(14),
+          borderRadius: BorderRadius.circular(18),
           onTap: () => Navigator.push(
             context,
             MaterialPageRoute(builder: (_) => TrailDetailScreen(trail: trail)),
@@ -112,7 +113,7 @@ class _TrailCard extends StatelessWidget {
             padding: const EdgeInsets.all(15),
             decoration: BoxDecoration(
               color: _surface,
-              borderRadius: BorderRadius.circular(14),
+              borderRadius: BorderRadius.circular(18),
               border: Border.all(color: _border),
             ),
             child: Row(
@@ -123,22 +124,20 @@ class _TrailCard extends StatelessWidget {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text(trail.title,
+                      Text(tr(trail.title),
                           style: const TextStyle(
                               color: _textPri,
                               fontSize: 16,
                               fontWeight: FontWeight.w700)),
                       const SizedBox(height: 2),
-                      Text(trail.subtitle,
+                      Text(tr(trail.subtitle),
                           style: const TextStyle(
                               color: C.textSoft,
                               fontSize: 12.5,
                               height: 1.35)),
                       const SizedBox(height: 6),
                       Text(
-                        '${trail.stops.length} plants · '
-                        '${trail.sections.length} sections · '
-                        '~${trail.minutes} min',
+                        tr('{0} plants · {1} sections · ~{2} min', [trail.stops.length, trail.sections.length, trail.minutes]),
                         style: const TextStyle(color: _textDim, fontSize: 11.5),
                       ),
                     ],
@@ -187,14 +186,14 @@ class _TrailDetailScreenState extends State<TrailDetailScreen> {
       appBar: AppBar(
         backgroundColor: C.bg,
         elevation: 0,
-        title: Text('${t.emoji}  ${t.title}',
+        title: Text('${t.emoji}  ${tr(t.title)}',
             style: const TextStyle(color: _textPri, fontSize: 17)),
         iconTheme: const IconThemeData(color: C.accent),
       ),
       body: ListView(
-        padding: const EdgeInsets.fromLTRB(16, 16, 16, 32),
+        padding: const EdgeInsets.fromLTRB(20, 16, 20, 32),
         children: [
-          Text(t.subtitle,
+          Text(tr(t.subtitle),
               style: const TextStyle(
                   color: C.textSoft, fontSize: 13.5, height: 1.5)),
           const SizedBox(height: 12),
@@ -204,7 +203,7 @@ class _TrailDetailScreenState extends State<TrailDetailScreen> {
             padding: const EdgeInsets.all(12),
             decoration: BoxDecoration(
               color: _surface,
-              borderRadius: BorderRadius.circular(10),
+              borderRadius: BorderRadius.circular(12),
               border: Border.all(color: _border),
             ),
             child: Row(
@@ -214,7 +213,7 @@ class _TrailDetailScreenState extends State<TrailDetailScreen> {
                 const SizedBox(width: 8),
                 Expanded(
                   child: Text(
-                    'Your route: ${t.sections.join("  →  ")}',
+                    tr('Your route: {0}', [t.sections.map(tr).join("  →  ")]),
                     style: const TextStyle(
                         color: C.text, fontSize: 12.5, height: 1.4),
                   ),
@@ -235,7 +234,7 @@ class _TrailDetailScreenState extends State<TrailDetailScreen> {
                 ),
                 const SizedBox(width: 6),
                 Expanded(
-                  child: Text(entry.key.toUpperCase(),
+                  child: Text(tr(entry.key).toUpperCase(),
                       style: const TextStyle(
                           color: _green,
                           fontSize: 11.5,
@@ -257,7 +256,7 @@ class _TrailDetailScreenState extends State<TrailDetailScreen> {
               Padding(
                 padding: const EdgeInsets.only(left: 21, top: 2),
                 child: Text(
-                  'signed “${entry.value.first.sectionRoom}”',
+                  tr('signed “{0}”', [entry.value.first.sectionRoom]),
                   style: const TextStyle(
                       color: C.textFaint,
                       fontSize: 11,
@@ -278,9 +277,8 @@ class _TrailDetailScreenState extends State<TrailDetailScreen> {
             const SizedBox(height: 18),
           ],
           const SizedBox(height: 4),
-          const Text(
-            'Sections are where the garden’s records place each plant. Ask at '
-            'the info desk if you cannot find one — plants do get moved.',
+          Text(
+            tr('Sections are where the garden’s records place each plant. Ask at the info desk if you cannot find one — plants do get moved.'),
             style: TextStyle(color: C.textFaint, fontSize: 11.5, height: 1.4),
           ),
         ],
@@ -305,12 +303,12 @@ class _Progress extends StatelessWidget {
               value: total == 0 ? 0 : found / total,
               minHeight: 7,
               backgroundColor: C.surfaceAlt,
-              valueColor: const AlwaysStoppedAnimation(Colors.greenAccent),
+              valueColor: const AlwaysStoppedAnimation(C.accent),
             ),
           ),
         ),
         const SizedBox(width: 10),
-        Text('$found / $total found',
+        Text(tr('{0} / {1} found', [found, total]),
             style: const TextStyle(color: C.textSoft, fontSize: 12)),
       ],
     );
@@ -353,7 +351,7 @@ class _StopTile extends StatelessWidget {
                       ? Icons.check_circle_rounded
                       : Icons.radio_button_unchecked,
                   size: 19,
-                  color: found ? Colors.greenAccent : C.textFaint,
+                  color: found ? C.accent : C.textFaint,
                 ),
                 const SizedBox(width: 11),
                 Expanded(
@@ -387,7 +385,7 @@ class _StopTile extends StatelessWidget {
                               size: 12, color: C.accent),
                           const SizedBox(width: 4),
                           Expanded(
-                            child: Text(stop.locationLine,
+                            child: Text(stop.locationLineIn(tr),
                                 style: const TextStyle(
                                     color: C.accent, fontSize: 11.5)),
                           ),
@@ -395,7 +393,10 @@ class _StopTile extends StatelessWidget {
                       ),
                       const SizedBox(height: 6),
                       // The garden's own words about this plant.
-                      Text(stop.why,
+                      Text(
+                          LanguageService.instance.current == AppLanguage.fi
+                              ? (stop.whyFi ?? tr(stop.why))
+                              : tr(stop.why),
                           style: const TextStyle(
                               color: C.text,
                               fontSize: 12.5,

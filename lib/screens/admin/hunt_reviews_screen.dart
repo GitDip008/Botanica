@@ -14,6 +14,7 @@ import '../../services/auth_service.dart';
 import '../../services/contest_service.dart';
 import '../../services/hunt_submission_service.dart';
 import '../../theme/tokens.dart';
+import '../../i18n/tr.dart';
 
 const _bg = C.bg;
 const _surface = C.surface;
@@ -32,7 +33,7 @@ class HuntReviewsScreen extends StatelessWidget {
       backgroundColor: _bg,
       appBar: AppBar(
         backgroundColor: C.bg,
-        title: const Text('Photo review requests',
+        title: Text(tr('Photo review requests'),
             style: TextStyle(color: _textPri)),
         iconTheme: const IconThemeData(color: C.accent),
       ),
@@ -44,16 +45,16 @@ class HuntReviewsScreen extends StatelessWidget {
           }
           final rows = snap.data!;
           if (rows.isEmpty) {
-            return const Center(
+            return Center(
               child: Padding(
                 padding: EdgeInsets.all(32),
-                child: Text('Nothing waiting for review.',
+                child: Text(tr('Nothing waiting for review.'),
                     style: TextStyle(color: C.textSoft)),
               ),
             );
           }
           return ListView.builder(
-            padding: const EdgeInsets.fromLTRB(16, 16, 16, 32),
+            padding: const EdgeInsets.fromLTRB(20, 16, 20, 32),
             itemCount: rows.length,
             itemBuilder: (_, i) => _ReviewCard(request: rows[i]),
           );
@@ -88,7 +89,7 @@ class _ReviewCardState extends State<_ReviewCard> {
       if (mounted) {
         setState(() => _busy = false);
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Could not save that: $e')),
+          SnackBar(content: Text(tr('Could not save that: {0}', [e]))),
         );
       }
     }
@@ -102,7 +103,7 @@ class _ReviewCardState extends State<_ReviewCard> {
       margin: const EdgeInsets.only(bottom: 14),
       decoration: BoxDecoration(
         color: _surface,
-        borderRadius: BorderRadius.circular(14),
+        borderRadius: BorderRadius.circular(18),
         border: Border.all(color: C.danger),
       ),
       child: Column(
@@ -119,8 +120,8 @@ class _ReviewCardState extends State<_ReviewCard> {
                 child: snap.data == null
                     ? Container(
                         color: C.surfaceAlt,
-                        child: const Center(
-                          child: Text('No photo attached',
+                        child: Center(
+                          child: Text(tr('No photo attached'),
                               style: TextStyle(color: _textDim, fontSize: 12)),
                         ),
                       )
@@ -144,7 +145,7 @@ class _ReviewCardState extends State<_ReviewCard> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text('${r.displayName} · quest ${r.questIndex + 1}',
+                Text(tr('{0} · quest {1}', [r.displayName, r.questIndex + 1]),
                     style: const TextStyle(
                         color: _textPri,
                         fontSize: 14.5,
@@ -152,16 +153,16 @@ class _ReviewCardState extends State<_ReviewCard> {
                 const SizedBox(height: 4),
                 // The admin cannot be expected to remember which quest is
                 // which, so the answer they are judging against is right here.
-                Text('Should be: ${r.plantName}',
+                Text(tr('Should be: {0}', [r.plantName]),
                     style: const TextStyle(
                         color: C.accent, fontSize: 12.5)),
                 if (r.typedAnswer.isNotEmpty)
-                  Text('They typed: "${r.typedAnswer}"',
+                  Text(tr('They typed: "{0}"', [r.typedAnswer]),
                       style: const TextStyle(color: _textDim, fontSize: 12.5)),
                 Text(
                   waited.inMinutes < 1
-                      ? 'Just now'
-                      : 'Waiting ${waited.inMinutes} min',
+                      ? tr('Just now')
+                      : tr('Waiting {0} min', [waited.inMinutes]),
                   style: const TextStyle(color: _textDim, fontSize: 11.5),
                 ),
                 const SizedBox(height: 12),
@@ -178,7 +179,7 @@ class _ReviewCardState extends State<_ReviewCard> {
                             padding: const EdgeInsets.symmetric(vertical: 12),
                           ),
                           icon: const Icon(Icons.close_rounded, size: 17),
-                          label: const Text('Decline'),
+                          label: Text(tr('Decline')),
                           onPressed: () => _decide(false),
                         ),
                       ),
@@ -190,7 +191,7 @@ class _ReviewCardState extends State<_ReviewCard> {
                             padding: const EdgeInsets.symmetric(vertical: 12),
                           ),
                           icon: const Icon(Icons.check_rounded, size: 17),
-                          label: const Text('Approve'),
+                          label: Text(tr('Approve')),
                           onPressed: () => _decide(true),
                         ),
                       ),
@@ -216,7 +217,7 @@ class ParticipantsScreen extends StatelessWidget {
       backgroundColor: _bg,
       appBar: AppBar(
         backgroundColor: C.bg,
-        title: const Text('Participants', style: TextStyle(color: _textPri)),
+        title: Text(tr('Participants'), style: TextStyle(color: _textPri)),
         iconTheme: const IconThemeData(color: C.accent),
       ),
       body: StreamBuilder<List<Participant>>(
@@ -227,16 +228,16 @@ class ParticipantsScreen extends StatelessWidget {
           }
           final rows = snap.data!;
           if (rows.isEmpty) {
-            return const Center(
+            return Center(
               child: Padding(
                 padding: EdgeInsets.all(32),
-                child: Text('Nobody has submitted anything yet.',
+                child: Text(tr('Nobody has submitted anything yet.'),
                     style: TextStyle(color: C.textSoft)),
               ),
             );
           }
           return ListView.builder(
-            padding: const EdgeInsets.fromLTRB(16, 16, 16, 32),
+            padding: const EdgeInsets.fromLTRB(20, 16, 20, 32),
             itemCount: rows.length,
             itemBuilder: (_, i) {
               final p = rows[i];
@@ -284,10 +285,9 @@ class ParticipantsScreen extends StatelessWidget {
                               Text(
                                 [
                                   if (p.huntAttempts > 0)
-                                    '${p.huntAttempts} hunt · '
-                                        '${p.huntSolved} correct',
+                                    tr('{0} hunt · {1} correct', [p.huntAttempts, p.huntSolved]),
                                   if (p.contestEntries > 0)
-                                    '${p.contestEntries} contest picks',
+                                    tr('{0} contest picks', [p.contestEntries]),
                                 ].join('   ·   '),
                                 style: const TextStyle(
                                     color: _textDim, fontSize: 12),
@@ -329,9 +329,9 @@ class ParticipantDetailScreen extends StatelessWidget {
       // a feature, and asking "what did they do today" should not mean opening
       // two different screens.
       body: ListView(
-        padding: const EdgeInsets.fromLTRB(16, 16, 16, 32),
+        padding: const EdgeInsets.fromLTRB(20, 16, 20, 32),
         children: [
-          const _SectionLabel('PLANT HUNT'),
+          _SectionLabel(tr('PLANT HUNT')),
           StreamBuilder<List<HuntSubmission>>(
             stream: HuntSubmissionService.instance
                 .watchUserSubmissions(participant.uid),
@@ -343,14 +343,14 @@ class ParticipantDetailScreen extends StatelessWidget {
                 );
               }
               final rows = snap.data!;
-              if (rows.isEmpty) return const _Empty('No Plant Hunt attempts.');
+              if (rows.isEmpty) return _Empty(tr('No Plant Hunt attempts.'));
               return Column(
                 children: [for (final r in rows) _SubmissionCard(s: r)],
               );
             },
           ),
           const SizedBox(height: 22),
-          const _SectionLabel('CONTEST PICKS'),
+          _SectionLabel(tr('CONTEST PICKS')),
           StreamBuilder<List<ContestEntry>>(
             stream:
                 ContestService.instance.watchEntriesByUser(participant.uid),
@@ -362,7 +362,7 @@ class ParticipantDetailScreen extends StatelessWidget {
                 );
               }
               final rows = snap.data!;
-              if (rows.isEmpty) return const _Empty('No contest picks.');
+              if (rows.isEmpty) return _Empty(tr('No contest picks.'));
               return Column(
                 children: [for (final e in rows) _ContestEntryCard(entry: e)],
               );
@@ -441,18 +441,18 @@ class _SubmissionCard extends StatelessWidget {
                       s.correct ? Icons.check_circle : Icons.cancel_outlined,
                       size: 15,
                       color: s.correct
-                          ? Colors.greenAccent
+                          ? C.accent
                           : C.textFaint,
                     ),
                     const SizedBox(width: 6),
                     Expanded(
-                      child: Text('Quest ${s.questIndex + 1} · ${s.plantName}',
+                      child: Text(tr('Quest {0} · {1}', [s.questIndex + 1, s.plantName]),
                           style: const TextStyle(
                               color: _textPri,
                               fontSize: 13.5,
                               fontWeight: FontWeight.w600)),
                     ),
-                    Text(s.correct ? '${s.points} pts' : '—',
+                    Text(s.correct ? tr('{0} pts', [s.points]) : '—',
                         style: TextStyle(
                             color: s.correct
                                 ? C.gold
@@ -462,16 +462,16 @@ class _SubmissionCard extends StatelessWidget {
                   ],
                 ),
                 const SizedBox(height: 4),
-                Text('Typed: "${s.typedAnswer}"',
+                Text(tr('Typed: "{0}"', [s.typedAnswer]),
                     style: const TextStyle(color: C.text, fontSize: 12.5)),
                 Text(
                   [
-                    'photo: ${s.photoVerdict}',
-                    if (s.detectedName != null) 'saw ${s.detectedName}',
-                    if (s.usedLocationHint) 'location hint',
-                    if (s.usedPhotoHint) 'photo hint',
+                    tr('photo: {0}', [s.photoVerdict]),
+                    if (s.detectedName != null) tr('saw {0}', [s.detectedName]),
+                    if (s.usedLocationHint) tr('location hint'),
+                    if (s.usedPhotoHint) tr('photo hint'),
                     if (s.uncheckedPhoto) 'unchecked',
-                    if (s.adminApproved) 'admin approved',
+                    if (s.adminApproved) tr('admin approved'),
                   ].join(' · '),
                   style: const TextStyle(color: _textDim, fontSize: 11),
                 ),
@@ -597,7 +597,7 @@ class _ContestEntryCard extends StatelessWidget {
                 Text(
                   [
                     if (entry.plantSection.isNotEmpty) entry.plantSection,
-                    if (entry.teamName != null) 'Team ${entry.teamName}',
+                    if (entry.teamName != null) tr('Team {0}', [entry.teamName]),
                   ].join(' · '),
                   style: const TextStyle(color: _textDim, fontSize: 12),
                 ),
@@ -626,7 +626,7 @@ class _ContestEntryCard extends StatelessWidget {
                       entry.hasLocation
                           ? '${entry.lat!.toStringAsFixed(5)}, '
                               '${entry.lng!.toStringAsFixed(5)}'
-                          : 'no location',
+                          : tr('no location'),
                       style: const TextStyle(
                           color: C.textFaint, fontSize: 11),
                     ),

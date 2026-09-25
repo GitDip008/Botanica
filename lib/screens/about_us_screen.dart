@@ -4,6 +4,7 @@ import 'package:url_launcher/url_launcher.dart';
 import '../services/language_service.dart';
 import '../widgets/developed_by_card.dart';
 import '../theme/tokens.dart';
+import '../i18n/tr.dart';
 
 /// All-in-one info page about Oulu Botanical Garden.
 /// Reachable from drawer and from tapping the Open/Closed chip on home.
@@ -31,85 +32,76 @@ class AboutUsScreen extends StatelessWidget {
       ),
       body: SafeArea(
         child: ListView(
-          padding: const EdgeInsets.all(16),
+          padding: const EdgeInsets.all(20),
           children: [
             // ── Header card ───────────────────────────────────
             _headerCard(s),
             const SizedBox(height: 20),
 
-            _section(s.admissionFee, Icons.payments_rounded, const [
+            _section(s.admissionFee, Icons.payments_rounded, [
               _Body(
-                'Voluntary admission fee: 5 € for greenhouses and outdoor garden.\n\n'
-                'Entrance fees fund garden activities and keep the garden open on weekends. '
-                'Pay with MobilePay number 12657 or by bank transfer:',
+                tr('Voluntary admission fee: 5 € for greenhouses and outdoor garden.\n\nEntrance fees fund garden activities and keep the garden open on weekends. Pay with MobilePay number 12657 or by bank transfer:'),
               ),
               SizedBox(height: 10),
-              _InfoLine('Bank', 'Danske Bank A/S'),
-              _InfoLine('SWIFT', 'DABAFIHH'),
-              _InfoLine('IBAN', 'FI66 8919 9710 0010 29'),
-              _InfoLine('Recipient', 'Oulun yliopisto'),
-              _InfoLine('Message', '2402120/pääsymaksu'),
+              _InfoLine(tr('Bank'), tr('Danske Bank A/S')),
+              _InfoLine(tr('SWIFT'), tr('DABAFIHH')),
+              _InfoLine(tr('IBAN'), tr('FI66 8919 9710 0010 29')),
+              _InfoLine(tr('Recipient'), tr('Oulun yliopisto')),
+              _InfoLine(tr('Message'), '2402120/pääsymaksu'),
             ]),
 
             _section(s.directionsAndParking, Icons.directions_rounded, [
-              const _Body(
-                'The Botanical Garden is in the northern corner of the Linnanmaa campus, '
-                'near Lake Kuivasjärvi. Street address: Kaitoväylä 5.\n\n'
-                'From motorway E4, take ramp 12 toward Teknologiakylä and Yliopisto.',
+              _Body(
+                tr('The Botanical Garden is in the northern corner of the Linnanmaa campus, near Lake Kuivasjärvi. Street address: Kaitoväylä 5.\n\nFrom motorway E4, take ramp 12 toward Teknologiakylä and Yliopisto.'),
               ),
               const SizedBox(height: 10),
-              _subTitle('Parking'),
-              const _Body(
-                'Visitor parking is paid 1 Aug – 31 May on weekdays 8:00–16:00.\n'
-                '  • Short-term: 1.20 €/h (max 6 €/day) + operator fee\n'
-                '  • Free outside paid hours\n'
-                '  • EV / hybrid charging at guest locations: 0.20 €/kWh + base fee\n\n'
-                'Payment apps: eParking · EasyPark · Parkman. Bus parking spaces available (free).',
+              _subTitle(tr('Parking')),
+              _Body(
+                tr('Visitor parking is paid 1 Aug – 31 May on weekdays 8:00–16:00.\n  • Short-term: 1.20 €/h (max 6 €/day) + operator fee\n  • Free outside paid hours\n  • EV / hybrid charging at guest locations: 0.20 €/kWh + base fee\n\nPayment apps: eParking · EasyPark · Parkman. Bus parking spaces available (free).'),
               ),
             ]),
 
-            _section(s.photography, Icons.photo_camera_rounded, const [
+            _section(s.photography, Icons.photo_camera_rounded, [
               _Body(
-                'Personal photography in the greenhouses is allowed for private use.\n'
-                'Commercial photography must be agreed separately — fee from 160 €/hour.',
+                tr('Personal photography in the greenhouses is allowed for private use.\nCommercial photography must be agreed separately — fee from 160 €/hour.'),
               ),
             ]),
 
             _linkSection(
               icon: Icons.tour_rounded,
-              title: 'Visit the Garden',
+              title: tr('Visit the Garden'),
               body:
-                  'The botanical garden is an excellent place for all ages to learn and enjoy the diversity of plants. In every season there is something new to find.',
+                  tr('The botanical garden is an excellent place for all ages to learn and enjoy the diversity of plants. In every season there is something new to find.'),
               url: 'https://www.oulu.fi/en/university/botanical-garden/visit-garden',
             ),
             _linkSection(
               icon: Icons.eco_rounded,
-              title: 'Seed Exchange — Index Seminum',
+              title: tr('Seed Exchange — Index Seminum'),
               body:
-                  'We supply wild plant seeds and cuttings collected from Northern Finland and Lapland for international seed exchange.',
+                  tr('We supply wild plant seeds and cuttings collected from Northern Finland and Lapland for international seed exchange.'),
               url: 'https://www.oulu.fi/en/university/botanical-garden/seed-exchange',
             ),
             _linkSection(
               icon: Icons.science_rounded,
-              title: 'Research at the Botanical Garden',
+              title: tr('Research at the Botanical Garden'),
               body:
-                  'In its research activities, the Botanical Garden is primarily a research support unit whose mission is to provide living plant material, breeding facilities and practical assistance to researchers and students.',
+                  tr('In its research activities, the Botanical Garden is primarily a research support unit whose mission is to provide living plant material, breeding facilities and practical assistance to researchers and students.'),
               url:
                   'https://www.oulu.fi/en/university/botanical-garden/research-botanical-garden',
             ),
             _linkSection(
               icon: Icons.museum_rounded,
-              title: 'University of Oulu Botanical Museum',
+              title: tr('University of Oulu Botanical Museum'),
               body:
-                  'The Botanical Museum maintains and increases the university\'s scientific plant and fungus collections, as well as the study collections of the University of Oulu.',
+                  tr('The Botanical Museum maintains and increases the university\'s scientific plant and fungus collections, as well as the study collections of the University of Oulu.'),
               url:
                   'https://www.oulu.fi/en/research/research-infrastructures/biodiversity-unit/botanical-museum',
             ),
 
             _section(s.contact, Icons.email_rounded, [
-              const _InfoLine('Address', _address),
-              const _InfoLine('Email', _mainEmail),
-              const _InfoLine('Website', 'oulu.fi/.../botanical-garden'),
+              _InfoLine(tr('Address'), _address),
+              _InfoLine(tr('Email'), _mainEmail),
+              _InfoLine(tr('Website'), 'oulu.fi/.../botanical-garden'),
               const SizedBox(height: 12),
               Row(
                 children: [
@@ -126,7 +118,7 @@ class AboutUsScreen extends StatelessWidget {
                   Expanded(
                     child: _actionButton(
                       icon: Icons.mail_rounded,
-                      label: 'Email',
+                      label: tr('Email'),
                       color: C.accent,
                       onTap: () =>
                           launchUrl(Uri.parse('mailto:$_mainEmail')),
@@ -140,8 +132,8 @@ class AboutUsScreen extends StatelessWidget {
                   Expanded(
                     child: _actionButton(
                       icon: Icons.language_rounded,
-                      label: 'Website',
-                      color: const Color(0xFFFFB74D),
+                      label: tr('Website'),
+                      color: C.gold,
                       onTap: () => launchUrl(Uri.parse(_website),
                           mode: LaunchMode.externalApplication),
                     ),
@@ -166,29 +158,28 @@ class AboutUsScreen extends StatelessWidget {
       padding: const EdgeInsets.all(18),
       decoration: BoxDecoration(
         gradient: const LinearGradient(
-          colors: [Color(0xFF162B1C), Color(0xFF0F2018)],
+          colors: [C.surface, C.surface],
         ),
         borderRadius: BorderRadius.circular(18),
-        border: Border.all(color: C.line),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
-        children: const [
-          Text('Oulu Botanical Garden',
+        children: [
+          Text(tr('Oulu Botanical Garden'),
               style: TextStyle(
                   color: C.textHi,
                   fontSize: 20,
                   fontWeight: FontWeight.w800)),
           SizedBox(height: 4),
-          Text('Oulun kasvitieteellinen puutarha',
+          Text(tr('Oulun kasvitieteellinen puutarha'),
               style: TextStyle(
                   color: C.accent,
                   fontSize: 13,
                   fontStyle: FontStyle.italic)),
           SizedBox(height: 10),
           Text(
-            'University of Oulu · Linnanmaa campus\n$_address',
-            style: TextStyle(color: Color(0xFFC5E1A5), fontSize: 13, height: 1.4),
+            tr('University of Oulu · Linnanmaa campus\n{0}', [_address]),
+            style: TextStyle(color: C.text, fontSize: 13, height: 1.4),
           ),
         ],
       ),
@@ -202,8 +193,7 @@ class AboutUsScreen extends StatelessWidget {
         padding: const EdgeInsets.all(16),
         decoration: BoxDecoration(
           color: C.surface,
-          borderRadius: BorderRadius.circular(16),
-          border: Border.all(color: C.line),
+          borderRadius: BorderRadius.circular(18),
         ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -238,15 +228,14 @@ class AboutUsScreen extends StatelessWidget {
       child: Material(
         color: Colors.transparent,
         child: InkWell(
-          borderRadius: BorderRadius.circular(16),
+          borderRadius: BorderRadius.circular(18),
           onTap: () => launchUrl(Uri.parse(url),
               mode: LaunchMode.externalApplication),
           child: Container(
             padding: const EdgeInsets.all(16),
             decoration: BoxDecoration(
               color: C.surface,
-              borderRadius: BorderRadius.circular(16),
-              border: Border.all(color: C.line),
+              borderRadius: BorderRadius.circular(18),
             ),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -270,7 +259,7 @@ class AboutUsScreen extends StatelessWidget {
                 Text(
                   body,
                   style: const TextStyle(
-                      color: Color(0xFFC5E1A5), fontSize: 13, height: 1.45),
+                      color: C.text, fontSize: 13, height: 1.45),
                 ),
               ],
             ),
@@ -298,13 +287,13 @@ class AboutUsScreen extends StatelessWidget {
     return Material(
       color: Colors.transparent,
       child: InkWell(
-        borderRadius: BorderRadius.circular(10),
+        borderRadius: BorderRadius.circular(12),
         onTap: onTap,
         child: Container(
           padding: const EdgeInsets.symmetric(vertical: 12),
           decoration: BoxDecoration(
             color: color.withValues(alpha: 0.12),
-            borderRadius: BorderRadius.circular(10),
+            borderRadius: BorderRadius.circular(12),
             border: Border.all(color: color.withValues(alpha: 0.3)),
           ),
           child: Row(
@@ -333,7 +322,7 @@ class _Body extends StatelessWidget {
   Widget build(BuildContext context) => Text(
         text,
         style: const TextStyle(
-            color: Color(0xFFC5E1A5), fontSize: 13, height: 1.5),
+            color: C.text, fontSize: 13, height: 1.5),
       );
 }
 

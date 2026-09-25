@@ -121,7 +121,7 @@ class _SignupScreenState extends State<SignupScreen> {
                     padding: const EdgeInsets.all(12),
                     decoration: BoxDecoration(
                       color: const Color(0xFF3B0B14),
-                      borderRadius: BorderRadius.circular(10),
+                      borderRadius: BorderRadius.circular(12),
                       border: Border.all(color: const Color(0xFF8C2336)),
                     ),
                     child: Row(children: [
@@ -140,7 +140,7 @@ class _SignupScreenState extends State<SignupScreen> {
                     backgroundColor: C.accentDim,
                     foregroundColor: Colors.white,
                     padding: const EdgeInsets.symmetric(vertical: 16),
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)),
                     elevation: 0,
                   ),
                   child: _busy
@@ -163,23 +163,11 @@ class _SignupScreenState extends State<SignupScreen> {
   InputDecoration _decoration(String label, IconData icon, {Widget? suffix}) {
     return InputDecoration(
       labelText: label,
-      labelStyle: const TextStyle(color: C.accent),
+      labelStyle: const TextStyle(color: C.textSoft),
       prefixIcon: Icon(icon, color: C.textFaint),
       suffixIcon: suffix,
       filled: true,
       fillColor: C.surface,
-      border: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(14),
-        borderSide: const BorderSide(color: C.line),
-      ),
-      enabledBorder: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(14),
-        borderSide: const BorderSide(color: C.line),
-      ),
-      focusedBorder: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(14),
-        borderSide: const BorderSide(color: C.accent, width: 1.5),
-      ),
     );
   }
 }

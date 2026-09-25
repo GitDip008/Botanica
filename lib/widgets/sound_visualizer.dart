@@ -6,6 +6,7 @@ import 'package:permission_handler/permission_handler.dart';
 import 'package:record/record.dart';
 import '../services/language_service.dart';
 import '../theme/tokens.dart';
+import '../i18n/tr.dart';
 
 class SoundVisualizer extends StatefulWidget {
   const SoundVisualizer({super.key});
@@ -165,7 +166,7 @@ class _SoundVisualizerState extends State<SoundVisualizer>
     if (db < 60) return C.accent;
     if (db < 80) return const Color(0xFF80CBC4); // teal-green
     if (db < 95) return Colors.yellow[600]!;
-    return Colors.red[400]!;
+    return C.danger;
   }
 
   String _dbLabel(double db) {
@@ -198,7 +199,7 @@ class _SoundVisualizerState extends State<SoundVisualizer>
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
             decoration: BoxDecoration(
               color: C.surface,
-              borderRadius: BorderRadius.circular(10),
+              borderRadius: BorderRadius.circular(12),
             ),
             child: Row(
               mainAxisSize: MainAxisSize.min,
@@ -230,7 +231,7 @@ class _SoundVisualizerState extends State<SoundVisualizer>
               Icon(Icons.mic, color: _dbColor(_smoothDb), size: 22),
               const SizedBox(width: 8),
               Text(
-                _isListening ? '${_currentDb.toStringAsFixed(1)} dB' : '-- dB',
+                _isListening ? tr('{0} dB', [_currentDb.toStringAsFixed(1)]) : tr('-- dB'),
                 style: TextStyle(
                   color: _dbColor(_smoothDb),
                   fontSize: 28,
@@ -251,7 +252,7 @@ class _SoundVisualizerState extends State<SoundVisualizer>
           Padding(
             padding: const EdgeInsets.only(top: 6),
             child: Text(s.retrying(_errorMsg ?? ''),
-                style: const TextStyle(color: Colors.orange, fontSize: 10),
+                style: const TextStyle(color: C.gold, fontSize: 10),
                 textAlign: TextAlign.center),
           ),
 
@@ -289,7 +290,7 @@ class _SoundVisualizerState extends State<SoundVisualizer>
                     C.accentDim,
                     C.accent,
                     if (_smoothDb > 75) Colors.yellow[700]!,
-                    if (_smoothDb > 95) Colors.red[400]!,
+                    if (_smoothDb > 95) C.danger,
                   ]),
                   boxShadow: [
                     BoxShadow(color: C.accent.withOpacity(0.4),
@@ -328,7 +329,7 @@ class _SoundVisualizerState extends State<SoundVisualizer>
           mainAxisSize: MainAxisSize.min,
           children: [
             Icon(Icons.mic_off,
-                color: isPerm ? Colors.red[400] : C.accent, size: 56),
+                color: isPerm ? C.danger : C.accent, size: 56),
             const SizedBox(height: 16),
             Text(
               isPerm ? s.micPermBodyPerm : s.micPermBody,
@@ -368,7 +369,7 @@ class _SoundVisualizerState extends State<SoundVisualizer>
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            const Icon(Icons.mic_none, color: Colors.orange, size: 56),
+            const Icon(Icons.mic_none, color: C.gold, size: 56),
             const SizedBox(height: 16),
             Text(
               s.noAudioArrived,

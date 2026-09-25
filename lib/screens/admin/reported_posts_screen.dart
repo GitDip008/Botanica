@@ -16,6 +16,7 @@ import 'package:flutter/material.dart';
 import '../../models/gallery_post.dart';
 import '../../services/gallery_service.dart';
 import '../../theme/tokens.dart';
+import '../../i18n/tr.dart';
 
 class ReportedPostsScreen extends StatelessWidget {
   const ReportedPostsScreen({super.key});
@@ -27,7 +28,7 @@ class ReportedPostsScreen extends StatelessWidget {
       appBar: AppBar(
         backgroundColor: C.bg,
         elevation: 0,
-        title: const Text('Reported posts'),
+        title: Text(tr('Reported posts')),
       ),
       body: StreamBuilder<List<GalleryReport>>(
         stream: GalleryService.instance.watchOpenReports(),
@@ -37,7 +38,7 @@ class ReportedPostsScreen extends StatelessWidget {
           }
           final reports = snap.data!;
           if (reports.isEmpty) {
-            return const Center(
+            return Center(
               child: Padding(
                 padding: EdgeInsets.all(32),
                 child: Column(
@@ -46,7 +47,7 @@ class ReportedPostsScreen extends StatelessWidget {
                     Icon(Icons.check_circle_outline,
                         size: 40, color: C.accentDim),
                     SizedBox(height: 12),
-                    Text('Nothing to review.',
+                    Text(tr('Nothing to review.'),
                         style: TextStyle(color: C.textSoft)),
                   ],
                 ),
@@ -54,7 +55,7 @@ class ReportedPostsScreen extends StatelessWidget {
             );
           }
           return ListView.builder(
-            padding: const EdgeInsets.all(16),
+            padding: const EdgeInsets.all(20),
             itemCount: reports.length,
             itemBuilder: (_, i) => _ReportCard(report: reports[i]),
           );
@@ -95,7 +96,7 @@ class _ReportCardState extends State<_ReportCard> {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             backgroundColor: const Color(0xFF4A1A1A),
-            content: Text('Failed: $e',
+            content: Text(tr('Failed: {0}', [e]),
                 style: const TextStyle(color: Color(0xFFFFCDD2))),
           ),
         );
@@ -115,24 +116,23 @@ class _ReportCardState extends State<_ReportCard> {
       context: context,
       builder: (_) => AlertDialog(
         backgroundColor: C.bg,
-        title: const Text('Delete permanently?',
+        title: Text(tr('Delete permanently?'),
             style: TextStyle(color: C.textHi, fontSize: 17)),
-        content: const Text(
-          'The post and its photo are removed for good. Hiding is reversible; '
-          'this is not. Use it only when the content must not remain stored.',
+        content: Text(
+          tr('The post and its photo are removed for good. Hiding is reversible; this is not. Use it only when the content must not remain stored.'),
           style: TextStyle(color: C.textSoft, fontSize: 13.5, height: 1.4),
         ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context, false),
-            child: const Text('Cancel',
+            child: Text(tr('Cancel'),
                 style: TextStyle(color: C.accent)),
           ),
           FilledButton(
             onPressed: () => Navigator.pop(context, true),
             style:
                 FilledButton.styleFrom(backgroundColor: const Color(0xFFC62828)),
-            child: const Text('Delete'),
+            child: Text(tr('Delete')),
           ),
         ],
       ),
@@ -141,7 +141,7 @@ class _ReportCardState extends State<_ReportCard> {
     await _run(() async {
       await GalleryService.instance.adminDeletePost(post);
       await GalleryService.instance.resolveReport(widget.report.id, 'deleted');
-    }, 'Post deleted.');
+    }, tr('Post deleted.'));
   }
 
   @override
@@ -179,8 +179,8 @@ class _ReportCardState extends State<_ReportCard> {
                       const Icon(Icons.info_outline,
                           color: C.textFaint, size: 18),
                       const SizedBox(width: 10),
-                      const Expanded(
-                        child: Text('This post no longer exists.',
+                      Expanded(
+                        child: Text(tr('This post no longer exists.'),
                             style: TextStyle(
                                 color: C.textSoft, fontSize: 13.5)),
                       ),
@@ -190,9 +190,9 @@ class _ReportCardState extends State<_ReportCard> {
                             : () => _run(
                                   () => GalleryService.instance
                                       .resolveReport(r.id, 'post-gone'),
-                                  'Report closed.',
+                                  tr('Report closed.'),
                                 ),
-                        child: const Text('Close',
+                        child: Text(tr('Close'),
                             style: TextStyle(color: C.accent)),
                       ),
                     ],
@@ -230,7 +230,7 @@ class _ReportCardState extends State<_ReportCard> {
                                 fontSize: 14,
                                 height: 1.4)),
                       const SizedBox(height: 6),
-                      Text('by ${post.displayName}',
+                      Text(tr('by {0}', [post.displayName]),
                           style: const TextStyle(
                               color: C.textFaint, fontSize: 12)),
                       const SizedBox(height: 10),
@@ -248,13 +248,13 @@ class _ReportCardState extends State<_ReportCard> {
                             const SizedBox(width: 8),
                             Expanded(
                               child: Text(
-                                'Reported: ${r.reason}',
+                                tr('Reported: {0}', [r.reason]),
                                 style: const TextStyle(
                                     color: Color(0xFFFFCDD2), fontSize: 12.5),
                               ),
                             ),
                             if (post.hidden)
-                              const Text('HIDDEN',
+                              Text(tr('HIDDEN'),
                                   style: TextStyle(
                                       color: C.gold,
                                       fontSize: 10.5,
@@ -291,8 +291,8 @@ class _ReportCardState extends State<_ReportCard> {
                                   }
                                 },
                                 post.hidden
-                                    ? 'Post restored.'
-                                    : 'Post hidden from the feed.',
+                                    ? tr('Post restored.')
+                                    : tr('Post hidden from the feed.'),
                               ),
                               icon: Icon(
                                   post.hidden
@@ -300,7 +300,7 @@ class _ReportCardState extends State<_ReportCard> {
                                       : Icons.visibility_off_rounded,
                                   size: 17),
                               label:
-                                  Text(post.hidden ? 'Restore' : 'Hide post'),
+                                  Text(post.hidden ? tr('Restore') : tr('Hide post')),
                               style: FilledButton.styleFrom(
                                 backgroundColor: const Color(0xFF8D6E00),
                                 foregroundColor: Colors.white,
@@ -311,10 +311,10 @@ class _ReportCardState extends State<_ReportCard> {
                               onPressed: () => _run(
                                 () => GalleryService.instance
                                     .resolveReport(r.id, 'dismissed'),
-                                'Report dismissed.',
+                                tr('Report dismissed.'),
                               ),
                               icon: const Icon(Icons.done_rounded, size: 17),
-                              label: const Text('Looks fine'),
+                              label: Text(tr('Looks fine')),
                               style: OutlinedButton.styleFrom(
                                 foregroundColor: C.accent,
                                 side: const BorderSide(
@@ -325,7 +325,7 @@ class _ReportCardState extends State<_ReportCard> {
                             TextButton.icon(
                               onPressed: () => _confirmDelete(post),
                               icon: const Icon(Icons.delete_outline, size: 17),
-                              label: const Text('Delete'),
+                              label: Text(tr('Delete')),
                               style: TextButton.styleFrom(
                                 foregroundColor: C.danger,
                                 visualDensity: VisualDensity.compact,

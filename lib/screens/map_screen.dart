@@ -11,6 +11,7 @@ import '../services/routing_service.dart';
 import '../services/usage_tracking_service.dart';
 import 'main_nav_screen.dart';
 import '../theme/tokens.dart';
+import '../i18n/tr.dart';
 
 class MapScreen extends StatefulWidget {
   const MapScreen({super.key});
@@ -138,12 +139,12 @@ class _MapScreenState extends State<MapScreen> {
   }
 
   String _distanceText(GardenSection section) {
-    if (_userLocation == null) return '📍 Tap for info';
+    if (_userLocation == null) return tr('📍 Tap for info');
     final dist = const Distance().as(LengthUnit.Meter, _userLocation!, section.location);
-    if (dist < 15) return '✅ You are here!';
-    if (dist < 50) return '🟢 ${dist.toInt()}m — very close';
-    if (dist < 200) return '🟡 ${dist.toInt()}m — keep walking';
-    return '🔴 ${dist.toInt()}m away';
+    if (dist < 15) return tr('✅ You are here!');
+    if (dist < 50) return tr('🟢 {0}m — very close', [dist.toInt()]);
+    if (dist < 200) return tr('🟡 {0}m — keep walking', [dist.toInt()]);
+    return tr('🔴 {0}m away', [dist.toInt()]);
   }
 
   bool _isNearby(GardenSection section) {
@@ -211,12 +212,12 @@ class _MapScreenState extends State<MapScreen> {
                             color: _selected?.id == s.id
                                 ? Colors.white
                                 : _isNearby(s)
-                                    ? Colors.greenAccent
-                                    : Colors.white70,
+                                    ? C.accent
+                                    : C.text,
                             width: _selected?.id == s.id ? 3 : 2,
                           ),
                           boxShadow: _isNearby(s)
-                              ? [BoxShadow(color: Colors.greenAccent.withOpacity(0.6), blurRadius: 10, spreadRadius: 3)]
+                              ? [BoxShadow(color: C.accent.withOpacity(0.6), blurRadius: 10, spreadRadius: 3)]
                               : null,
                         ),
                         child: Center(
@@ -276,7 +277,6 @@ class _MapScreenState extends State<MapScreen> {
                           decoration: BoxDecoration(
                             color: C.surface.withValues(alpha: 0.97),
                             borderRadius: BorderRadius.circular(24),
-                            border: Border.all(color: C.accentDim),
                           ),
                           child: Row(
                             children: [
@@ -318,8 +318,8 @@ class _MapScreenState extends State<MapScreen> {
                                         ? Icons.gps_fixed
                                         : Icons.gps_off,
                                     color: _userLocation != null
-                                        ? Colors.greenAccent
-                                        : Colors.orange,
+                                        ? C.accent
+                                        : C.gold,
                                     size: 16,
                                   ),
                                 ),
@@ -337,8 +337,7 @@ class _MapScreenState extends State<MapScreen> {
                       constraints: const BoxConstraints(maxHeight: 240),
                       decoration: BoxDecoration(
                         color: C.surface,
-                        borderRadius: BorderRadius.circular(14),
-                        border: Border.all(color: C.accentDim),
+                        borderRadius: BorderRadius.circular(18),
                       ),
                       child: ListView(
                         shrinkWrap: true,

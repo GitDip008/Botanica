@@ -70,9 +70,9 @@ class _AIModelScreenState extends State<AIModelScreen> {
             padding: const EdgeInsets.all(18),
             decoration: BoxDecoration(
               gradient: const LinearGradient(
-                colors: [C.surfaceAlt, Color(0xFF0F2018)],
+                colors: [C.surfaceAlt, C.surface],
               ),
-              borderRadius: BorderRadius.circular(16),
+              borderRadius: BorderRadius.circular(18),
               border: Border.all(color: C.accent),
             ),
             child: Row(children: [
@@ -126,7 +126,7 @@ class _AIModelScreenState extends State<AIModelScreen> {
             icon: Icons.bubble_chart_rounded,
             title: s.engineGeminiTitle,
             subtitle: s.engineGeminiBody,
-            iconColor: const Color(0xFFFFB74D),
+            iconColor: C.gold,
             status: s.statusAvailable,
             statusColor: C.accent,
           ),
@@ -155,7 +155,7 @@ class _AIModelScreenState extends State<AIModelScreen> {
                 margin: const EdgeInsets.only(bottom: 12),
                 decoration: BoxDecoration(
                   color: const Color(0xFF3B0B14),
-                  borderRadius: BorderRadius.circular(10),
+                  borderRadius: BorderRadius.circular(12),
                   border: Border.all(color: const Color(0xFF8C2336)),
                 ),
                 child: Text(_error!,
@@ -176,7 +176,7 @@ class _AIModelScreenState extends State<AIModelScreen> {
                 backgroundColor: C.line,
                 foregroundColor: C.textHi,
                 padding: const EdgeInsets.symmetric(vertical: 14),
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)),
                 elevation: 0,
               ),
             ),
@@ -205,15 +205,14 @@ class _AIModelScreenState extends State<AIModelScreen> {
       padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
         color: C.surface,
-        borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: C.line),
+        borderRadius: BorderRadius.circular(18),
       ),
       child: Row(children: [
         Container(
           width: 38, height: 38,
           decoration: BoxDecoration(
             color: iconColor.withValues(alpha: 0.15),
-            borderRadius: BorderRadius.circular(10),
+            borderRadius: BorderRadius.circular(12),
           ),
           child: Icon(icon, color: iconColor, size: 19),
         ),

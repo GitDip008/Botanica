@@ -116,7 +116,7 @@ class _PaywallScreenState extends State<PaywallScreen> {
                   backgroundColor: const Color(0xFFB8860B),
                   foregroundColor: Colors.white,
                   padding: const EdgeInsets.symmetric(vertical: 16),
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)),
                   elevation: 0,
                 ),
                 child: _busy
@@ -196,12 +196,12 @@ class _PlanCard extends StatelessWidget {
       color: Colors.transparent,
       child: InkWell(
         onTap: onTap,
-        borderRadius: BorderRadius.circular(14),
+        borderRadius: BorderRadius.circular(18),
         child: Container(
           padding: const EdgeInsets.all(14),
           decoration: BoxDecoration(
             color: selected ? C.surfaceAlt : C.surface,
-            borderRadius: BorderRadius.circular(14),
+            borderRadius: BorderRadius.circular(18),
             border: Border.all(
               color: selected ? const Color(0xFFB8860B) : C.line,
               width: selected ? 2 : 1,

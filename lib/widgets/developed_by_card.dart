@@ -3,6 +3,7 @@ import 'package:flutter_animate/flutter_animate.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:url_launcher/url_launcher.dart';
 import '../theme/tokens.dart';
+import '../i18n/tr.dart';
 
 /// Stylized "Developed by" card — terminal/IDE aesthetic.
 class DevelopedByCard extends StatelessWidget {
@@ -18,7 +19,7 @@ class DevelopedByCard extends StatelessWidget {
   Widget build(BuildContext context) {
     return Container(
       decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(16),
+        borderRadius: BorderRadius.circular(18),
         border: Border.all(color: C.line, width: 1),
         gradient: const LinearGradient(
           colors: [Color(0xFF0D1A11), Color(0xFF0F1F15)],
@@ -44,7 +45,7 @@ class DevelopedByCard extends StatelessWidget {
               children: [
                 _trafficDot(C.danger),
                 const SizedBox(width: 6),
-                _trafficDot(const Color(0xFFFFB74D)),
+                _trafficDot(C.gold),
                 const SizedBox(width: 6),
                 _trafficDot(C.accent),
                 const SizedBox(width: 12),
@@ -96,8 +97,8 @@ class DevelopedByCard extends StatelessWidget {
                     const SizedBox(width: 10),
                     _iconColumn(
                       icon: FontAwesomeIcons.briefcase,
-                      label: 'Portfolio',
-                      color: const Color(0xFFFFB74D),
+                      label: tr('Portfolio'),
+                      color: C.gold,
                       url: _portfolio,
                     ),
                     const SizedBox(width: 10),
@@ -133,14 +134,14 @@ class DevelopedByCard extends StatelessWidget {
       child: Material(
         color: Colors.transparent,
         child: InkWell(
-          borderRadius: BorderRadius.circular(10),
+          borderRadius: BorderRadius.circular(12),
           onTap: () => launchUrl(Uri.parse(url),
               mode: LaunchMode.externalApplication),
           child: Container(
             padding: const EdgeInsets.symmetric(vertical: 10),
             decoration: BoxDecoration(
               color: C.bg,
-              borderRadius: BorderRadius.circular(10),
+              borderRadius: BorderRadius.circular(12),
               border: Border.all(color: color.withValues(alpha: 0.25), width: 1),
             ),
             child: Column(
